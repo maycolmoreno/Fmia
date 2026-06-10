@@ -1,0 +1,11 @@
+package com.farmamia.operations.infraestructura.persistencia.repositorio;
+
+import com.farmamia.operations.infraestructura.persistencia.entidad.PaquetePosEntidad;
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PaquetePosRepositorioJpa extends JpaRepository<PaquetePosEntidad, UUID> {
+
+    Optional<PaquetePosEntidad> findByVersion(String version);
+}

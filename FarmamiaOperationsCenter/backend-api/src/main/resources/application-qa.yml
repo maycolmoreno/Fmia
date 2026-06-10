@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: ${FARMAMIA_DB_URL}
+    username: ${FARMAMIA_DB_USER}
+    password: ${FARMAMIA_DB_PASSWORD}
+  flyway:
+    placeholders:
+      seed-demo-admin: ${FARMAMIA_SEED_DEMO_ADMIN:false}
+
+farmamia:
+  security:
+    jwt-secret: ${FARMAMIA_JWT_SECRET}
+    cors-allowed-origins: ${FARMAMIA_CORS_ALLOWED_ORIGINS}
+  paquetes:
+    ruta-almacenamiento: ${FARMAMIA_PACKAGE_STORAGE}
+
+server:
+  ssl:
+    enabled: ${FARMAMIA_HTTPS_ENABLED:false}
+    key-store: ${FARMAMIA_SSL_KEY_STORE:}
+    key-store-password: ${FARMAMIA_SSL_KEY_STORE_PASSWORD:}
+    key-store-type: ${FARMAMIA_SSL_KEY_STORE_TYPE:PKCS12}

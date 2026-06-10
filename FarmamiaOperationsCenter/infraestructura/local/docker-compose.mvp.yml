@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: farmamia_ops_postgres_mvp
+    environment:
+      POSTGRES_DB: farmamia_ops
+      POSTGRES_USER: farmamia
+      POSTGRES_PASSWORD: farmamia
+    ports:
+      - "5432:5432"
+    volumes:
+      - farmamia_ops_postgres_mvp:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U farmamia -d farmamia_ops"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  farmamia_ops_postgres_mvp:

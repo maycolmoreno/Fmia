@@ -1,0 +1,35 @@
+# Java / Maven
+target/
+.mvn/wrapper/apache-maven-*/
+.mvn/wrapper/*.zip
+
+# .NET
+bin/
+obj/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Local runtime data
+data/
+logs/
+.runtime/
+
+# Angular / Node
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+*.log

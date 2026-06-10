@@ -1,0 +1,809 @@
+<router-outlet></router-outlet>
+
+<main class="login-shell" *ngIf="!sesion.autenticado(); else appAutenticada">
+  <section class="login-panel">
+    <div class="marca login-marca">
+      <span class="marca-senal"></span>
+      <div>
+        <strong>Farmamia</strong>
+        <small>Operations Center</small>
+      </div>
+    </div>
+    <h1>Acceso administrativo</h1>
+    <p class="texto-ayuda">Ingresa con el usuario local de desarrollo para operar el MVP.</p>
+    <div class="alerta error" *ngIf="error">{{ error }}</div>
+    <form class="campos-login" (ngSubmit)="iniciarSesion()">
+      <label>
+        Usuario
+        <input type="text" name="usuario" [(ngModel)]="loginFormulario.usuario" autocomplete="username">
+      </label>
+      <label>
+        Contrasena
+        <input type="password" name="contrasena" [(ngModel)]="loginFormulario.contrasena" autocomplete="current-password">
+      </label>
+      <button type="submit" class="boton primario" [disabled]="autenticando">
+        Iniciar sesion
+      </button>
+    </form>
+  </section>
+</main>
+
+<ng-template #appAutenticada>
+<main class="app-shell">
+  <aside class="barra-lateral">
+    <div class="marca">
+      <span class="marca-senal"></span>
+      <div>
+        <strong>Farmamia</strong>
+        <small>Operations Center</small>
+      </div>
+    </div>
+
+    <nav class="navegacion" aria-label="Navegacion principal">
+      <button type="button" [class.activo]="vistaActiva === 'dashboard'" (click)="cambiarVista('dashboard')">
+        Dashboard
+      </button>
+      <button type="button" [class.activo]="vistaActiva === 'paquetes'" (click)="cambiarVista('paquetes')">
+        Paquetes POS
+      </button>
+      <button type="button" [class.activo]="vistaActiva === 'equipos'" (click)="cambiarVista('equipos')">
+        Equipos
+      </button>
+      <button type="button" [class.activo]="vistaActiva === 'despliegues'" (click)="cambiarVista('despliegues')">
+        Despliegues
+      </button>
+      <button type="button" *ngIf="sesion.puedeVerEventosYAlertas()" [class.activo]="vistaActiva === 'eventos'" (click)="cambiarVista('eventos')">
+        Eventos
+      </button>
+      <button type="button" *ngIf="sesion.puedeVerEventosYAlertas()" [class.activo]="vistaActiva === 'alertas'" (click)="cambiarVista('alertas')">
+        Alertas
+      </button>
+      <button type="button" *ngIf="sesion.puedeVerAuditoria()" [class.activo]="vistaActiva === 'auditoria'" (click)="cambiarVista('auditoria')">
+        Auditoria
+      </button>
+      <button type="button" *ngIf="sesion.esAdmin()" [class.activo]="vistaActiva === 'usuarios'" (click)="cambiarVista('usuarios')">
+        Usuarios
+      </button>
+      <button type="button" [class.activo]="vistaActiva === 'seguridad'" (click)="cambiarVista('seguridad')">
+        Seguridad
+      </button>
+    </nav>
+  </aside>
+
+  <section class="contenido">
+    <header class="encabezado">
+      <div>
+        <p class="etiqueta">MVP de actualizacion POS</p>
+        <h1>Centro de operaciones</h1>
+      </div>
+      <button type="button" class="boton secundario" (click)="recargarTodo()" [disabled]="cargando">
+        Actualizar
+      </button>
+      <button type="button" class="boton secundario" (click)="cerrarSesion()">
+        Salir
+      </button>
+    </header>
+
+    <div class="alerta exito" *ngIf="mensaje">{{ mensaje }}</div>
+    <div class="alerta error" *ngIf="error">{{ error }}</div>
+
+    <section class="vista" *ngIf="vistaActiva === 'dashboard'">
+      <div class="metricas">
+        <article class="tarjeta metrica">
+          <span>API</span>
+          <strong>{{ salud?.status || 'SIN DATOS' }}</strong>
+          <small>{{ salud?.serverTime | date:'short' }}</small>
+        </article>
+        <article class="tarjeta metrica">
+          <span>Equipos</span>
+          <strong>{{ equipos.length }}</strong>
+          <small>{{ equiposOnline }} online</small>
+        </article>
+        <article class="tarjeta metrica">
+          <span>Paquetes</span>
+          <strong>{{ paquetes.length }}</strong>
+          <small>{{ paquetesAprobados }} aprobados</small>
+        </article>
+        <article class="tarjeta metrica">
+          <span>Despliegues</span>
+          <strong>{{ despliegues.length }}</strong>
+          <small>{{ desplieguesActivos }} activos</small>
+        </article>
+        <article class="tarjeta metrica">
+          <span>Eventos</span>
+          <strong>{{ eventos.length }}</strong>
+          <small>{{ eventosCriticos }} criticos</small>
+        </article>
+        <article class="tarjeta metrica">
+          <span>Alertas</span>
+          <strong>{{ alertasDashboard.length }}</strong>
+          <small>{{ alertasAbiertas }} abiertas</small>
+        </article>
+      </div>
+
+      <div class="rejilla-dos">
+        <article class="tarjeta" *ngIf="sesion.puedeVerEventosYAlertas()">
+          <div class="titulo-tarjeta">
+            <h2>Equipos recientes</h2>
+          </div>
+          <div class="lista-compacta">
+            <div class="fila-compacta" *ngFor="let equipo of equipos.slice(0, 5)">
+              <div>
+                <strong>{{ equipo.hostname }}</strong>
+                <small>{{ equipo.branchCode }} | POS {{ equipo.posVersion || 'sin version' }}</small>
+              </div>
+              <span class="estado">{{ equipo.status }}</span>
+            </div>
+            <p class="vacio" *ngIf="equipos.length === 0">Sin equipos registrados.</p>
+          </div>
+        </article>
+
+        <article class="tarjeta" *ngIf="sesion.puedeVerEventosYAlertas()">
+          <div class="titulo-tarjeta">
+            <h2>Ultimos paquetes</h2>
+          </div>
+          <div class="lista-compacta">
+            <div class="fila-compacta" *ngFor="let paquete of paquetes.slice(0, 5)">
+              <div>
+                <strong>{{ paquete.version }}</strong>
+                <small>{{ paquete.fileName }}</small>
+              </div>
+              <span class="estado">{{ paquete.status }}</span>
+            </div>
+            <p class="vacio" *ngIf="paquetes.length === 0">Sin paquetes cargados.</p>
+          </div>
+        </article>
+
+        <article class="tarjeta">
+          <div class="titulo-tarjeta">
+            <h2>Ultimos despliegues</h2>
+          </div>
+          <div class="lista-compacta">
+            <div class="fila-compacta" *ngFor="let despliegue of despliegues.slice(0, 5)">
+              <div>
+                <strong>{{ despliegue.name }}</strong>
+                <small>{{ despliegue.packageVersion || 'Version pendiente' }}</small>
+              </div>
+              <span class="estado">{{ despliegue.status }}</span>
+            </div>
+            <p class="vacio" *ngIf="despliegues.length === 0">Sin despliegues creados.</p>
+          </div>
+        </article>
+
+        <article class="tarjeta">
+          <div class="titulo-tarjeta">
+            <h2>Ultimos eventos</h2>
+          </div>
+          <div class="lista-compacta">
+            <div class="fila-compacta" *ngFor="let evento of eventos.slice(0, 5)">
+              <div>
+                <strong>{{ evento.eventType }}</strong>
+                <small>{{ evento.hostname }} | {{ evento.createdAt | date:'short' }}</small>
+              </div>
+              <span class="estado">{{ evento.newVersion || 'N/D' }}</span>
+            </div>
+            <p class="vacio" *ngIf="eventos.length === 0">Sin eventos registrados.</p>
+          </div>
+        </article>
+
+        <article class="tarjeta">
+          <div class="titulo-tarjeta">
+            <h2>Alertas recientes</h2>
+          </div>
+          <div class="lista-compacta">
+            <div class="fila-compacta" *ngFor="let alerta of alertasCriticasDashboard">
+              <div>
+                <strong>{{ alerta.title }}</strong>
+                <small>{{ alerta.hostname }} | {{ alerta.openedAt | date:'short' }}</small>
+              </div>
+              <span class="estado" [class.critica]="alerta.severity === 'CRITICAL'">{{ alerta.severity }}</span>
+            </div>
+            <p class="vacio" *ngIf="alertasCriticasDashboard.length === 0">Sin alertas criticas recientes.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'equipos'">
+      <div class="rejilla-dos">
+        <article class="tarjeta">
+          <div class="titulo-tarjeta">
+            <h2>Sucursales</h2>
+          </div>
+          <div class="tabla tabla-sucursales">
+            <div class="tabla-fila cabecera">
+              <span>Codigo</span>
+              <span>Nombre</span>
+              <span>Ciudad</span>
+              <span>Estado</span>
+            </div>
+            <div class="tabla-fila" *ngFor="let sucursal of sucursales">
+              <span>{{ sucursal.code }}</span>
+              <span>{{ sucursal.name }}</span>
+              <span>{{ sucursal.city || 'N/D' }}</span>
+              <span><mark>{{ sucursal.active ? 'ACTIVA' : 'INACTIVA' }}</mark></span>
+            </div>
+            <p class="vacio" *ngIf="sucursales.length === 0">Sin sucursales registradas.</p>
+          </div>
+        </article>
+
+        <article class="tarjeta">
+          <div class="titulo-tarjeta">
+            <h2>Resumen operativo</h2>
+          </div>
+          <div class="metricas internas">
+            <article class="metrica-simple">
+              <span>Sucursales</span>
+              <strong>{{ sucursales.length }}</strong>
+            </article>
+            <article class="metrica-simple">
+              <span>Online</span>
+              <strong>{{ equiposOnline }}</strong>
+            </article>
+          </div>
+        </article>
+      </div>
+
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Equipos inventariados</h2>
+        </div>
+        <div class="tabla tabla-equipos">
+          <div class="tabla-fila cabecera">
+            <span>Equipo</span>
+            <span>Sucursal</span>
+            <span>IP</span>
+            <span>Agente</span>
+            <span>POS</span>
+            <span>Estado</span>
+            <span>Ultimo latido</span>
+            <span>Accion</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let equipo of equipos">
+            <span>{{ equipo.hostname }}</span>
+            <span>{{ equipo.branchCode }}</span>
+            <span>{{ equipo.ipAddress || 'N/D' }}</span>
+            <span>{{ equipo.agentVersion || 'N/D' }}</span>
+            <span>{{ equipo.posVersion || 'N/D' }}</span>
+            <span><mark>{{ equipo.status }}</mark></span>
+            <span>{{ equipo.lastHeartbeatAt ? (equipo.lastHeartbeatAt | date:'short') : 'Sin latido' }}</span>
+            <span>
+              <button type="button" class="boton pequeno" (click)="verDetalleEquipo(equipo)">Ver</button>
+            </span>
+          </div>
+          <p class="vacio" *ngIf="equipos.length === 0">Registra un agente para ver equipos aqui.</p>
+        </div>
+      </article>
+
+      <article class="tarjeta" *ngIf="detalleEquipo">
+        <div class="titulo-tarjeta">
+          <h2>{{ detalleEquipo.device.hostname }}</h2>
+          <button type="button" class="boton pequeno secundario" (click)="cerrarDetalleEquipo()">Cerrar</button>
+        </div>
+
+        <div class="detalle-grid">
+          <section>
+            <h3>Inventario</h3>
+            <div class="detalle-lista">
+              <span>Sucursal</span><strong>{{ detalleEquipo.device.branchCode }}</strong>
+              <span>IP</span><strong>{{ detalleEquipo.device.ipAddress || 'N/D' }}</strong>
+              <span>MAC</span><strong>{{ detalleEquipo.device.macAddress || 'N/D' }}</strong>
+              <span>Windows</span><strong>{{ detalleEquipo.device.windowsVersion || 'N/D' }}</strong>
+              <span>Ruta POS</span><strong>{{ detalleEquipo.device.posPath }}</strong>
+            </div>
+          </section>
+
+          <section>
+            <h3>Ultima metrica</h3>
+            <div class="detalle-lista" *ngIf="detalleEquipo.lastMetric; else sinMetrica">
+              <span>Disco usado</span><strong>{{ porcentajeDisco(detalleEquipo.lastMetric) }}%</strong>
+              <span>Libre</span><strong>{{ detalleEquipo.lastMetric.diskFreeMb || 0 }} MB</strong>
+              <span>POS activo</span><strong>{{ detalleEquipo.lastMetric.posProcessRunning ? 'Si' : 'No' }}</strong>
+              <span>Latencia</span><strong>{{ detalleEquipo.lastMetric.latencyMs || 0 }} ms</strong>
+              <span>Recolectado</span><strong>{{ detalleEquipo.lastMetric.collectedAt | date:'short' }}</strong>
+            </div>
+            <ng-template #sinMetrica>
+              <p class="vacio">Sin metricas registradas.</p>
+            </ng-template>
+          </section>
+        </div>
+
+        <div class="rejilla-dos">
+          <section>
+            <h3>Despliegues asociados</h3>
+            <div class="lista-compacta">
+              <div class="fila-compacta" *ngFor="let objetivo of detalleEquipo.deployments">
+                <div>
+                  <strong>{{ objetivo.deploymentName }}</strong>
+                  <small>{{ objetivo.packageVersion }} | {{ objetivo.updatedAt | date:'short' }}</small>
+                </div>
+                <span class="estado">{{ objetivo.targetStatus }}</span>
+              </div>
+              <p class="vacio" *ngIf="detalleEquipo.deployments.length === 0">Sin despliegues asociados.</p>
+            </div>
+          </section>
+
+          <section>
+            <h3>Eventos recientes</h3>
+            <div class="lista-compacta">
+              <div class="fila-compacta" *ngFor="let evento of detalleEquipo.recentEvents">
+                <div>
+                  <strong>{{ evento.eventType }}</strong>
+                  <small>{{ evento.eventMessage || 'Sin mensaje' }}</small>
+                </div>
+                <span class="estado">{{ evento.createdAt | date:'short' }}</span>
+              </div>
+              <p class="vacio" *ngIf="detalleEquipo.recentEvents.length === 0">Sin eventos recientes.</p>
+            </div>
+          </section>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'paquetes'">
+      <article class="tarjeta formulario" *ngIf="sesion.puedeOperar()">
+        <div class="titulo-tarjeta">
+          <h2>Cargar paquete POS</h2>
+        </div>
+        <div class="campos">
+          <label>
+            Version
+            <input type="text" [(ngModel)]="paqueteFormulario.version" placeholder="2026.06.01">
+          </label>
+          <label>
+            Archivo ZIP
+            <input type="file" accept=".zip" (change)="seleccionarArchivo($event)">
+          </label>
+          <button type="button" class="boton primario" (click)="cargarPaquete()" [disabled]="guardandoPaquete">
+            Cargar
+          </button>
+        </div>
+      </article>
+
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Paquetes disponibles</h2>
+        </div>
+        <div class="tabla">
+          <div class="tabla-fila cabecera">
+            <span>Version</span>
+            <span>Archivo</span>
+            <span>Estado</span>
+            <span>Tamano</span>
+            <span>Acciones</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let paquete of paquetes">
+            <span>{{ paquete.version }}</span>
+            <span class="texto-corto">{{ paquete.fileName }}</span>
+            <span><mark>{{ paquete.status }}</mark></span>
+            <span>{{ formatoBytes(paquete.sizeBytes) }}</span>
+            <span class="acciones">
+              <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="aprobarPaquete(paquete)" [disabled]="paquete.status === 'APPROVED'">
+                Aprobar
+              </button>
+              <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="retirarPaquete(paquete)" [disabled]="paquete.status === 'RETIRED'">
+                Retirar
+              </button>
+              <button type="button" class="boton pequeno secundario" (click)="descargarPaquete(paquete)">
+                Descargar
+              </button>
+            </span>
+          </div>
+          <p class="vacio" *ngIf="paquetes.length === 0">Aun no hay paquetes registrados.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'despliegues'">
+      <article class="tarjeta formulario" *ngIf="sesion.puedeOperar()">
+        <div class="titulo-tarjeta">
+          <h2>Crear despliegue</h2>
+        </div>
+        <div class="campos despliegue-campos">
+          <label>
+            Paquete
+            <select [(ngModel)]="despliegueFormulario.packageId">
+              <option *ngFor="let paquete of paquetes" [value]="paquete.id">
+                {{ paquete.version }} - {{ paquete.status }}
+              </option>
+            </select>
+          </label>
+          <label>
+            Nombre
+            <input type="text" [(ngModel)]="despliegueFormulario.name" placeholder="Campana POS junio">
+          </label>
+          <label>
+            Programado
+            <input type="datetime-local" [(ngModel)]="despliegueFormulario.scheduledAt">
+          </label>
+          <label>
+            Grupo
+            <input type="text" [(ngModel)]="despliegueFormulario.targetGroup">
+          </label>
+          <label class="check">
+            <input type="checkbox" [(ngModel)]="despliegueFormulario.pilot">
+            Piloto requerido
+          </label>
+          <label class="ancho-completo">
+            Equipos registrados
+            <div class="selector-equipos">
+              <label class="check fila-check" *ngFor="let equipo of equipos">
+                <input
+                  type="checkbox"
+                  [checked]="estaSeleccionado(equipo)"
+                  (change)="alternarEquipo(equipo, $any($event.target).checked)">
+                <span>{{ equipo.hostname }} | {{ equipo.branchCode }} | {{ equipo.status }}</span>
+              </label>
+              <p class="vacio" *ngIf="equipos.length === 0">No hay equipos registrados todavia.</p>
+            </div>
+          </label>
+          <label class="ancho-completo">
+            Equipos manuales
+            <textarea rows="2" [(ngModel)]="despliegueFormulario.deviceIds" placeholder="UUID adicionales separados por coma o salto de linea"></textarea>
+          </label>
+          <label class="ancho-completo">
+            Descripcion
+            <textarea rows="2" [(ngModel)]="despliegueFormulario.description"></textarea>
+          </label>
+          <button type="button" class="boton primario" (click)="crearDespliegue()" [disabled]="guardandoDespliegue">
+            Crear
+          </button>
+        </div>
+      </article>
+
+      <div class="rejilla-dos">
+        <article class="tarjeta">
+          <div class="titulo-tarjeta">
+            <h2>Campanas</h2>
+          </div>
+          <div class="lista-compacta">
+            <div class="fila-despliegue" *ngFor="let despliegue of despliegues">
+              <div>
+                <strong>{{ despliegue.name }}</strong>
+                <small>{{ despliegue.packageVersion }} | {{ despliegue.targetCount }} equipos</small>
+              </div>
+              <span class="estado">{{ despliegue.status }}</span>
+              <div class="acciones">
+                <button type="button" class="boton pequeno" (click)="verEstado(despliegue)">Estado</button>
+                <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="pausar(despliegue)">Pausar</button>
+                <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="reanudar(despliegue)">Reanudar</button>
+                <button type="button" class="boton pequeno peligro" *ngIf="sesion.puedeOperar()" (click)="cancelar(despliegue)">Cancelar</button>
+              </div>
+            </div>
+            <p class="vacio" *ngIf="despliegues.length === 0">Aun no hay despliegues.</p>
+          </div>
+        </article>
+
+        <article class="tarjeta">
+          <div class="titulo-tarjeta">
+            <h2>Estado seleccionado</h2>
+          </div>
+          <div *ngIf="estadoSeleccionado; else sinEstado">
+            <p class="estado-grande">{{ estadoSeleccionado.status }}</p>
+            <div class="fila-compacta" *ngFor="let item of objetivoEstados()">
+              <span>{{ item[0] }}</span>
+              <strong>{{ item[1] }}</strong>
+            </div>
+          </div>
+          <ng-template #sinEstado>
+            <p class="vacio">Selecciona una campana para ver sus objetivos.</p>
+          </ng-template>
+        </article>
+      </div>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'eventos'">
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Eventos de actualizacion</h2>
+        </div>
+        <div class="tabla tabla-eventos">
+          <div class="tabla-fila cabecera">
+            <span>Fecha</span>
+            <span>Equipo</span>
+            <span>Tipo</span>
+            <span>Versiones</span>
+            <span>Mensaje</span>
+            <span>Metadatos</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let evento of eventos">
+            <span>{{ evento.createdAt | date:'short' }}</span>
+            <span>{{ evento.hostname }}</span>
+            <span><mark>{{ evento.eventType }}</mark></span>
+            <span>{{ evento.oldVersion || 'N/D' }} -> {{ evento.newVersion || 'N/D' }}</span>
+            <span class="texto-corto">{{ evento.eventMessage || 'Sin mensaje' }}</span>
+            <span class="texto-corto">{{ metadatosComoTexto(evento) }}</span>
+          </div>
+          <p class="vacio" *ngIf="eventos.length === 0">Aun no hay eventos enviados por agentes.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'alertas'">
+      <article class="tarjeta formulario">
+        <div class="titulo-tarjeta">
+          <h2>Filtros de alertas</h2>
+          <button type="button" class="boton pequeno secundario" (click)="limpiarFiltrosAlertas()">Limpiar</button>
+        </div>
+        <div class="campos alertas-campos">
+          <label>
+            Estado
+            <select [(ngModel)]="alertasFiltros.status">
+              <option *ngFor="let estado of estadosAlerta" [value]="estado">{{ estado || 'Todos' }}</option>
+            </select>
+          </label>
+          <label>
+            Severidad
+            <select [(ngModel)]="alertasFiltros.severity">
+              <option *ngFor="let severidad of severidadesAlerta" [value]="severidad">{{ severidad || 'Todas' }}</option>
+            </select>
+          </label>
+          <label>
+            Tipo
+            <select [(ngModel)]="alertasFiltros.type">
+              <option *ngFor="let tipo of tiposAlerta" [value]="tipo">{{ tipo || 'Todos' }}</option>
+            </select>
+          </label>
+          <label>
+            Equipo
+            <input type="text" [(ngModel)]="alertasFiltros.hostname" placeholder="POS-DEMO">
+          </label>
+          <label>
+            Sucursal
+            <input type="text" [(ngModel)]="alertasFiltros.branchCode" placeholder="FMA001">
+          </label>
+          <label>
+            Desde
+            <input type="datetime-local" [(ngModel)]="alertasFiltros.dateFrom">
+          </label>
+          <label>
+            Hasta
+            <input type="datetime-local" [(ngModel)]="alertasFiltros.dateTo">
+          </label>
+          <label>
+            Tamano
+            <select [(ngModel)]="alertasFiltros.size">
+              <option [ngValue]="10">10</option>
+              <option [ngValue]="20">20</option>
+              <option [ngValue]="50">50</option>
+              <option [ngValue]="100">100</option>
+            </select>
+          </label>
+          <button type="button" class="boton primario" (click)="filtrarAlertas()">Filtrar</button>
+        </div>
+      </article>
+
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Alertas operativas</h2>
+          <div class="acciones">
+            <button type="button" class="boton pequeno secundario" (click)="paginaAlertas(-1)" [disabled]="alertasFiltros.page === 0">Anterior</button>
+            <span class="estado">Pagina {{ alertasFiltros.page + 1 }}</span>
+            <button type="button" class="boton pequeno secundario" (click)="paginaAlertas(1)" [disabled]="alertas.length < alertasFiltros.size">Siguiente</button>
+          </div>
+        </div>
+        <div class="tabla tabla-alertas">
+          <div class="tabla-fila cabecera">
+            <span>Fecha</span>
+            <span>Equipo</span>
+            <span>Sucursal</span>
+            <span>Severidad</span>
+            <span>Tipo</span>
+            <span>Estado</span>
+            <span>Gestion</span>
+            <span>Mensaje</span>
+            <span>Acciones</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let alerta of alertas">
+            <span>{{ alerta.openedAt | date:'short' }}</span>
+            <span>{{ alerta.hostname }}</span>
+            <span>{{ alerta.branchCode }}</span>
+            <span><mark class="severidad" [class.critica]="alerta.severity === 'CRITICAL'" [class.alta]="alerta.severity === 'HIGH'" [class.media]="alerta.severity === 'MEDIUM'" [class.baja]="alerta.severity === 'LOW'">{{ alerta.severity }}</mark></span>
+            <span>{{ alerta.alertType }}</span>
+            <span>{{ alerta.status }}</span>
+            <span class="texto-corto">
+              {{ alerta.acknowledgedBy ? ('Reconocida por ' + alerta.acknowledgedBy) : 'Sin reconocer' }}
+              {{ alerta.closedBy ? (' | Cerrada por ' + alerta.closedBy) : '' }}
+            </span>
+            <span class="texto-corto">{{ alerta.message || alerta.title }}</span>
+            <span class="acciones">
+              <button
+                type="button"
+                class="boton pequeno"
+                *ngIf="sesion.puedeOperar()"
+                (click)="reconocerAlerta(alerta)"
+                [disabled]="alerta.status !== 'OPEN'">
+                Reconocer
+              </button>
+              <button
+                type="button"
+                class="boton pequeno peligro"
+                *ngIf="sesion.puedeOperar()"
+                (click)="cerrarAlerta(alerta)"
+                [disabled]="alerta.status === 'CLOSED'">
+                Cerrar
+              </button>
+            </span>
+          </div>
+          <p class="vacio" *ngIf="alertas.length === 0">Aun no hay alertas registradas.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'auditoria'">
+      <article class="tarjeta formulario">
+        <div class="titulo-tarjeta">
+          <h2>Filtros de auditoria</h2>
+          <button type="button" class="boton pequeno secundario" (click)="limpiarFiltrosAuditoria()">Limpiar</button>
+        </div>
+        <div class="campos auditoria-campos">
+          <label>
+            Accion
+            <input type="text" [(ngModel)]="auditoriaFiltros.action" placeholder="ADMIN_LOGIN">
+          </label>
+          <label>
+            Entidad
+            <input type="text" [(ngModel)]="auditoriaFiltros.entityType" placeholder="AUTH">
+          </label>
+          <label>
+            Usuario
+            <input type="text" [(ngModel)]="auditoriaFiltros.actorUsername" placeholder="admin">
+          </label>
+          <label>
+            Desde
+            <input type="datetime-local" [(ngModel)]="auditoriaFiltros.from">
+          </label>
+          <label>
+            Hasta
+            <input type="datetime-local" [(ngModel)]="auditoriaFiltros.to">
+          </label>
+          <button type="button" class="boton primario" (click)="cargarAuditoria()">Filtrar</button>
+        </div>
+      </article>
+
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Auditoria administrativa</h2>
+        </div>
+        <div class="tabla tabla-auditoria">
+          <div class="tabla-fila cabecera">
+            <span>Fecha</span>
+            <span>Usuario</span>
+            <span>Accion</span>
+            <span>Entidad</span>
+            <span>IP</span>
+            <span>Valores</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let item of auditoria">
+            <span>{{ item.createdAt | date:'short' }}</span>
+            <span>{{ item.actorUsername || 'Sistema' }}</span>
+            <span><mark>{{ item.action }}</mark></span>
+            <span>{{ item.entityType }} {{ item.entityId || '' }}</span>
+            <span>{{ item.ipAddress || 'N/D' }}</span>
+            <span class="texto-corto">{{ valoresComoTexto(item.newValues) }}</span>
+          </div>
+          <p class="vacio" *ngIf="auditoria.length === 0">Aun no hay acciones administrativas auditadas.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'seguridad'">
+      <article class="tarjeta formulario">
+        <div class="titulo-tarjeta">
+          <h2>Credenciales administrativas</h2>
+        </div>
+        <div class="campos seguridad-campos">
+          <label>
+            Contrasena actual
+            <input type="password" [(ngModel)]="seguridadFormulario.contrasenaActual" autocomplete="current-password">
+          </label>
+          <label>
+            Nueva contrasena
+            <input type="password" [(ngModel)]="seguridadFormulario.contrasenaNueva" autocomplete="new-password">
+          </label>
+          <label>
+            Confirmar contrasena
+            <input type="password" [(ngModel)]="seguridadFormulario.confirmarContrasena" autocomplete="new-password">
+          </label>
+          <button type="button" class="boton primario" (click)="cambiarContrasena()" [disabled]="guardandoSeguridad">
+            Actualizar
+          </button>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'usuarios' && sesion.esAdmin()">
+      <article class="tarjeta formulario">
+        <div class="titulo-tarjeta">
+          <h2>{{ usuarioEditandoId ? 'Editar usuario' : 'Crear usuario' }}</h2>
+          <button type="button" class="boton pequeno secundario" *ngIf="usuarioEditandoId" (click)="limpiarFormularioUsuario()">
+            Nuevo
+          </button>
+        </div>
+        <div class="campos usuarios-campos">
+          <label>
+            Usuario
+            <input type="text" [(ngModel)]="usuarioFormulario.username" [disabled]="!!usuarioEditandoId" autocomplete="off">
+          </label>
+          <label>
+            Nombre completo
+            <input type="text" [(ngModel)]="usuarioFormulario.fullName" autocomplete="off">
+          </label>
+          <label>
+            Correo
+            <input type="email" [(ngModel)]="usuarioFormulario.email" autocomplete="off">
+          </label>
+          <label>
+            Rol
+            <select [(ngModel)]="usuarioFormulario.role" [disabled]="!!usuarioEditandoId">
+              <option *ngFor="let rol of rolesAdministrativos" [value]="rol">{{ rol }}</option>
+            </select>
+          </label>
+          <label *ngIf="!usuarioEditandoId">
+            Contrasena inicial
+            <input type="password" [(ngModel)]="usuarioFormulario.password" autocomplete="new-password">
+          </label>
+          <button type="button" class="boton primario" (click)="guardarUsuarioAdministrativo()" [disabled]="guardandoUsuario">
+            Guardar
+          </button>
+        </div>
+      </article>
+
+      <article class="tarjeta" *ngIf="usuarioResetId">
+        <div class="titulo-tarjeta">
+          <h2>Resetear contrasena</h2>
+          <button type="button" class="boton pequeno secundario" (click)="cancelarResetContrasena()">Cancelar</button>
+        </div>
+        <div class="campos seguridad-campos">
+          <label>
+            Nueva contrasena
+            <input type="password" [(ngModel)]="usuarioResetFormulario.newPassword" autocomplete="new-password">
+          </label>
+          <button type="button" class="boton primario" (click)="resetearContrasenaUsuarioAdministrativo()">
+            Resetear
+          </button>
+        </div>
+      </article>
+
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Usuarios administrativos</h2>
+          <button type="button" class="boton pequeno secundario" (click)="cargarUsuariosAdministrativos()">Actualizar</button>
+        </div>
+        <div class="tabla tabla-usuarios">
+          <div class="tabla-fila cabecera">
+            <span>Usuario</span>
+            <span>Nombre</span>
+            <span>Correo</span>
+            <span>Rol</span>
+            <span>Estado</span>
+            <span>Ultimo acceso</span>
+            <span>Acciones</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let usuario of usuariosAdministrativos">
+            <span>{{ usuario.username }}</span>
+            <span>{{ usuario.fullName }}</span>
+            <span class="texto-corto">{{ usuario.email || 'N/D' }}</span>
+            <span>
+              <select [ngModel]="usuario.role" (ngModelChange)="cambiarRolUsuarioAdministrativo(usuario, $event)">
+                <option *ngFor="let rol of rolesAdministrativos" [value]="rol">{{ rol }}</option>
+              </select>
+            </span>
+            <span>
+              <mark [class.critica]="!usuario.active">{{ usuario.active ? 'ACTIVO' : 'INACTIVO' }}</mark>
+            </span>
+            <span>{{ usuario.lastLoginAt ? (usuario.lastLoginAt | date:'short') : 'Sin acceso' }}</span>
+            <span class="acciones">
+              <button type="button" class="boton pequeno" (click)="editarUsuarioAdministrativo(usuario)">Editar</button>
+              <button type="button" class="boton pequeno" (click)="iniciarResetContrasena(usuario)">Reset</button>
+              <button type="button" class="boton pequeno" *ngIf="!usuario.active" (click)="activarUsuarioAdministrativo(usuario)">Activar</button>
+              <button type="button" class="boton pequeno peligro" *ngIf="usuario.active" (click)="desactivarUsuarioAdministrativo(usuario)">Desactivar</button>
+            </span>
+          </div>
+          <p class="vacio" *ngIf="usuariosAdministrativos.length === 0">Aun no hay usuarios administrativos.</p>
+        </div>
+      </article>
+    </section>
+  </section>
+</main>
+</ng-template>

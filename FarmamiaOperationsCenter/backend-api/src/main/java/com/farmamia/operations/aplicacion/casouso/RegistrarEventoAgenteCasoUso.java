@@ -1,0 +1,136 @@
+package com.farmamia.operations.aplicacion.casouso;
+
+import com.farmamia.operations.aplicacion.excepcion.RecursoNoEncontradoException;
+import com.farmamia.operations.dominio.modelo.AlertaEquipo;
+import com.farmamia.operations.dominio.modelo.DatosEventoAgente;
+import com.farmamia.operations.dominio.modelo.EventoActualizacion;
+import com.farmamia.operations.dominio.modelo.ResultadoActualizacion;
+import com.farmamia.operations.dominio.puerto.RepositorioAlertas;
+import com.farmamia.operations.dominio.puerto.RepositorioEquipos;
+import com.farmamia.operations.dominio.puerto.RepositorioEventosActualizacion;
+import com.farmamia.operations.dominio.puerto.RepositorioObjetivosDespliegue;
+import jakarta.transaction.Transactional;
+import java.util.Map;
+import java.util.UUID;
+import org.springframework.stereotype.Service;
+
+@Service
+public class RegistrarEventoAgenteCasoUso {
+
+    private static final String ESTADO_COMPLETADO = "COMPLETED";
+    private static final String ESTADO_ROLLBACK_COMPLETADO = "ROLLBACK_COMPLETED";
+    private static final String ESTADO_ROLLBACK_FALLIDO = "ROLLBACK_FAILED";
+    private static final String EVENTO_RESULTADO_ACTUALIZACION = "UPDATE_COMPLETED";
+    private static final String EVENTO_ROLLBACK_COMPLETADO = "ROLLBACK_COMPLETED";
+    private static final String EVENTO_FALLO = "FAILED";
+
+    private final RepositorioEquipos repositorioEquipos;
+    private final RepositorioObjetivosDespliegue repositorioObjetivosDespliegue;
+    private final RepositorioEventosActualizacion repositorioEventosActualizacion;
+    private final RepositorioAlertas repositorioAlertas;
+
+    public RegistrarEventoAgenteCasoUso(
+        RepositorioEquipos repositorioEquipos,
+        RepositorioObjetivosDespliegue repositorioObjetivosDespliegue,
+        RepositorioEventosActualizacion repositorioEventosActualizacion,
+        RepositorioAlertas repositorioAlertas
+    ) {
+        this.repositorioEquipos = repositorioEquipos;
+        this.repositorioObjetivosDespliegue = repositorioObjetivosDespliegue;
+        this.repositorioEventosActualizacion = repositorioEventosActualizacion;
+        this.repositorioAlertas = repositorioAlertas;
+    }
+
+    @Transactional
+    public void registrarEvento(UUID idEquipo, DatosEventoAgente datos) {
+        validarEquipo(idEquipo);
+        validarObjetivoOpcional(idEquipo, datos.idObjetivoDespliegue());
+
+        repositorioEventosActualizacion.guardar(new EventoActualizacion(
+            idEquipo,
+            datos.idObjetivoDespliegue(),
+            datos.tipoEvento(),
+            datos.mensajeEvento(),
+            datos.versionAnterior(),
+            datos.versionNueva(),
+            datos.metadatos()
+        ));
+    }
+
+    @Transactional
+    public void registrarResultadoActualizacion(UUID idEquipo, ResultadoActualizacion resultado) {
+        validarEquipo(idEquipo);
+
+        ResultadoActualizacion resultadoPersistible = new ResultadoActualizacion(
+            resultado.idObjetivoDespliegue(),
+            resultado.estado(),
+            resultado.versionAnterior(),
+            resultado.versionNueva(),
+            esFallo(resultado.estado()) ? resultado.mensaje() : null
+        );
+        repositorioObjetivosDespliegue.registrarResultado(idEquipo, resultadoPersistible);
+
+        if (ESTADO_COMPLETADO.equals(resultado.estado())) {
+            repositorioEquipos.actualizarVersionPos(idEquipo, resultado.versionNueva());
+        }
+
+        repositorioEventosActualizacion.guardar(new EventoActualizacion(
+            idEquipo,
+            resultado.idObjetivoDespliegue(),
+            tipoEventoResultado(resultado.estado()),
+            resultado.mensaje(),
+            resultado.versionAnterior(),
+            resultado.versionNueva(),
+            Map.of("status", resultado.estado())
+        ));
+
+        generarAlertaSiCorresponde(idEquipo, resultado);
+    }
+
+    private void validarEquipo(UUID idEquipo) {
+        repositorioEquipos.buscarPorId(idEquipo)
+            .orElseThrow(() -> new RecursoNoEncontradoException("Equipo no encontrado: " + idEquipo));
+    }
+
+    private void validarObjetivoOpcional(UUID idEquipo, UUID idObjetivoDespliegue) {
+        if (idObjetivoDespliegue == null) {
+            return;
+        }
+
+        repositorioObjetivosDespliegue.validarPerteneceAEquipo(idObjetivoDespliegue, idEquipo);
+    }
+
+    private String tipoEventoResultado(String estado) {
+        if (ESTADO_COMPLETADO.equals(estado)) {
+            return EVENTO_RESULTADO_ACTUALIZACION;
+        }
+
+        if (ESTADO_ROLLBACK_COMPLETADO.equals(estado)) {
+            return EVENTO_ROLLBACK_COMPLETADO;
+        }
+
+        return EVENTO_FALLO;
+    }
+
+    private boolean esFallo(String estado) {
+        return !ESTADO_COMPLETADO.equals(estado) && !ESTADO_ROLLBACK_COMPLETADO.equals(estado);
+    }
+
+    private void generarAlertaSiCorresponde(UUID idEquipo, ResultadoActualizacion resultado) {
+        if (!esFallo(resultado.estado())) {
+            return;
+        }
+
+        String tipoAlerta = ESTADO_ROLLBACK_FALLIDO.equals(resultado.estado())
+            ? "ROLLBACK_FAILED"
+            : "UPDATE_FAILED";
+
+        repositorioAlertas.guardar(new AlertaEquipo(
+            idEquipo,
+            "CRITICAL",
+            tipoAlerta,
+            "Fallo de actualizacion POS",
+            resultado.mensaje()
+        ));
+    }
+}

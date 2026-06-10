@@ -1,0 +1,120 @@
+name: Farmamia MVP Verification
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend Spring Boot
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: FarmamiaOperationsCenter/backend-api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Cache Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('FarmamiaOperationsCenter/backend-api/pom.xml') }}
+          restore-keys: |
+            maven-${{ runner.os }}-
+
+      - name: Backend tests
+        run: |
+          chmod +x ./mvnw
+          ./mvnw test
+
+  admin-panel:
+    name: Admin Panel Angular
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: FarmamiaOperationsCenter/admin-panel
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: FarmamiaOperationsCenter/admin-panel/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Angular
+        run: npm run build
+
+      - name: Build Angular production
+        run: npx ng build --configuration production
+
+      - name: Angular tests when present
+        shell: pwsh
+        run: |
+          $specs = Get-ChildItem ./src -Recurse -Filter "*.spec.ts" -ErrorAction SilentlyContinue
+          if ($specs) {
+            npm test -- --watch=false --browsers=ChromeHeadless
+          } else {
+            Write-Host "No Angular *.spec.ts files found; skipping Angular tests."
+          }
+
+  windows-agent:
+    name: Windows Agent .NET
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: FarmamiaOperationsCenter/windows-agent
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Agent tests
+        run: dotnet test Farmamia.Agent.Tests\Farmamia.Agent.Tests.csproj
+
+  scripts:
+    name: PowerShell Script Validation
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse verification scripts
+        shell: pwsh
+        run: |
+          $scripts = @(
+            "FarmamiaOperationsCenter/herramientas/verificacion/verificar-mvp.ps1",
+            "FarmamiaOperationsCenter/herramientas/verificacion/levantar-stack-mvp-local.ps1",
+            "FarmamiaOperationsCenter/herramientas/verificacion/detener-stack-mvp-local.ps1",
+            "FarmamiaOperationsCenter/herramientas/verificacion/ejecutar-e2e-demo-local.ps1"
+          )
+
+          foreach ($script in $scripts) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script), [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              Write-Error "PowerShell parse errors in $script: $($errors | ForEach-Object Message)"
+            }
+            Write-Host "OK $script"
+          }
