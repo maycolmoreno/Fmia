@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public record SolicitudEventoAgente(
     @JsonProperty("deploymentTargetId") UUID idObjetivoDespliegue,
+    @JsonProperty("idempotencyKey") String idempotencyKey,
     @JsonProperty("eventType") @NotBlank String tipoEvento,
     @JsonProperty("eventMessage") String mensajeEvento,
     @JsonProperty("oldVersion") String versionAnterior,

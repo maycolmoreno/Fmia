@@ -2,6 +2,9 @@ package com.farmamia.operations.aplicacion.casouso;
 
 import com.farmamia.operations.dominio.modelo.Equipo;
 import com.farmamia.operations.dominio.modelo.EventoActualizacionRegistrado;
+import com.farmamia.operations.dominio.modelo.FiltroEquipos;
+import com.farmamia.operations.dominio.modelo.FiltroEventosActualizacion;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.modelo.Sucursal;
 import com.farmamia.operations.dominio.puerto.RepositorioEquipos;
 import com.farmamia.operations.dominio.puerto.RepositorioEventosActualizacion;
@@ -33,6 +36,11 @@ public class ConsultarCatalogoOperativoCasoUso {
     }
 
     @Transactional(readOnly = true)
+    public Pagina<Equipo> listarEquiposPaginado(FiltroEquipos filtro) {
+        return repositorioEquipos.listarPaginado(normalizar(filtro));
+    }
+
+    @Transactional(readOnly = true)
     public List<Sucursal> listarSucursales() {
         return repositorioSucursales.listar();
     }
@@ -41,5 +49,38 @@ public class ConsultarCatalogoOperativoCasoUso {
     public List<EventoActualizacionRegistrado> listarEventosRecientes(int limite) {
         int limiteNormalizado = Math.max(1, Math.min(limite, 200));
         return repositorioEventosActualizacion.listarRecientes(limiteNormalizado);
+    }
+
+    @Transactional(readOnly = true)
+    public Pagina<EventoActualizacionRegistrado> listarEventosPaginado(FiltroEventosActualizacion filtro) {
+        return repositorioEventosActualizacion.listarPaginado(new FiltroEventosActualizacion(
+            filtro.idEquipo(),
+            filtro.idDespliegue(),
+            blancoANulo(filtro.tipoEvento()),
+            filtro.desde(),
+            filtro.hasta(),
+            Math.max(0, filtro.pagina()),
+            Math.max(1, Math.min(filtro.tamano(), 200)),
+            blancoANulo(filtro.orden()) == null ? "creadoEn,desc" : filtro.orden()
+        ));
+    }
+
+    private FiltroEquipos normalizar(FiltroEquipos filtro) {
+        return new FiltroEquipos(
+            blancoANulo(filtro.q()),
+            blancoANulo(filtro.estado()),
+            blancoANulo(filtro.codigoSucursal()),
+            blancoANulo(filtro.versionPos()),
+            blancoANulo(filtro.versionAgente()),
+            filtro.ultimoLatidoDesde(),
+            filtro.ultimoLatidoHasta(),
+            Math.max(0, filtro.pagina()),
+            Math.max(1, Math.min(filtro.tamano(), 200)),
+            blancoANulo(filtro.orden()) == null ? "nombreEquipo,asc" : filtro.orden()
+        );
+    }
+
+    private String blancoANulo(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim();
     }
 }

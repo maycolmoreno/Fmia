@@ -118,19 +118,40 @@ public class DespliegueEntidad {
     }
 
     public void programar(OffsetDateTime programadoEn) {
+        if (!estadoEn("DRAFT", "SCHEDULED", "PAUSED")) {
+            throw new IllegalArgumentException("Solo se puede programar un despliegue en estado DRAFT, SCHEDULED o PAUSED.");
+        }
         this.programadoEn = programadoEn;
         this.estado = "SCHEDULED";
     }
 
     public void pausar() {
+        if (!estadoEn("SCHEDULED", "APPROVED", "PILOT_RUNNING", "RUNNING")) {
+            throw new IllegalArgumentException("Solo se puede pausar un despliegue programado o en ejecucion.");
+        }
         this.estado = "PAUSED";
     }
 
     public void reanudar() {
+        if (!estadoEn("PAUSED")) {
+            throw new IllegalArgumentException("Solo se puede reanudar un despliegue pausado.");
+        }
         this.estado = "RUNNING";
     }
 
     public void cancelar() {
+        if (estadoEn("COMPLETED", "FAILED", "CANCELLED")) {
+            throw new IllegalArgumentException("No se puede cancelar un despliegue finalizado.");
+        }
         this.estado = "CANCELLED";
+    }
+
+    private boolean estadoEn(String... estados) {
+        for (String estadoPermitido : estados) {
+            if (estadoPermitido.equals(estado)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

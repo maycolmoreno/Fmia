@@ -3,6 +3,8 @@ package com.farmamia.operations.aplicacion.casouso;
 import com.farmamia.operations.aplicacion.excepcion.RecursoNoEncontradoException;
 import com.farmamia.operations.dominio.modelo.ArchivoPaqueteDescarga;
 import com.farmamia.operations.dominio.modelo.ArchivoPaqueteGuardado;
+import com.farmamia.operations.dominio.modelo.FiltroPaquetesPos;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.modelo.PaquetePos;
 import com.farmamia.operations.dominio.puerto.AlmacenamientoPaquetes;
 import com.farmamia.operations.dominio.puerto.RepositorioPaquetesPos;
@@ -52,6 +54,19 @@ public class GestionarPaquetesPosCasoUso {
         return repositorioPaquetesPos.listar();
     }
 
+    public Pagina<PaquetePos> listarPaginado(FiltroPaquetesPos filtro) {
+        return repositorioPaquetesPos.listarPaginado(new FiltroPaquetesPos(
+            blancoANulo(filtro.q()),
+            blancoANulo(filtro.estado()),
+            blancoANulo(filtro.version()),
+            filtro.cargadoDesde(),
+            filtro.cargadoHasta(),
+            Math.max(0, filtro.pagina()),
+            Math.max(1, Math.min(filtro.tamano(), 200)),
+            blancoANulo(filtro.orden()) == null ? "cargadoEn,desc" : filtro.orden()
+        ));
+    }
+
     public PaquetePos obtener(UUID id) {
         return buscarPaquete(id);
     }
@@ -78,5 +93,9 @@ public class GestionarPaquetesPosCasoUso {
     private PaquetePos buscarPaquete(UUID id) {
         return repositorioPaquetesPos.buscarPorId(id)
             .orElseThrow(() -> new RecursoNoEncontradoException("Paquete POS no encontrado: " + id));
+    }
+
+    private String blancoANulo(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim();
     }
 }

@@ -4,6 +4,7 @@ import com.farmamia.operations.aplicacion.excepcion.RecursoNoEncontradoException
 import com.farmamia.operations.dominio.modelo.AlertaEquipo;
 import com.farmamia.operations.dominio.modelo.AlertaRegistrada;
 import com.farmamia.operations.dominio.modelo.FiltroAlertas;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.puerto.RepositorioAlertas;
 import com.farmamia.operations.infraestructura.persistencia.entidad.AlertaEntidad;
 import com.farmamia.operations.infraestructura.persistencia.entidad.EquipoEntidad;
@@ -13,6 +14,7 @@ import com.farmamia.operations.infraestructura.persistencia.repositorio.AlertaRe
 import com.farmamia.operations.infraestructura.persistencia.repositorio.EquipoRepositorioJpa;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.UsuarioAppRepositorioJpa;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -60,13 +62,13 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
     @Override
     public List<AlertaRegistrada> listarConFiltros(FiltroAlertas filtro) {
         return alertaRepositorioJpa.buscarConFiltros(
-            filtro.estado(),
-            filtro.severidad(),
-            filtro.tipo(),
+            minusculaANulo(filtro.estado()),
+            minusculaANulo(filtro.severidad()),
+            minusculaANulo(filtro.tipo()),
             filtro.idEquipo(),
             filtro.idSucursal(),
-            filtro.codigoSucursal(),
-            filtro.nombreEquipo(),
+            minusculaANulo(filtro.codigoSucursal()),
+            minusculaANulo(filtro.nombreEquipo()),
             filtro.fechaDesde(),
             filtro.fechaHasta(),
             PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
@@ -74,6 +76,31 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
             .stream()
             .map(this::aDominio)
             .toList();
+    }
+
+    @Override
+    public Pagina<AlertaRegistrada> listarPaginado(FiltroAlertas filtro) {
+        org.springframework.data.domain.Page<AlertaEntidad> pagina = alertaRepositorioJpa.buscarConFiltrosPaginado(
+            minusculaANulo(filtro.estado()),
+            minusculaANulo(filtro.severidad()),
+            minusculaANulo(filtro.tipo()),
+            filtro.idEquipo(),
+            filtro.idSucursal(),
+            minusculaANulo(filtro.codigoSucursal()),
+            minusculaANulo(filtro.nombreEquipo()),
+            filtro.fechaDesde(),
+            filtro.fechaHasta(),
+            PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
+        );
+
+        return new Pagina<>(
+            pagina.getContent().stream().map(this::aDominio).toList(),
+            pagina.getNumber(),
+            pagina.getSize(),
+            pagina.getTotalElements(),
+            pagina.getTotalPages(),
+            pagina.hasNext()
+        );
     }
 
     @Override
@@ -139,5 +166,9 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
             ? Sort.Direction.ASC
             : Sort.Direction.DESC;
         return Sort.by(direccion, campo);
+    }
+
+    private String minusculaANulo(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim().toLowerCase(Locale.ROOT);
     }
 }

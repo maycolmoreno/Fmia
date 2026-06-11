@@ -32,6 +32,10 @@ if (Test-Path $pids) {
     Remove-Item -LiteralPath $pids -Force
 }
 
-Write-Host "Deteniendo PostgreSQL MVP..."
-docker compose -f $compose down
+if ($estado -and $estado.postgresLocal) {
+    Write-Host "PostgreSQL local queda encendido; no se detiene desde este script."
+} else {
+    Write-Host "Deteniendo PostgreSQL MVP..."
+    docker compose -f $compose down
+}
 Write-Host "Stack MVP local detenido."

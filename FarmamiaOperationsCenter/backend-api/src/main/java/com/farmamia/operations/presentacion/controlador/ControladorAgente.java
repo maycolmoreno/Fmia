@@ -94,6 +94,7 @@ public class ControladorAgente {
     public void registrarEvento(@PathVariable UUID idEquipo, @Valid @RequestBody SolicitudEventoAgente solicitud) {
         registrarEventoAgenteCasoUso.registrarEvento(idEquipo, new DatosEventoAgente(
             solicitud.idObjetivoDespliegue(),
+            solicitud.idempotencyKey(),
             solicitud.tipoEvento(),
             solicitud.mensajeEvento(),
             solicitud.versionAnterior(),
@@ -110,6 +111,7 @@ public class ControladorAgente {
     ) {
         registrarEventoAgenteCasoUso.registrarResultadoActualizacion(idEquipo, new ResultadoActualizacion(
             solicitud.idObjetivoDespliegue(),
+            solicitud.idempotencyKey(),
             solicitud.estado(),
             solicitud.versionAnterior(),
             solicitud.versionNueva(),

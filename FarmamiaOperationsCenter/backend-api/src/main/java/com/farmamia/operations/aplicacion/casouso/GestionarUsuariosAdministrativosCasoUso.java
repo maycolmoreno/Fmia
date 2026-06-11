@@ -1,6 +1,8 @@
 package com.farmamia.operations.aplicacion.casouso;
 
 import com.farmamia.operations.aplicacion.excepcion.RecursoNoEncontradoException;
+import com.farmamia.operations.dominio.modelo.FiltroUsuariosAdministrativos;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.modelo.UsuarioAdministrativo;
 import com.farmamia.operations.dominio.puerto.CodificadorContrasenas;
 import com.farmamia.operations.dominio.puerto.RepositorioUsuariosAdministrativos;
@@ -29,6 +31,19 @@ public class GestionarUsuariosAdministrativosCasoUso {
     @Transactional(readOnly = true)
     public List<UsuarioAdministrativo> listar() {
         return repositorioUsuariosAdministrativos.listar();
+    }
+
+    @Transactional(readOnly = true)
+    public Pagina<UsuarioAdministrativo> listarPaginado(FiltroUsuariosAdministrativos filtro) {
+        return repositorioUsuariosAdministrativos.listarPaginado(new FiltroUsuariosAdministrativos(
+            blancoANulo(filtro.q()),
+            blancoANulo(filtro.rol()),
+            filtro.activo(),
+            filtro.bloqueado(),
+            Math.max(0, filtro.pagina()),
+            Math.max(1, Math.min(filtro.tamano(), 200)),
+            blancoANulo(filtro.orden()) == null ? "usuario,asc" : filtro.orden()
+        ));
     }
 
     @Transactional(readOnly = true)
@@ -121,5 +136,9 @@ public class GestionarUsuariosAdministrativosCasoUso {
             || !contrasena.matches(".*\\d.*")) {
             throw new IllegalArgumentException("La contrasena debe incluir mayusculas, minusculas y numeros.");
         }
+    }
+
+    private String blancoANulo(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim();
     }
 }

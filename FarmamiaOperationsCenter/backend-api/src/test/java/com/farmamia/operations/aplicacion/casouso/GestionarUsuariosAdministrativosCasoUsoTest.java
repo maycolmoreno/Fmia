@@ -150,6 +150,20 @@ class GestionarUsuariosAdministrativosCasoUsoTest {
         }
 
         @Override
+        public com.farmamia.operations.dominio.modelo.Pagina<UsuarioAdministrativo> listarPaginado(
+            com.farmamia.operations.dominio.modelo.FiltroUsuariosAdministrativos filtro
+        ) {
+            return new com.farmamia.operations.dominio.modelo.Pagina<>(
+                List.copyOf(usuarios),
+                0,
+                Math.max(1, usuarios.size()),
+                usuarios.size(),
+                usuarios.isEmpty() ? 0 : 1,
+                false
+            );
+        }
+
+        @Override
         public UsuarioAdministrativo crear(String usuario, String hashContrasena, String nombreCompleto, String correo, String rol) {
             UsuarioAdministrativo creado = new UsuarioAdministrativo(
                 UUID.randomUUID(),

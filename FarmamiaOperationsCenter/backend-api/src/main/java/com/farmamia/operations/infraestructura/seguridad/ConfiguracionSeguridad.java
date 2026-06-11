@@ -49,7 +49,7 @@ public class ConfiguracionSeguridad {
                 .requestMatchers("/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                 .requestMatchers("/api/packages/*/download").permitAll()
                 .requestMatchers("/api/branches/**", "/api/devices/**", "/api/packages/**").authenticated()
-                .requestMatchers("/api/deployments/**", "/api/update-events/**", "/api/alerts/**").authenticated()
+                .requestMatchers("/api/deployments/**", "/api/dashboard/**", "/api/update-events/**", "/api/alerts/**").authenticated()
                 .requestMatchers("/api/audit-logs/**", "/api/admin/**").authenticated()
                 .anyRequest().permitAll()
             )

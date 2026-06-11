@@ -3,7 +3,9 @@ package com.farmamia.operations.aplicacion.casouso;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.farmamia.operations.aplicacion.excepcion.ConflictoIdempotenciaException;
 import com.farmamia.operations.dominio.modelo.AlertaEquipo;
 import com.farmamia.operations.dominio.modelo.AlertaRegistrada;
 import com.farmamia.operations.dominio.modelo.DatosRegistroAgente;
@@ -11,6 +13,7 @@ import com.farmamia.operations.dominio.modelo.Equipo;
 import com.farmamia.operations.dominio.modelo.EventoActualizacion;
 import com.farmamia.operations.dominio.modelo.EventoActualizacionRegistrado;
 import com.farmamia.operations.dominio.modelo.FiltroAlertas;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.modelo.ResultadoActualizacion;
 import com.farmamia.operations.dominio.puerto.RepositorioAlertas;
 import com.farmamia.operations.dominio.puerto.RepositorioEquipos;
@@ -66,6 +69,7 @@ class RegistrarEventoAgenteCasoUsoTest {
 
         casoUso.registrarResultadoActualizacion(idEquipo, new ResultadoActualizacion(
             idObjetivo,
+            null,
             "FAILED",
             versionActual,
             versionFallida,
@@ -125,6 +129,7 @@ class RegistrarEventoAgenteCasoUsoTest {
 
         casoUso.registrarResultadoActualizacion(idEquipo, new ResultadoActualizacion(
             idObjetivo,
+            null,
             "COMPLETED",
             versionActual,
             versionNueva,
@@ -137,6 +142,100 @@ class RegistrarEventoAgenteCasoUsoTest {
         assertEquals(1, repositorioEventos.eventos.size());
         assertEquals("UPDATE_COMPLETED", repositorioEventos.eventos.getFirst().tipoEvento());
         assertEquals(0, repositorioAlertas.alertas.size());
+    }
+
+    @Test
+    void resultadoDuplicadoConMismaIdempotencyKeyNoDuplicaEfectos() {
+        UUID idEquipo = UUID.randomUUID();
+        UUID idSucursal = UUID.randomUUID();
+        UUID idObjetivo = UUID.randomUUID();
+        RepositorioEquiposEnMemoria repositorioEquipos = new RepositorioEquiposEnMemoria(equipoDemo(idEquipo, idSucursal, "2026.06.1"));
+        RepositorioObjetivosEnMemoria repositorioObjetivos = new RepositorioObjetivosEnMemoria(idObjetivo);
+        RepositorioEventosEnMemoria repositorioEventos = new RepositorioEventosEnMemoria();
+        RepositorioAlertasEnMemoria repositorioAlertas = new RepositorioAlertasEnMemoria(idSucursal);
+        RegistrarEventoAgenteCasoUso casoUso = new RegistrarEventoAgenteCasoUso(
+            repositorioEquipos,
+            repositorioObjetivos,
+            repositorioEventos,
+            repositorioAlertas
+        );
+
+        ResultadoActualizacion resultado = new ResultadoActualizacion(
+            idObjetivo,
+            "result-" + idObjetivo,
+            "FAILED",
+            "2026.06.1",
+            "2026.06.2",
+            "Fallo validado"
+        );
+
+        casoUso.registrarResultadoActualizacion(idEquipo, resultado);
+        casoUso.registrarResultadoActualizacion(idEquipo, resultado);
+
+        assertEquals(1, repositorioEventos.eventos.size());
+        assertEquals(1, repositorioAlertas.alertas.size());
+        assertEquals(1, repositorioObjetivos.vecesResultadoRegistrado);
+    }
+
+    @Test
+    void mismaIdempotencyKeyConPayloadDiferenteGeneraConflicto() {
+        UUID idEquipo = UUID.randomUUID();
+        UUID idSucursal = UUID.randomUUID();
+        UUID idObjetivo = UUID.randomUUID();
+        RepositorioEquiposEnMemoria repositorioEquipos = new RepositorioEquiposEnMemoria(equipoDemo(idEquipo, idSucursal, "2026.06.1"));
+        RepositorioObjetivosEnMemoria repositorioObjetivos = new RepositorioObjetivosEnMemoria(idObjetivo);
+        RepositorioEventosEnMemoria repositorioEventos = new RepositorioEventosEnMemoria();
+        RepositorioAlertasEnMemoria repositorioAlertas = new RepositorioAlertasEnMemoria(idSucursal);
+        RegistrarEventoAgenteCasoUso casoUso = new RegistrarEventoAgenteCasoUso(
+            repositorioEquipos,
+            repositorioObjetivos,
+            repositorioEventos,
+            repositorioAlertas
+        );
+
+        casoUso.registrarResultadoActualizacion(idEquipo, new ResultadoActualizacion(
+            idObjetivo,
+            "result-conflict",
+            "FAILED",
+            "2026.06.1",
+            "2026.06.2",
+            "Primer fallo"
+        ));
+
+        assertThrows(ConflictoIdempotenciaException.class, () -> casoUso.registrarResultadoActualizacion(
+            idEquipo,
+            new ResultadoActualizacion(
+                idObjetivo,
+                "result-conflict",
+                "FAILED",
+                "2026.06.1",
+                "2026.06.2",
+                "Segundo fallo distinto"
+            )
+        ));
+
+        assertEquals(1, repositorioEventos.eventos.size());
+        assertEquals(1, repositorioAlertas.alertas.size());
+    }
+
+    private Equipo equipoDemo(UUID idEquipo, UUID idSucursal, String versionPos) {
+        return new Equipo(
+            idEquipo,
+            idSucursal,
+            "FMA-DEMO-001",
+            "Sucursal demo",
+            "POS-DEMO-001",
+            "192.168.10.25",
+            "00-11-22-33-44-55",
+            "Windows 11",
+            "0.1.0-demo",
+            versionPos,
+            "C:\\Farmamia\\POS",
+            "ONLINE",
+            OffsetDateTime.now(),
+            OffsetDateTime.now(),
+            OffsetDateTime.now()
+        );
     }
 
     private static final class RepositorioEquiposEnMemoria implements RepositorioEquipos {
@@ -164,6 +263,13 @@ class RegistrarEventoAgenteCasoUsoTest {
         }
 
         @Override
+        public com.farmamia.operations.dominio.modelo.Pagina<Equipo> listarPaginado(
+            com.farmamia.operations.dominio.modelo.FiltroEquipos filtro
+        ) {
+            return new com.farmamia.operations.dominio.modelo.Pagina<>(List.of(equipo), 0, 1, 1, 1, false);
+        }
+
+        @Override
         public void registrarLatido(UUID idEquipo, String versionPos) {
         }
 
@@ -177,6 +283,7 @@ class RegistrarEventoAgenteCasoUsoTest {
 
         private final UUID idObjetivo;
         private ResultadoActualizacion resultadoRegistrado;
+        private int vecesResultadoRegistrado;
 
         private RepositorioObjetivosEnMemoria(UUID idObjetivo) {
             this.idObjetivo = idObjetivo;
@@ -193,6 +300,7 @@ class RegistrarEventoAgenteCasoUsoTest {
         public void registrarResultado(UUID idEquipo, ResultadoActualizacion resultado) {
             validarPerteneceAEquipo(resultado.idObjetivoDespliegue(), idEquipo);
             this.resultadoRegistrado = resultado;
+            this.vecesResultadoRegistrado++;
         }
     }
 
@@ -206,8 +314,36 @@ class RegistrarEventoAgenteCasoUsoTest {
         }
 
         @Override
+        public boolean existeConIdempotencia(UUID idEquipo, String idempotencyKey) {
+            return eventos.stream().anyMatch(evento ->
+                evento.idEquipo().equals(idEquipo) && idempotencyKey.equals(evento.idempotencyKey())
+            );
+        }
+
+        @Override
+        public boolean coincideConIdempotencia(EventoActualizacion evento) {
+            return eventos.stream().anyMatch(existente ->
+                existente.idEquipo().equals(evento.idEquipo())
+                    && existente.idempotencyKey().equals(evento.idempotencyKey())
+                    && existente.idObjetivoDespliegue().equals(evento.idObjetivoDespliegue())
+                    && existente.tipoEvento().equals(evento.tipoEvento())
+                    && existente.mensajeEvento().equals(evento.mensajeEvento())
+                    && existente.versionAnterior().equals(evento.versionAnterior())
+                    && existente.versionNueva().equals(evento.versionNueva())
+                    && existente.metadatos().equals(evento.metadatos())
+            );
+        }
+
+        @Override
         public List<EventoActualizacionRegistrado> listarRecientes(int limite) {
             return List.of();
+        }
+
+        @Override
+        public com.farmamia.operations.dominio.modelo.Pagina<EventoActualizacionRegistrado> listarPaginado(
+            com.farmamia.operations.dominio.modelo.FiltroEventosActualizacion filtro
+        ) {
+            return new com.farmamia.operations.dominio.modelo.Pagina<>(List.of(), 0, 1, 0, 0, false);
         }
 
         @Override
@@ -257,6 +393,12 @@ class RegistrarEventoAgenteCasoUsoTest {
         @Override
         public List<AlertaRegistrada> listarConFiltros(FiltroAlertas filtro) {
             return listarRecientes(filtro.tamano());
+        }
+
+        @Override
+        public Pagina<AlertaRegistrada> listarPaginado(FiltroAlertas filtro) {
+            List<AlertaRegistrada> contenido = listarConFiltros(filtro);
+            return new Pagina<>(contenido, filtro.pagina(), filtro.tamano(), contenido.size(), 1, false);
         }
 
         @Override

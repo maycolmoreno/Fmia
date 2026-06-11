@@ -3,6 +3,8 @@ package com.farmamia.operations.infraestructura.persistencia.adaptador;
 import com.farmamia.operations.aplicacion.excepcion.RecursoNoEncontradoException;
 import com.farmamia.operations.dominio.modelo.DatosRegistroAgente;
 import com.farmamia.operations.dominio.modelo.Equipo;
+import com.farmamia.operations.dominio.modelo.FiltroEquipos;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.puerto.RepositorioEquipos;
 import com.farmamia.operations.infraestructura.persistencia.entidad.EquipoEntidad;
 import com.farmamia.operations.infraestructura.persistencia.entidad.SucursalEntidad;
@@ -10,9 +12,12 @@ import com.farmamia.operations.infraestructura.persistencia.repositorio.EquipoRe
 import com.farmamia.operations.infraestructura.persistencia.repositorio.SucursalRepositorioJpa;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @Repository
 public class RepositorioEquiposJpaAdaptador implements RepositorioEquipos {
@@ -64,6 +69,29 @@ public class RepositorioEquiposJpaAdaptador implements RepositorioEquipos {
     }
 
     @Override
+    public Pagina<Equipo> listarPaginado(FiltroEquipos filtro) {
+        org.springframework.data.domain.Page<EquipoEntidad> pagina = equipoRepositorioJpa.buscarConFiltros(
+            minusculaANulo(filtro.q()),
+            minusculaANulo(filtro.estado()),
+            minusculaANulo(filtro.codigoSucursal()),
+            minusculaANulo(filtro.versionPos()),
+            minusculaANulo(filtro.versionAgente()),
+            filtro.ultimoLatidoDesde(),
+            filtro.ultimoLatidoHasta(),
+            PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
+        );
+
+        return new Pagina<>(
+            pagina.getContent().stream().map(this::aDominio).toList(),
+            pagina.getNumber(),
+            pagina.getSize(),
+            pagina.getTotalElements(),
+            pagina.getTotalPages(),
+            pagina.hasNext()
+        );
+    }
+
+    @Override
     public void registrarLatido(UUID idEquipo, String versionPos) {
         EquipoEntidad equipo = equipoRepositorioJpa.findById(idEquipo)
             .orElseThrow(() -> new RecursoNoEncontradoException("Equipo no encontrado: " + idEquipo));
@@ -96,5 +124,26 @@ public class RepositorioEquiposJpaAdaptador implements RepositorioEquipos {
             entidad.getRegistradoEn(),
             entidad.getActualizadoEn()
         );
+    }
+
+    private Sort aOrden(String orden) {
+        String[] partes = orden == null ? new String[0] : orden.split(",", 2);
+        String campo = partes.length > 0 ? partes[0] : "nombreEquipo";
+        Sort.Direction direccion = partes.length > 1 && "desc".equalsIgnoreCase(partes[1])
+            ? Sort.Direction.DESC
+            : Sort.Direction.ASC;
+
+        return Sort.by(direccion, switch (campo) {
+            case "lastHeartbeatAt", "ultimoLatidoEn" -> "ultimoLatidoEn";
+            case "posVersion", "versionPos" -> "versionPos";
+            case "agentVersion", "versionAgente" -> "versionAgente";
+            case "status", "estado" -> "estado";
+            case "updatedAt", "actualizadoEn" -> "actualizadoEn";
+            default -> "nombreEquipo";
+        });
+    }
+
+    private String minusculaANulo(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim().toLowerCase(Locale.ROOT);
     }
 }

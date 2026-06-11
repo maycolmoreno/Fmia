@@ -3,7 +3,10 @@ package com.farmamia.operations.presentacion.controlador;
 import com.farmamia.operations.aplicacion.casouso.GestionarAuditoriaCasoUso;
 import com.farmamia.operations.aplicacion.casouso.GestionarUsuariosAdministrativosCasoUso;
 import com.farmamia.operations.dominio.modelo.DatosAuditoria;
+import com.farmamia.operations.dominio.modelo.FiltroUsuariosAdministrativos;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.modelo.UsuarioAdministrativo;
+import com.farmamia.operations.presentacion.dto.RespuestaPagina;
 import com.farmamia.operations.presentacion.dto.RespuestaUsuarioAdministrativo;
 import com.farmamia.operations.presentacion.dto.SolicitudActualizarUsuarioAdministrativo;
 import com.farmamia.operations.presentacion.dto.SolicitudCambioRolUsuario;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -44,6 +48,37 @@ public class ControladorUsuariosAdministrativos {
     public List<RespuestaUsuarioAdministrativo> listar(Authentication autenticacion) {
         exigirAdmin(autenticacion);
         return gestionarUsuariosCasoUso.listar().stream().map(this::aRespuesta).toList();
+    }
+
+    @GetMapping("/page")
+    public RespuestaPagina<RespuestaUsuarioAdministrativo> listarPaginado(
+        @RequestParam(required = false) String q,
+        @RequestParam(required = false) String role,
+        @RequestParam(required = false) Boolean active,
+        @RequestParam(required = false) Boolean locked,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "50") int size,
+        @RequestParam(defaultValue = "usuario,asc") String sort,
+        Authentication autenticacion
+    ) {
+        exigirAdmin(autenticacion);
+        Pagina<UsuarioAdministrativo> pagina = gestionarUsuariosCasoUso.listarPaginado(new FiltroUsuariosAdministrativos(
+            q,
+            role,
+            active,
+            locked,
+            page,
+            size,
+            sort
+        ));
+        return new RespuestaPagina<>(
+            pagina.contenido().stream().map(this::aRespuesta).toList(),
+            pagina.pagina(),
+            pagina.tamano(),
+            pagina.totalElementos(),
+            pagina.totalPaginas(),
+            pagina.tieneSiguiente()
+        );
     }
 
     @GetMapping("/{id}")

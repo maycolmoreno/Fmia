@@ -1,5 +1,7 @@
 package com.farmamia.operations.dominio.puerto;
 
+import com.farmamia.operations.dominio.modelo.FiltroUsuariosAdministrativos;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.modelo.UsuarioAdministrativo;
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +16,8 @@ public interface RepositorioUsuariosAdministrativos {
     Optional<UsuarioAdministrativo> buscarPorId(UUID id);
 
     List<UsuarioAdministrativo> listar();
+
+    Pagina<UsuarioAdministrativo> listarPaginado(FiltroUsuariosAdministrativos filtro);
 
     UsuarioAdministrativo crear(String usuario, String hashContrasena, String nombreCompleto, String correo, String rol);
 

@@ -6,11 +6,15 @@ import com.farmamia.operations.dominio.modelo.DatosCrearDespliegue;
 import com.farmamia.operations.dominio.modelo.DatosAuditoria;
 import com.farmamia.operations.dominio.modelo.Despliegue;
 import com.farmamia.operations.dominio.modelo.EstadoDespliegue;
+import com.farmamia.operations.dominio.modelo.FiltroDespliegues;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.presentacion.dto.RespuestaDespliegue;
 import com.farmamia.operations.presentacion.dto.RespuestaEstadoDespliegue;
+import com.farmamia.operations.presentacion.dto.RespuestaPagina;
 import com.farmamia.operations.presentacion.dto.SolicitudCrearDespliegue;
 import com.farmamia.operations.presentacion.dto.SolicitudProgramarDespliegue;
 import jakarta.validation.Valid;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -22,6 +26,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -72,6 +77,37 @@ public class ControladorDespliegues {
             .stream()
             .map(this::aRespuesta)
             .toList();
+    }
+
+    @GetMapping("/page")
+    public RespuestaPagina<RespuestaDespliegue> listarPaginado(
+        @RequestParam(required = false) String q,
+        @RequestParam(required = false) String status,
+        @RequestParam(required = false) String packageVersion,
+        @RequestParam(required = false) OffsetDateTime createdFrom,
+        @RequestParam(required = false) OffsetDateTime createdTo,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "50") int size,
+        @RequestParam(defaultValue = "creadoEn,desc") String sort
+    ) {
+        Pagina<Despliegue> pagina = gestionarDesplieguesCasoUso.listarPaginado(new FiltroDespliegues(
+            q,
+            status,
+            packageVersion,
+            createdFrom,
+            createdTo,
+            page,
+            size,
+            sort
+        ));
+        return new RespuestaPagina<>(
+            pagina.contenido().stream().map(this::aRespuesta).toList(),
+            pagina.pagina(),
+            pagina.tamano(),
+            pagina.totalElementos(),
+            pagina.totalPaginas(),
+            pagina.tieneSiguiente()
+        );
     }
 
     @GetMapping("/{id}")
@@ -139,6 +175,12 @@ public class ControladorDespliegues {
         return new RespuestaEstadoDespliegue(
             estado.idDespliegue(),
             estado.estado(),
+            estado.totalObjetivos(),
+            estado.objetivosCompletados(),
+            estado.objetivosFallidos(),
+            estado.objetivosPendientes(),
+            estado.porcentajeAvance(),
+            estado.porcentajeFallo(),
             estado.objetivosPorEstado()
         );
     }

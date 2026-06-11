@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public record SolicitudResultadoActualizacion(
     @JsonProperty("deploymentTargetId") @NotNull UUID idObjetivoDespliegue,
+    @JsonProperty("idempotencyKey") String idempotencyKey,
     @JsonProperty("status") @NotBlank String estado,
     @JsonProperty("oldVersion") String versionAnterior,
     @JsonProperty("newVersion") String versionNueva,

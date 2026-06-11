@@ -13,6 +13,8 @@ import {
   EstadoSaludApi,
   EventoActualizacion,
   PaquetePos,
+  RespuestaPagina,
+  ResumenDashboard,
   SolicitudCrearDespliegue,
   Sucursal,
   UsuarioAdministrativo
@@ -32,6 +34,7 @@ type Vista = 'dashboard' | 'equipos' | 'paquetes' | 'despliegues' | 'eventos' | 
 export class AppComponent implements OnInit {
   vistaActiva: Vista = 'dashboard';
   salud?: EstadoSaludApi;
+  resumenDashboard?: ResumenDashboard;
   sucursales: Sucursal[] = [];
   equipos: Equipo[] = [];
   paquetes: PaquetePos[] = [];
@@ -39,7 +42,9 @@ export class AppComponent implements OnInit {
   eventos: EventoActualizacion[] = [];
   alertas: AlertaOperativa[] = [];
   alertasDashboard: AlertaOperativa[] = [];
+  alertasPagina?: RespuestaPagina<AlertaOperativa>;
   auditoria: AuditoriaAdministrativa[] = [];
+  auditoriaPagina?: RespuestaPagina<AuditoriaAdministrativa>;
   usuariosAdministrativos: UsuarioAdministrativo[] = [];
   detalleEquipo?: DetalleEquipo;
   estadoSeleccionado?: EstadoDespliegue;
@@ -85,7 +90,10 @@ export class AppComponent implements OnInit {
     entityType: '',
     actorUsername: '',
     from: '',
-    to: ''
+    to: '',
+    page: 0,
+    size: 20,
+    sort: 'creadoEn,desc'
   };
 
   alertasFiltros = {
@@ -129,33 +137,61 @@ export class AppComponent implements OnInit {
   }
 
   get paquetesAprobados(): number {
-    return this.paquetes.filter((paquete) => paquete.status === 'APPROVED').length;
+    return this.resumenDashboard?.approvedPackages ?? this.paquetes.filter((paquete) => paquete.status === 'APPROVED').length;
   }
 
   get desplieguesActivos(): number {
-    return this.despliegues.filter((despliegue) =>
+    return this.resumenDashboard?.activeDeployments ?? this.despliegues.filter((despliegue) =>
       ['SCHEDULED', 'PILOT_RUNNING', 'APPROVED', 'RUNNING'].includes(despliegue.status)
     ).length;
   }
 
   get equiposOnline(): number {
-    return this.equipos.filter((equipo) => equipo.status === 'ONLINE').length;
+    return this.resumenDashboard?.onlineDevices ?? this.equipos.filter((equipo) => equipo.status === 'ONLINE').length;
   }
 
   get eventosCriticos(): number {
-    return this.eventos.filter((evento) =>
+    return this.resumenDashboard?.criticalEvents ?? this.eventos.filter((evento) =>
       ['FAILED', 'VALIDATION_FAILED', 'ROLLBACK_STARTED', 'ROLLBACK_COMPLETED'].includes(evento.eventType)
     ).length;
   }
 
   get alertasAbiertas(): number {
-    return this.alertasDashboard.filter((alerta) => alerta.status === 'OPEN').length;
+    return this.resumenDashboard?.openAlerts ?? this.alertasDashboard.filter((alerta) => alerta.status === 'OPEN').length;
+  }
+
+  get totalEquiposDashboard(): number {
+    return this.resumenDashboard?.totalDevices ?? this.equipos.length;
+  }
+
+  get totalPaquetesDashboard(): number {
+    return this.resumenDashboard?.totalPackages ?? this.paquetes.length;
+  }
+
+  get totalDesplieguesDashboard(): number {
+    return this.resumenDashboard?.totalDeployments ?? this.despliegues.length;
+  }
+
+  get totalEventosDashboard(): number {
+    return this.resumenDashboard?.totalEvents ?? this.eventos.length;
+  }
+
+  get totalAlertasDashboard(): number {
+    return this.resumenDashboard?.totalAlerts ?? this.alertasDashboard.length;
   }
 
   get alertasCriticasDashboard(): AlertaOperativa[] {
     return this.alertasDashboard
       .filter((alerta) => alerta.severity === 'CRITICAL')
       .slice(0, 5);
+  }
+
+  get alertasTieneSiguiente(): boolean {
+    return this.alertasPagina?.hasNext ?? false;
+  }
+
+  get auditoriaTieneSiguiente(): boolean {
+    return this.auditoriaPagina?.hasNext ?? false;
   }
 
   ngOnInit(): void {
@@ -253,6 +289,11 @@ export class AppComponent implements OnInit {
       error: () => this.error = 'No se pudo consultar la salud de la API.'
     });
 
+    this.api.obtenerResumenDashboard().subscribe({
+      next: (resumen) => this.resumenDashboard = resumen,
+      error: () => this.error = 'No se pudo cargar el resumen operativo.'
+    });
+
     this.api.listarPaquetes().subscribe({
       next: (paquetes) => {
         this.paquetes = paquetes;
@@ -320,7 +361,7 @@ export class AppComponent implements OnInit {
       this.alertas = [];
       return;
     }
-    this.api.listarAlertas(100, {
+    this.api.listarAlertasPaginadas({
       status: this.alertasFiltros.status,
       severity: this.alertasFiltros.severity,
       type: this.alertasFiltros.type,
@@ -332,7 +373,10 @@ export class AppComponent implements OnInit {
       size: this.alertasFiltros.size,
       sort: this.alertasFiltros.sort
     }).subscribe({
-      next: (alertas) => this.alertas = alertas,
+      next: (pagina) => {
+        this.alertasPagina = pagina;
+        this.alertas = pagina.content;
+      },
       error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo cargar el listado de alertas.'
     });
   }
@@ -342,8 +386,8 @@ export class AppComponent implements OnInit {
       this.alertasDashboard = [];
       return;
     }
-    this.api.listarAlertas(100, { sort: 'openedAt,desc' }).subscribe({
-      next: (alertas) => this.alertasDashboard = alertas,
+    this.api.listarAlertasPaginadas({ size: 100, sort: 'openedAt,desc' }).subscribe({
+      next: (pagina) => this.alertasDashboard = pagina.content,
       error: () => this.alertasDashboard = []
     });
   }
@@ -374,7 +418,7 @@ export class AppComponent implements OnInit {
     if (siguiente < 0) {
       return;
     }
-    if (delta > 0 && this.alertas.length < this.alertasFiltros.size) {
+    if (delta > 0 && !this.alertasTieneSiguiente) {
       return;
     }
     this.alertasFiltros.page = siguiente;
@@ -386,14 +430,20 @@ export class AppComponent implements OnInit {
       this.error = 'No tienes permiso para consultar auditoria.';
       return;
     }
-    this.api.listarAuditoria(100, {
+    this.api.listarAuditoriaPaginada({
       action: this.auditoriaFiltros.action.trim(),
       entityType: this.auditoriaFiltros.entityType.trim(),
       actorUsername: this.auditoriaFiltros.actorUsername.trim(),
       from: this.normalizarFecha(this.auditoriaFiltros.from) ?? undefined,
-      to: this.normalizarFecha(this.auditoriaFiltros.to) ?? undefined
+      to: this.normalizarFecha(this.auditoriaFiltros.to) ?? undefined,
+      page: this.auditoriaFiltros.page,
+      size: this.auditoriaFiltros.size,
+      sort: this.auditoriaFiltros.sort
     }).subscribe({
-      next: (auditoria) => this.auditoria = auditoria,
+      next: (pagina) => {
+        this.auditoriaPagina = pagina;
+        this.auditoria = pagina.content;
+      },
       error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo cargar el listado de auditoria.'
     });
   }
@@ -404,8 +454,28 @@ export class AppComponent implements OnInit {
       entityType: '',
       actorUsername: '',
       from: '',
-      to: ''
+      to: '',
+      page: 0,
+      size: 20,
+      sort: 'creadoEn,desc'
     };
+    this.cargarAuditoria();
+  }
+
+  filtrarAuditoria(): void {
+    this.auditoriaFiltros.page = 0;
+    this.cargarAuditoria();
+  }
+
+  paginaAuditoria(delta: number): void {
+    const siguiente = this.auditoriaFiltros.page + delta;
+    if (siguiente < 0) {
+      return;
+    }
+    if (delta > 0 && !this.auditoriaTieneSiguiente) {
+      return;
+    }
+    this.auditoriaFiltros.page = siguiente;
     this.cargarAuditoria();
   }
 
@@ -560,6 +630,20 @@ export class AppComponent implements OnInit {
       return;
     }
     this.api.cancelarDespliegue(despliegue.id).subscribe({ next: () => this.recargarTodo() });
+  }
+
+  puedePausar(despliegue: Despliegue): boolean {
+    return this.sesion.puedeOperar()
+      && ['SCHEDULED', 'APPROVED', 'PILOT_RUNNING', 'RUNNING'].includes(despliegue.status);
+  }
+
+  puedeReanudar(despliegue: Despliegue): boolean {
+    return this.sesion.puedeOperar() && despliegue.status === 'PAUSED';
+  }
+
+  puedeCancelar(despliegue: Despliegue): boolean {
+    return this.sesion.puedeOperar()
+      && !['COMPLETED', 'FAILED', 'CANCELLED'].includes(despliegue.status);
   }
 
   cambiarContrasena(): void {

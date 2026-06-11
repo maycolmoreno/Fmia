@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record ResultadoActualizacion(
     UUID idObjetivoDespliegue,
+    String idempotencyKey,
     String estado,
     String versionAnterior,
     String versionNueva,

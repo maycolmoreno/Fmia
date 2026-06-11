@@ -4,9 +4,13 @@ import com.farmamia.operations.aplicacion.casouso.GestionarAuditoriaCasoUso;
 import com.farmamia.operations.aplicacion.casouso.GestionarPaquetesPosCasoUso;
 import com.farmamia.operations.dominio.modelo.DatosAuditoria;
 import com.farmamia.operations.dominio.modelo.ArchivoPaqueteDescarga;
+import com.farmamia.operations.dominio.modelo.FiltroPaquetesPos;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.modelo.PaquetePos;
 import com.farmamia.operations.presentacion.dto.RespuestaPaquetePos;
+import com.farmamia.operations.presentacion.dto.RespuestaPagina;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -74,6 +78,37 @@ public class ControladorPaquetes {
             .stream()
             .map(this::aRespuesta)
             .toList();
+    }
+
+    @GetMapping("/page")
+    public RespuestaPagina<RespuestaPaquetePos> listarPaginado(
+        @RequestParam(required = false) String q,
+        @RequestParam(required = false) String status,
+        @RequestParam(required = false) String version,
+        @RequestParam(required = false) OffsetDateTime uploadedFrom,
+        @RequestParam(required = false) OffsetDateTime uploadedTo,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "50") int size,
+        @RequestParam(defaultValue = "cargadoEn,desc") String sort
+    ) {
+        Pagina<PaquetePos> pagina = gestionarPaquetesPosCasoUso.listarPaginado(new FiltroPaquetesPos(
+            q,
+            status,
+            version,
+            uploadedFrom,
+            uploadedTo,
+            page,
+            size,
+            sort
+        ));
+        return new RespuestaPagina<>(
+            pagina.contenido().stream().map(this::aRespuesta).toList(),
+            pagina.pagina(),
+            pagina.tamano(),
+            pagina.totalElementos(),
+            pagina.totalPaginas(),
+            pagina.tieneSiguiente()
+        );
     }
 
     @GetMapping("/{id}")

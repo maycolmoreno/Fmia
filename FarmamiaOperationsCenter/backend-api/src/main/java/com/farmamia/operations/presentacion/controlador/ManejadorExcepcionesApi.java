@@ -1,6 +1,7 @@
 package com.farmamia.operations.presentacion.controlador;
 
 import com.farmamia.operations.aplicacion.excepcion.RecursoNoEncontradoException;
+import com.farmamia.operations.aplicacion.excepcion.ConflictoIdempotenciaException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,12 @@ public class ManejadorExcepcionesApi {
     public ResponseEntity<RespuestaErrorApi> manejarArgumentoInvalido(IllegalArgumentException ex) {
         return ResponseEntity.badRequest()
             .body(RespuestaErrorApi.de("INVALID_REQUEST", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ConflictoIdempotenciaException.class)
+    public ResponseEntity<RespuestaErrorApi> manejarConflictoIdempotencia(ConflictoIdempotenciaException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(RespuestaErrorApi.de("IDEMPOTENCY_CONFLICT", ex.getMessage()));
     }
 
     @ExceptionHandler(BadCredentialsException.class)

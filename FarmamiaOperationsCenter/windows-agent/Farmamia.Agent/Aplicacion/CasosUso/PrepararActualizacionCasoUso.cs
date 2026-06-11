@@ -173,6 +173,7 @@ public sealed class PrepararActualizacionCasoUso
                 credenciales,
                 new ResultadoActualizacionAgente(
                     instruccion.IdObjetivoDespliegue!.Value,
+                    IdempotencyKeyResultado(instruccion, "COMPLETED"),
                     "COMPLETED",
                     inventario.VersionPos,
                     instruccion.Version,
@@ -365,6 +366,7 @@ public sealed class PrepararActualizacionCasoUso
 
         return new EventoAgente(
             instruccion.IdObjetivoDespliegue,
+            IdempotencyKeyEvento(instruccion, tipoEvento),
             tipoEvento,
             mensaje,
             inventario.VersionPos,
@@ -467,6 +469,7 @@ public sealed class PrepararActualizacionCasoUso
             credenciales,
             new ResultadoActualizacionAgente(
                 instruccion.IdObjetivoDespliegue!.Value,
+                IdempotencyKeyResultado(instruccion, estado),
                 estado,
                 inventario.VersionPos,
                 instruccion.Version,
@@ -511,6 +514,7 @@ public sealed class PrepararActualizacionCasoUso
 
         return new EventoAgente(
             instruccion.IdObjetivoDespliegue,
+            IdempotencyKeyEvento(instruccion, "USER_WARNING_SENT:" + horaAviso.ToString("HHmmss")),
             "USER_WARNING_SENT",
             "Aviso de actualizacion enviado al usuario",
             inventario.VersionPos,
@@ -553,6 +557,7 @@ public sealed class PrepararActualizacionCasoUso
                 credenciales,
                 new ResultadoActualizacionAgente(
                     instruccion.IdObjetivoDespliegue!.Value,
+                    IdempotencyKeyResultado(instruccion, "ROLLBACK_COMPLETED"),
                     "ROLLBACK_COMPLETED",
                     inventario.VersionPos,
                     instruccion.Version,
@@ -573,6 +578,7 @@ public sealed class PrepararActualizacionCasoUso
                 credenciales,
                 new ResultadoActualizacionAgente(
                     instruccion.IdObjetivoDespliegue!.Value,
+                    IdempotencyKeyResultado(instruccion, "ROLLBACK_FAILED"),
                     "ROLLBACK_FAILED",
                     inventario.VersionPos,
                     instruccion.Version,
@@ -582,5 +588,15 @@ public sealed class PrepararActualizacionCasoUso
             );
             await GuardarEstadoAsync("ROLLBACK_FAILED", instruccion, inventario, "ROLLBACK_FAILED", rollbackError.Message, cancellationToken);
         }
+    }
+
+    private static string IdempotencyKeyEvento(InstruccionActualizacion instruccion, string tipoEvento)
+    {
+        return $"{instruccion.IdObjetivoDespliegue}:event:{tipoEvento}";
+    }
+
+    private static string IdempotencyKeyResultado(InstruccionActualizacion instruccion, string estado)
+    {
+        return $"{instruccion.IdObjetivoDespliegue}:result:{estado}";
     }
 }

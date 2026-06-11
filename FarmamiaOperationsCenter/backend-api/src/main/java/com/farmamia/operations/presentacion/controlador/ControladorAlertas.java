@@ -5,7 +5,9 @@ import com.farmamia.operations.aplicacion.casouso.GestionarAuditoriaCasoUso;
 import com.farmamia.operations.dominio.modelo.AlertaRegistrada;
 import com.farmamia.operations.dominio.modelo.DatosAuditoria;
 import com.farmamia.operations.dominio.modelo.FiltroAlertas;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.presentacion.dto.RespuestaAlerta;
+import com.farmamia.operations.presentacion.dto.RespuestaPagina;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -79,6 +81,46 @@ public class ControladorAlertas {
             .toList();
     }
 
+    @GetMapping("/page")
+    public RespuestaPagina<RespuestaAlerta> listarPaginado(
+        @RequestParam(required = false) String status,
+        @RequestParam(required = false) String severity,
+        @RequestParam(name = "type", required = false) String type,
+        @RequestParam(required = false) UUID deviceId,
+        @RequestParam(required = false) UUID branchId,
+        @RequestParam(required = false) String branchCode,
+        @RequestParam(required = false) String hostname,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime dateFrom,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime dateTo,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "50") int size,
+        @RequestParam(defaultValue = "abiertaEn,desc") String sort,
+        Authentication autenticacion
+    ) {
+        PermisosAdministrativos.exigirRol(
+            autenticacion,
+            "Solo ADMIN, OPERATOR o AUDITOR pueden consultar alertas operativas.",
+            "ADMIN",
+            "OPERATOR",
+            "AUDITOR"
+        );
+        Pagina<AlertaRegistrada> pagina = consultarAlertasCasoUso.listarPaginado(new FiltroAlertas(
+            status,
+            severity,
+            type,
+            deviceId,
+            branchId,
+            branchCode,
+            hostname,
+            dateFrom,
+            dateTo,
+            page,
+            size,
+            sort
+        ));
+        return aRespuestaPagina(pagina);
+    }
+
     @PostMapping("/{id}/acknowledge")
     public RespuestaAlerta reconocer(@PathVariable UUID id, Authentication autenticacion, HttpServletRequest request) {
         exigirOperador(autenticacion);
@@ -112,6 +154,17 @@ public class ControladorAlertas {
             alerta.reconocidaEn(),
             alerta.cerradaPor(),
             alerta.cerradaEn()
+        );
+    }
+
+    private RespuestaPagina<RespuestaAlerta> aRespuestaPagina(Pagina<AlertaRegistrada> pagina) {
+        return new RespuestaPagina<>(
+            pagina.contenido().stream().map(this::aRespuesta).toList(),
+            pagina.pagina(),
+            pagina.tamano(),
+            pagina.totalElementos(),
+            pagina.totalPaginas(),
+            pagina.tieneSiguiente()
         );
     }
 

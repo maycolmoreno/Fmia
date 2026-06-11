@@ -3,6 +3,8 @@ package com.farmamia.operations.aplicacion.casouso;
 import com.farmamia.operations.dominio.modelo.DatosCrearDespliegue;
 import com.farmamia.operations.dominio.modelo.Despliegue;
 import com.farmamia.operations.dominio.modelo.EstadoDespliegue;
+import com.farmamia.operations.dominio.modelo.FiltroDespliegues;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.puerto.RepositorioDespliegues;
 import jakarta.transaction.Transactional;
 import java.time.OffsetDateTime;
@@ -26,6 +28,19 @@ public class GestionarDesplieguesCasoUso {
 
     public List<Despliegue> listar() {
         return repositorioDespliegues.listar();
+    }
+
+    public Pagina<Despliegue> listarPaginado(FiltroDespliegues filtro) {
+        return repositorioDespliegues.listarPaginado(new FiltroDespliegues(
+            blancoANulo(filtro.q()),
+            blancoANulo(filtro.estado()),
+            blancoANulo(filtro.versionPaquete()),
+            filtro.creadoDesde(),
+            filtro.creadoHasta(),
+            Math.max(0, filtro.pagina()),
+            Math.max(1, Math.min(filtro.tamano(), 200)),
+            blancoANulo(filtro.orden()) == null ? "creadoEn,desc" : filtro.orden()
+        ));
     }
 
     public Despliegue obtener(UUID id) {
@@ -54,5 +69,9 @@ public class GestionarDesplieguesCasoUso {
 
     public EstadoDespliegue estado(UUID id) {
         return repositorioDespliegues.estado(id);
+    }
+
+    private String blancoANulo(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim();
     }
 }

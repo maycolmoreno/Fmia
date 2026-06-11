@@ -1,14 +1,19 @@
 package com.farmamia.operations.infraestructura.persistencia.adaptador;
 
 import com.farmamia.operations.aplicacion.excepcion.RecursoNoEncontradoException;
+import com.farmamia.operations.dominio.modelo.FiltroUsuariosAdministrativos;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.modelo.UsuarioAdministrativo;
 import com.farmamia.operations.dominio.puerto.RepositorioUsuariosAdministrativos;
 import com.farmamia.operations.infraestructura.persistencia.entidad.UsuarioAppEntidad;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.UsuarioAppRepositorioJpa;
 import java.util.Optional;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @Repository
 public class RepositorioUsuariosAdministrativosJpaAdaptador implements RepositorioUsuariosAdministrativos {
@@ -39,6 +44,26 @@ public class RepositorioUsuariosAdministrativosJpaAdaptador implements Repositor
     @Override
     public List<UsuarioAdministrativo> listar() {
         return usuarioAppRepositorioJpa.findAll().stream().map(this::aDominio).toList();
+    }
+
+    @Override
+    public Pagina<UsuarioAdministrativo> listarPaginado(FiltroUsuariosAdministrativos filtro) {
+        org.springframework.data.domain.Page<UsuarioAppEntidad> pagina = usuarioAppRepositorioJpa.buscarConFiltros(
+            minusculaANulo(filtro.q()),
+            minusculaANulo(filtro.rol()),
+            filtro.activo(),
+            filtro.bloqueado(),
+            PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
+        );
+
+        return new Pagina<>(
+            pagina.getContent().stream().map(this::aDominio).toList(),
+            pagina.getNumber(),
+            pagina.getSize(),
+            pagina.getTotalElements(),
+            pagina.getTotalPages(),
+            pagina.hasNext()
+        );
     }
 
     @Override
@@ -125,5 +150,28 @@ public class RepositorioUsuariosAdministrativosJpaAdaptador implements Repositor
             entidad.getCreadoEn(),
             entidad.getActualizadoEn()
         );
+    }
+
+    private Sort aOrden(String orden) {
+        String[] partes = orden == null ? new String[0] : orden.split(",", 2);
+        String campo = partes.length > 0 ? partes[0] : "usuario";
+        Sort.Direction direccion = partes.length > 1 && "desc".equalsIgnoreCase(partes[1])
+            ? Sort.Direction.DESC
+            : Sort.Direction.ASC;
+
+        return Sort.by(direccion, switch (campo) {
+            case "fullName", "nombreCompleto" -> "nombreCompleto";
+            case "email", "correo" -> "correo";
+            case "role", "rol" -> "rol";
+            case "active", "activo" -> "activo";
+            case "lockedUntil", "bloqueadoHasta" -> "bloqueadoHasta";
+            case "createdAt", "creadoEn" -> "creadoEn";
+            case "updatedAt", "actualizadoEn" -> "actualizadoEn";
+            default -> "usuario";
+        });
+    }
+
+    private String minusculaANulo(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim().toLowerCase(Locale.ROOT);
     }
 }

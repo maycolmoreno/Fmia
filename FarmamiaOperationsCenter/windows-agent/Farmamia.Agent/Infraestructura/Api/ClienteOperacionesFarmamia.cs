@@ -148,6 +148,7 @@ public sealed class ClienteOperacionesFarmamia : IClienteOperacionesFarmamia
         {
             Content = JsonContent.Create(new SolicitudEventoAgente(
                 evento.IdObjetivoDespliegue,
+                evento.IdempotencyKey,
                 evento.TipoEvento,
                 evento.MensajeEvento,
                 evento.VersionAnterior,
@@ -174,6 +175,7 @@ public sealed class ClienteOperacionesFarmamia : IClienteOperacionesFarmamia
         {
             Content = JsonContent.Create(new SolicitudResultadoActualizacion(
                 resultado.IdObjetivoDespliegue,
+                resultado.IdempotencyKey,
                 resultado.Estado,
                 resultado.VersionAnterior,
                 resultado.VersionNueva,
@@ -224,6 +226,7 @@ public sealed class ClienteOperacionesFarmamia : IClienteOperacionesFarmamia
 
     private sealed record SolicitudEventoAgente(
         Guid? DeploymentTargetId,
+        string IdempotencyKey,
         string EventType,
         string? EventMessage,
         string? OldVersion,
@@ -233,6 +236,7 @@ public sealed class ClienteOperacionesFarmamia : IClienteOperacionesFarmamia
 
     private sealed record SolicitudResultadoActualizacion(
         Guid DeploymentTargetId,
+        string IdempotencyKey,
         string Status,
         string? OldVersion,
         string? NewVersion,

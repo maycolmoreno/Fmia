@@ -5,17 +5,22 @@ import com.farmamia.operations.aplicacion.casouso.ConsultarCatalogoOperativoCaso
 import com.farmamia.operations.dominio.modelo.DetalleEquipo;
 import com.farmamia.operations.dominio.modelo.Equipo;
 import com.farmamia.operations.dominio.modelo.EventoActualizacionRegistrado;
+import com.farmamia.operations.dominio.modelo.FiltroEquipos;
 import com.farmamia.operations.dominio.modelo.MetricaEquipoRegistrada;
 import com.farmamia.operations.dominio.modelo.ObjetivoDespliegueEquipo;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.presentacion.dto.RespuestaDetalleEquipo;
 import com.farmamia.operations.presentacion.dto.RespuestaEquipo;
 import com.farmamia.operations.presentacion.dto.RespuestaEventoActualizacion;
 import com.farmamia.operations.presentacion.dto.RespuestaMetricaEquipo;
 import com.farmamia.operations.presentacion.dto.RespuestaObjetivoEquipo;
+import com.farmamia.operations.presentacion.dto.RespuestaPagina;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -40,6 +45,34 @@ public class ControladorEquipos {
             .stream()
             .map(this::aRespuesta)
             .toList();
+    }
+
+    @GetMapping("/page")
+    public RespuestaPagina<RespuestaEquipo> listarPaginado(
+        @RequestParam(required = false) String q,
+        @RequestParam(required = false) String status,
+        @RequestParam(required = false) String branchCode,
+        @RequestParam(required = false) String posVersion,
+        @RequestParam(required = false) String agentVersion,
+        @RequestParam(required = false) OffsetDateTime lastHeartbeatFrom,
+        @RequestParam(required = false) OffsetDateTime lastHeartbeatTo,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "50") int size,
+        @RequestParam(defaultValue = "nombreEquipo,asc") String sort
+    ) {
+        Pagina<Equipo> pagina = consultarCatalogoOperativoCasoUso.listarEquiposPaginado(new FiltroEquipos(
+            q,
+            status,
+            branchCode,
+            posVersion,
+            agentVersion,
+            lastHeartbeatFrom,
+            lastHeartbeatTo,
+            page,
+            size,
+            sort
+        ));
+        return aRespuestaPagina(pagina);
     }
 
     @GetMapping("/{id}")
@@ -70,6 +103,17 @@ public class ControladorEquipos {
             equipo.ultimoLatidoEn(),
             equipo.registradoEn(),
             equipo.actualizadoEn()
+        );
+    }
+
+    private RespuestaPagina<RespuestaEquipo> aRespuestaPagina(Pagina<Equipo> pagina) {
+        return new RespuestaPagina<>(
+            pagina.contenido().stream().map(this::aRespuesta).toList(),
+            pagina.pagina(),
+            pagina.tamano(),
+            pagina.totalElementos(),
+            pagina.totalPaginas(),
+            pagina.tieneSiguiente()
         );
     }
 

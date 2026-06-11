@@ -1,5 +1,6 @@
 using Farmamia.Agent.Aplicacion.CasosUso;
 using Farmamia.Agent.Dominio.Modelos;
+using Farmamia.Agent.Dominio.Puertos;
 using Microsoft.Extensions.Options;
 
 namespace Farmamia.Agent.Servicio;
@@ -9,6 +10,7 @@ public sealed class ServicioAgente : BackgroundService
     private readonly InicializarAgenteCasoUso inicializarAgenteCasoUso;
     private readonly EnviarLatidoCasoUso enviarLatidoCasoUso;
     private readonly PrepararActualizacionCasoUso prepararActualizacionCasoUso;
+    private readonly IColaEventosAgente colaEventosAgente;
     private readonly ILogger<ServicioAgente> logger;
     private readonly OpcionesAgente opciones;
 
@@ -16,6 +18,7 @@ public sealed class ServicioAgente : BackgroundService
         InicializarAgenteCasoUso inicializarAgenteCasoUso,
         EnviarLatidoCasoUso enviarLatidoCasoUso,
         PrepararActualizacionCasoUso prepararActualizacionCasoUso,
+        IColaEventosAgente colaEventosAgente,
         ILogger<ServicioAgente> logger,
         IOptions<OpcionesAgente> opciones
     )
@@ -23,6 +26,7 @@ public sealed class ServicioAgente : BackgroundService
         this.inicializarAgenteCasoUso = inicializarAgenteCasoUso;
         this.enviarLatidoCasoUso = enviarLatidoCasoUso;
         this.prepararActualizacionCasoUso = prepararActualizacionCasoUso;
+        this.colaEventosAgente = colaEventosAgente;
         this.logger = logger;
         this.opciones = opciones.Value;
     }
@@ -30,6 +34,9 @@ public sealed class ServicioAgente : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Iniciando agente Farmamia Operations");
+        await colaEventosAgente.InicializarAsync(stoppingToken);
+        await colaEventosAgente.RecuperarEnviosInterrumpidosAsync(stoppingToken);
+
         CredencialesAgente credenciales = await InicializarConReintentosAsync(stoppingToken);
 
         using var temporizador = new PeriodicTimer(TimeSpan.FromSeconds(opciones.IntervaloHeartbeatSegundos));

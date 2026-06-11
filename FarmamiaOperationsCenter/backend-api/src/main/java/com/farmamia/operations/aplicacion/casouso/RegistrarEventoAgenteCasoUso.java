@@ -1,6 +1,7 @@
 package com.farmamia.operations.aplicacion.casouso;
 
 import com.farmamia.operations.aplicacion.excepcion.RecursoNoEncontradoException;
+import com.farmamia.operations.aplicacion.excepcion.ConflictoIdempotenciaException;
 import com.farmamia.operations.dominio.modelo.AlertaEquipo;
 import com.farmamia.operations.dominio.modelo.DatosEventoAgente;
 import com.farmamia.operations.dominio.modelo.EventoActualizacion;
@@ -46,15 +47,22 @@ public class RegistrarEventoAgenteCasoUso {
         validarEquipo(idEquipo);
         validarObjetivoOpcional(idEquipo, datos.idObjetivoDespliegue());
 
-        repositorioEventosActualizacion.guardar(new EventoActualizacion(
+        EventoActualizacion evento = new EventoActualizacion(
             idEquipo,
             datos.idObjetivoDespliegue(),
+            normalizarIdempotencyKey(datos.idempotencyKey()),
             datos.tipoEvento(),
             datos.mensajeEvento(),
             datos.versionAnterior(),
             datos.versionNueva(),
             datos.metadatos()
-        ));
+        );
+
+        if (esRepetidoIdempotente(evento)) {
+            return;
+        }
+
+        repositorioEventosActualizacion.guardar(evento);
     }
 
     @Transactional
@@ -63,28 +71,59 @@ public class RegistrarEventoAgenteCasoUso {
 
         ResultadoActualizacion resultadoPersistible = new ResultadoActualizacion(
             resultado.idObjetivoDespliegue(),
+            normalizarIdempotencyKey(resultado.idempotencyKey()),
             resultado.estado(),
             resultado.versionAnterior(),
             resultado.versionNueva(),
             esFallo(resultado.estado()) ? resultado.mensaje() : null
         );
+
+        EventoActualizacion eventoResultado = new EventoActualizacion(
+            idEquipo,
+            resultado.idObjetivoDespliegue(),
+            normalizarIdempotencyKey(resultado.idempotencyKey()),
+            tipoEventoResultado(resultado.estado()),
+            resultado.mensaje(),
+            resultado.versionAnterior(),
+            resultado.versionNueva(),
+            Map.of("status", resultado.estado())
+        );
+
+        if (esRepetidoIdempotente(eventoResultado)) {
+            return;
+        }
+
         repositorioObjetivosDespliegue.registrarResultado(idEquipo, resultadoPersistible);
 
         if (ESTADO_COMPLETADO.equals(resultado.estado())) {
             repositorioEquipos.actualizarVersionPos(idEquipo, resultado.versionNueva());
         }
 
-        repositorioEventosActualizacion.guardar(new EventoActualizacion(
-            idEquipo,
-            resultado.idObjetivoDespliegue(),
-            tipoEventoResultado(resultado.estado()),
-            resultado.mensaje(),
-            resultado.versionAnterior(),
-            resultado.versionNueva(),
-            Map.of("status", resultado.estado())
-        ));
+        repositorioEventosActualizacion.guardar(eventoResultado);
 
         generarAlertaSiCorresponde(idEquipo, resultado);
+    }
+
+    private boolean esRepetidoIdempotente(EventoActualizacion evento) {
+        if (evento.idempotencyKey() == null) {
+            return false;
+        }
+
+        if (!repositorioEventosActualizacion.existeConIdempotencia(evento.idEquipo(), evento.idempotencyKey())) {
+            return false;
+        }
+
+        if (!repositorioEventosActualizacion.coincideConIdempotencia(evento)) {
+            throw new ConflictoIdempotenciaException(
+                "La idempotencyKey ya fue usada con un payload diferente: " + evento.idempotencyKey()
+            );
+        }
+
+        return true;
+    }
+
+    private String normalizarIdempotencyKey(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim();
     }
 
     private void validarEquipo(UUID idEquipo) {

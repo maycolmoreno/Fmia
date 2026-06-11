@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record DatosEventoAgente(
     UUID idObjetivoDespliegue,
+    String idempotencyKey,
     String tipoEvento,
     String mensajeEvento,
     String versionAnterior,

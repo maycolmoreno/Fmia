@@ -3,7 +3,10 @@ package com.farmamia.operations.presentacion.controlador;
 import com.farmamia.operations.aplicacion.casouso.GestionarAuditoriaCasoUso;
 import com.farmamia.operations.dominio.modelo.AuditoriaRegistrada;
 import com.farmamia.operations.dominio.modelo.FiltroAuditoria;
+import com.farmamia.operations.dominio.modelo.FiltroAuditoriaPaginada;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.presentacion.dto.RespuestaAuditoria;
+import com.farmamia.operations.presentacion.dto.RespuestaPagina;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -52,6 +55,37 @@ public class ControladorAuditoria {
             .toList();
     }
 
+    @GetMapping("/page")
+    public RespuestaPagina<RespuestaAuditoria> listarPaginado(
+        @RequestParam(required = false) String action,
+        @RequestParam(required = false) String entityType,
+        @RequestParam(required = false) String actorUsername,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "50") int size,
+        @RequestParam(defaultValue = "creadoEn,desc") String sort,
+        Authentication autenticacion
+    ) {
+        PermisosAdministrativos.exigirRol(
+            autenticacion,
+            "Solo ADMIN o AUDITOR pueden consultar auditoria administrativa.",
+            "ADMIN",
+            "AUDITOR"
+        );
+        Pagina<AuditoriaRegistrada> pagina = gestionarAuditoriaCasoUso.listarPaginado(new FiltroAuditoriaPaginada(
+            action,
+            entityType,
+            actorUsername,
+            from,
+            to,
+            page,
+            size,
+            sort
+        ));
+        return aRespuestaPagina(pagina);
+    }
+
     private RespuestaAuditoria aRespuesta(AuditoriaRegistrada auditoria) {
         return new RespuestaAuditoria(
             auditoria.id(),
@@ -64,6 +98,17 @@ public class ControladorAuditoria {
             auditoria.valoresNuevos(),
             auditoria.direccionIp(),
             auditoria.creadoEn()
+        );
+    }
+
+    private RespuestaPagina<RespuestaAuditoria> aRespuestaPagina(Pagina<AuditoriaRegistrada> pagina) {
+        return new RespuestaPagina<>(
+            pagina.contenido().stream().map(this::aRespuesta).toList(),
+            pagina.pagina(),
+            pagina.tamano(),
+            pagina.totalElementos(),
+            pagina.totalPaginas(),
+            pagina.tieneSiguiente()
         );
     }
 }

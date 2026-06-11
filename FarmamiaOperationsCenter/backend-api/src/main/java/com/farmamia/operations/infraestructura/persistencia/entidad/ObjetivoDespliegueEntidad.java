@@ -28,6 +28,10 @@ public class ObjetivoDespliegueEntidad {
     @JoinColumn(name = "device_id", nullable = false)
     private EquipoEntidad equipo;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "wave_id")
+    private OleadaDespliegueEntidad oleada;
+
     @Column(name = "target_group", length = 40)
     private String grupoObjetivo;
 
@@ -89,6 +93,14 @@ public class ObjetivoDespliegueEntidad {
         return despliegue;
     }
 
+    public EquipoEntidad getEquipo() {
+        return equipo;
+    }
+
+    public OleadaDespliegueEntidad getOleada() {
+        return oleada;
+    }
+
     public String getGrupoObjetivo() {
         return grupoObjetivo;
     }
@@ -131,6 +143,10 @@ public class ObjetivoDespliegueEntidad {
 
     public boolean estaAutorizado() {
         return "AUTHORIZED".equals(estado);
+    }
+
+    public void asignarOleada(OleadaDespliegueEntidad oleada) {
+        this.oleada = oleada;
     }
 
     public void registrarResultado(String estado, String versionAnterior, String versionNueva, String mensajeError) {

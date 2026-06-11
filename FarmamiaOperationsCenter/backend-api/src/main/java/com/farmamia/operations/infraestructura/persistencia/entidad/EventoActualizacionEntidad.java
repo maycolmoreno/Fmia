@@ -40,6 +40,9 @@ public class EventoActualizacionEntidad {
     @Column(name = "event_message")
     private String mensajeEvento;
 
+    @Column(name = "idempotency_key", length = 120)
+    private String idempotencyKey;
+
     @Column(name = "old_version", length = 40)
     private String versionAnterior;
 
@@ -61,6 +64,7 @@ public class EventoActualizacionEntidad {
         ObjetivoDespliegueEntidad objetivoDespliegue,
         EquipoEntidad equipo,
         String tipoEvento,
+        String idempotencyKey,
         String mensajeEvento,
         String versionAnterior,
         String versionNueva,
@@ -70,6 +74,7 @@ public class EventoActualizacionEntidad {
         this.despliegue = objetivoDespliegue == null ? null : objetivoDespliegue.getDespliegue();
         this.equipo = equipo;
         this.tipoEvento = tipoEvento;
+        this.idempotencyKey = idempotencyKey == null || idempotencyKey.isBlank() ? null : idempotencyKey;
         this.mensajeEvento = mensajeEvento;
         this.versionAnterior = versionAnterior;
         this.versionNueva = versionNueva;
@@ -98,6 +103,10 @@ public class EventoActualizacionEntidad {
 
     public String getMensajeEvento() {
         return mensajeEvento;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
     }
 
     public String getVersionAnterior() {

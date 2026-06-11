@@ -21,4 +21,6 @@ public sealed class OpcionesAgente
     public int BackoffInicialSegundos { get; init; } = 5;
 
     public int BackoffMaximoSegundos { get; init; } = 300;
+
+    public int MaxIntentosColaEventos { get; init; } = 8;
 }

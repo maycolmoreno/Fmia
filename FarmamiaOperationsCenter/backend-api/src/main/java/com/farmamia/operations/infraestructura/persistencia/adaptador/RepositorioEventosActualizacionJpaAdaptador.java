@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.farmamia.operations.aplicacion.excepcion.RecursoNoEncontradoException;
 import com.farmamia.operations.dominio.modelo.EventoActualizacion;
 import com.farmamia.operations.dominio.modelo.EventoActualizacionRegistrado;
+import com.farmamia.operations.dominio.modelo.FiltroEventosActualizacion;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.puerto.RepositorioEventosActualizacion;
 import com.farmamia.operations.infraestructura.persistencia.entidad.DespliegueEntidad;
 import com.farmamia.operations.infraestructura.persistencia.entidad.EquipoEntidad;
@@ -15,9 +17,11 @@ import com.farmamia.operations.infraestructura.persistencia.repositorio.EquipoRe
 import com.farmamia.operations.infraestructura.persistencia.repositorio.EventoActualizacionRepositorioJpa;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.ObjetivoDespliegueRepositorioJpa;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -50,6 +54,7 @@ public class RepositorioEventosActualizacionJpaAdaptador implements RepositorioE
             objetivo,
             equipo,
             evento.tipoEvento(),
+            evento.idempotencyKey(),
             evento.mensajeEvento(),
             evento.versionAnterior(),
             evento.versionNueva(),
@@ -58,11 +63,53 @@ public class RepositorioEventosActualizacionJpaAdaptador implements RepositorioE
     }
 
     @Override
+    public boolean existeConIdempotencia(UUID idEquipo, String idempotencyKey) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            return false;
+        }
+
+        return eventoActualizacionRepositorioJpa.existsByEquipo_IdAndIdempotencyKey(idEquipo, idempotencyKey);
+    }
+
+    @Override
+    public boolean coincideConIdempotencia(EventoActualizacion evento) {
+        if (evento.idempotencyKey() == null || evento.idempotencyKey().isBlank()) {
+            return false;
+        }
+
+        return eventoActualizacionRepositorioJpa
+            .findByEquipo_IdAndIdempotencyKey(evento.idEquipo(), evento.idempotencyKey())
+            .map(existente -> coincide(existente, evento))
+            .orElse(false);
+    }
+
+    @Override
     public List<EventoActualizacionRegistrado> listarRecientes(int limite) {
         return eventoActualizacionRepositorioJpa.findByOrderByCreadoEnDesc(PageRequest.of(0, limite))
             .stream()
             .map(this::aDominio)
             .toList();
+    }
+
+    @Override
+    public Pagina<EventoActualizacionRegistrado> listarPaginado(FiltroEventosActualizacion filtro) {
+        org.springframework.data.domain.Page<EventoActualizacionEntidad> pagina = eventoActualizacionRepositorioJpa.buscarConFiltros(
+            filtro.idEquipo(),
+            filtro.idDespliegue(),
+            minusculaANulo(filtro.tipoEvento()),
+            filtro.desde(),
+            filtro.hasta(),
+            PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
+        );
+
+        return new Pagina<>(
+            pagina.getContent().stream().map(this::aDominio).toList(),
+            pagina.getNumber(),
+            pagina.getSize(),
+            pagina.getTotalElements(),
+            pagina.getTotalPages(),
+            pagina.hasNext()
+        );
     }
 
     @Override
@@ -116,6 +163,22 @@ public class RepositorioEventosActualizacionJpaAdaptador implements RepositorioE
         );
     }
 
+    private boolean coincide(EventoActualizacionEntidad existente, EventoActualizacion evento) {
+        return iguales(existente.getTipoEvento(), evento.tipoEvento())
+            && iguales(existente.getMensajeEvento(), evento.mensajeEvento())
+            && iguales(existente.getVersionAnterior(), evento.versionAnterior())
+            && iguales(existente.getVersionNueva(), evento.versionNueva())
+            && iguales(existente.getMetadatosJson(), aJson(evento.metadatos()))
+            && iguales(
+                existente.getObjetivoDespliegue() == null ? null : existente.getObjetivoDespliegue().getId(),
+                evento.idObjetivoDespliegue()
+            );
+    }
+
+    private boolean iguales(Object actual, Object esperado) {
+        return actual == null ? esperado == null : actual.equals(esperado);
+    }
+
     private UUID idDespliegue(DespliegueEntidad despliegue) {
         return despliegue == null ? null : despliegue.getId();
     }
@@ -131,5 +194,24 @@ public class RepositorioEventosActualizacionJpaAdaptador implements RepositorioE
         } catch (JsonProcessingException ex) {
             return Map.of("raw", metadatosJson);
         }
+    }
+
+    private Sort aOrden(String orden) {
+        String[] partes = orden == null ? new String[0] : orden.split(",", 2);
+        String campo = partes.length > 0 ? partes[0] : "creadoEn";
+        Sort.Direction direccion = partes.length > 1 && "asc".equalsIgnoreCase(partes[1])
+            ? Sort.Direction.ASC
+            : Sort.Direction.DESC;
+
+        return Sort.by(direccion, switch (campo) {
+            case "eventType", "tipoEvento" -> "tipoEvento";
+            case "oldVersion", "versionAnterior" -> "versionAnterior";
+            case "newVersion", "versionNueva" -> "versionNueva";
+            default -> "creadoEn";
+        });
+    }
+
+    private String minusculaANulo(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim().toLowerCase(Locale.ROOT);
     }
 }

@@ -4,6 +4,7 @@ import com.farmamia.operations.dominio.modelo.InstruccionAgente;
 import com.farmamia.operations.dominio.puerto.RepositorioInstruccionesAgente;
 import com.farmamia.operations.infraestructura.persistencia.entidad.DespliegueEntidad;
 import com.farmamia.operations.infraestructura.persistencia.entidad.ObjetivoDespliegueEntidad;
+import com.farmamia.operations.infraestructura.persistencia.entidad.OleadaDespliegueEntidad;
 import com.farmamia.operations.infraestructura.persistencia.entidad.PaquetePosEntidad;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.ObjetivoDespliegueRepositorioJpa;
 import java.time.LocalTime;
@@ -38,7 +39,31 @@ public class RepositorioInstruccionesAgenteJpaAdaptador implements RepositorioIn
 
         return objetivo.estaAutorizado()
             && despliegue.puedeEntregarInstrucciones()
-            && paquete.estaAprobado();
+            && paquete.estaAprobado()
+            && oleadaPermiteEntrega(objetivo.getOleada());
+    }
+
+    private boolean oleadaPermiteEntrega(OleadaDespliegueEntidad oleada) {
+        if (oleada == null) {
+            return true;
+        }
+        return "RUNNING".equals(oleada.getEstado()) && dentroDeVentana(oleada);
+    }
+
+    private boolean dentroDeVentana(OleadaDespliegueEntidad oleada) {
+        if (oleada.getVentanaInicio() == null || oleada.getVentanaFin() == null) {
+            return true;
+        }
+        LocalTime ahora = LocalTime.now();
+        LocalTime inicio = oleada.getVentanaInicio();
+        LocalTime fin = oleada.getVentanaFin();
+        if (inicio.equals(fin)) {
+            return true;
+        }
+        if (inicio.isBefore(fin)) {
+            return !ahora.isBefore(inicio) && !ahora.isAfter(fin);
+        }
+        return !ahora.isBefore(inicio) || !ahora.isAfter(fin);
     }
 
     private InstruccionAgente aDominio(ObjetivoDespliegueEntidad objetivo) {

@@ -96,27 +96,27 @@
         </article>
         <article class="tarjeta metrica">
           <span>Equipos</span>
-          <strong>{{ equipos.length }}</strong>
+          <strong>{{ totalEquiposDashboard }}</strong>
           <small>{{ equiposOnline }} online</small>
         </article>
         <article class="tarjeta metrica">
           <span>Paquetes</span>
-          <strong>{{ paquetes.length }}</strong>
+          <strong>{{ totalPaquetesDashboard }}</strong>
           <small>{{ paquetesAprobados }} aprobados</small>
         </article>
         <article class="tarjeta metrica">
           <span>Despliegues</span>
-          <strong>{{ despliegues.length }}</strong>
+          <strong>{{ totalDesplieguesDashboard }}</strong>
           <small>{{ desplieguesActivos }} activos</small>
         </article>
         <article class="tarjeta metrica">
           <span>Eventos</span>
-          <strong>{{ eventos.length }}</strong>
+          <strong>{{ totalEventosDashboard }}</strong>
           <small>{{ eventosCriticos }} criticos</small>
         </article>
         <article class="tarjeta metrica">
           <span>Alertas</span>
-          <strong>{{ alertasDashboard.length }}</strong>
+          <strong>{{ totalAlertasDashboard }}</strong>
           <small>{{ alertasAbiertas }} abiertas</small>
         </article>
       </div>
@@ -465,9 +465,9 @@
               <span class="estado">{{ despliegue.status }}</span>
               <div class="acciones">
                 <button type="button" class="boton pequeno" (click)="verEstado(despliegue)">Estado</button>
-                <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="pausar(despliegue)">Pausar</button>
-                <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="reanudar(despliegue)">Reanudar</button>
-                <button type="button" class="boton pequeno peligro" *ngIf="sesion.puedeOperar()" (click)="cancelar(despliegue)">Cancelar</button>
+                <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="pausar(despliegue)" [disabled]="!puedePausar(despliegue)">Pausar</button>
+                <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="reanudar(despliegue)" [disabled]="!puedeReanudar(despliegue)">Reanudar</button>
+                <button type="button" class="boton pequeno peligro" *ngIf="sesion.puedeOperar()" (click)="cancelar(despliegue)" [disabled]="!puedeCancelar(despliegue)">Cancelar</button>
               </div>
             </div>
             <p class="vacio" *ngIf="despliegues.length === 0">Aun no hay despliegues.</p>
@@ -480,6 +480,36 @@
           </div>
           <div *ngIf="estadoSeleccionado; else sinEstado">
             <p class="estado-grande">{{ estadoSeleccionado.status }}</p>
+            <div class="resumen-estado">
+              <div>
+                <span>Total</span>
+                <strong>{{ estadoSeleccionado.totalTargets }}</strong>
+              </div>
+              <div>
+                <span>Completados</span>
+                <strong>{{ estadoSeleccionado.completedTargets }}</strong>
+              </div>
+              <div>
+                <span>Fallidos</span>
+                <strong>{{ estadoSeleccionado.failedTargets }}</strong>
+              </div>
+              <div>
+                <span>Pendientes</span>
+                <strong>{{ estadoSeleccionado.pendingTargets }}</strong>
+              </div>
+            </div>
+            <div class="progreso-linea">
+              <span>Avance {{ estadoSeleccionado.progressPercent }}%</span>
+              <div class="barra-progreso">
+                <span [style.width.%]="estadoSeleccionado.progressPercent"></span>
+              </div>
+            </div>
+            <div class="progreso-linea fallo" *ngIf="estadoSeleccionado.failurePercent > 0">
+              <span>Fallo {{ estadoSeleccionado.failurePercent }}%</span>
+              <div class="barra-progreso">
+                <span [style.width.%]="estadoSeleccionado.failurePercent"></span>
+              </div>
+            </div>
             <div class="fila-compacta" *ngFor="let item of objetivoEstados()">
               <span>{{ item[0] }}</span>
               <strong>{{ item[1] }}</strong>
@@ -578,8 +608,8 @@
           <h2>Alertas operativas</h2>
           <div class="acciones">
             <button type="button" class="boton pequeno secundario" (click)="paginaAlertas(-1)" [disabled]="alertasFiltros.page === 0">Anterior</button>
-            <span class="estado">Pagina {{ alertasFiltros.page + 1 }}</span>
-            <button type="button" class="boton pequeno secundario" (click)="paginaAlertas(1)" [disabled]="alertas.length < alertasFiltros.size">Siguiente</button>
+            <span class="estado">Pagina {{ alertasFiltros.page + 1 }} / {{ alertasPagina?.totalPages || 1 }}</span>
+            <button type="button" class="boton pequeno secundario" (click)="paginaAlertas(1)" [disabled]="!alertasTieneSiguiente">Siguiente</button>
           </div>
         </div>
         <div class="tabla tabla-alertas">
@@ -657,13 +687,27 @@
             Hasta
             <input type="datetime-local" [(ngModel)]="auditoriaFiltros.to">
           </label>
-          <button type="button" class="boton primario" (click)="cargarAuditoria()">Filtrar</button>
+          <label>
+            Tamano
+            <select [(ngModel)]="auditoriaFiltros.size">
+              <option [ngValue]="10">10</option>
+              <option [ngValue]="20">20</option>
+              <option [ngValue]="50">50</option>
+              <option [ngValue]="100">100</option>
+            </select>
+          </label>
+          <button type="button" class="boton primario" (click)="filtrarAuditoria()">Filtrar</button>
         </div>
       </article>
 
       <article class="tarjeta">
         <div class="titulo-tarjeta">
           <h2>Auditoria administrativa</h2>
+          <div class="acciones">
+            <button type="button" class="boton pequeno secundario" (click)="paginaAuditoria(-1)" [disabled]="auditoriaFiltros.page === 0">Anterior</button>
+            <span class="estado">Pagina {{ auditoriaFiltros.page + 1 }} / {{ auditoriaPagina?.totalPages || 1 }}</span>
+            <button type="button" class="boton pequeno secundario" (click)="paginaAuditoria(1)" [disabled]="!auditoriaTieneSiguiente">Siguiente</button>
+          </div>
         </div>
         <div class="tabla tabla-auditoria">
           <div class="tabla-fila cabecera">

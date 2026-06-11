@@ -103,12 +103,13 @@ Ese script valida estructura, compila Angular, ejecuta pruebas backend con Maven
 Para levantar un stack local completo:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\herramientas\verificacion\levantar-stack-mvp-local.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\herramientas\verificacion\levantar-stack-mvp-local.ps1 -PostgresLocal
 powershell -NoProfile -ExecutionPolicy Bypass -File .\herramientas\verificacion\ejecutar-e2e-demo-local.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\herramientas\verificacion\detener-stack-mvp-local.ps1
 ```
 
-Requiere Docker Desktop activo para PostgreSQL.
+El modo recomendado de desarrollo usa PostgreSQL local en `localhost:5432` con `postgres/.r4e3w2q1`.
+Si quieres usar Docker para PostgreSQL, omite `-PostgresLocal`.
 
 La verificacion automatica de CI vive en:
 

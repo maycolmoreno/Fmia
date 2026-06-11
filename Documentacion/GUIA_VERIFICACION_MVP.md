@@ -108,7 +108,34 @@ dotnet test Farmamia.Agent.Tests\Farmamia.Agent.Tests.csproj
 
 ## E2E exitoso y fallido
 
-### Stack local automatizado
+### Stack local con PostgreSQL instalado en Windows
+
+Este es el modo recomendado si ya tienes PostgreSQL local escuchando en `localhost:5432`.
+
+Credenciales usadas actualmente:
+
+```txt
+DB: farmamia_ops
+User: postgres
+Password: .r4e3w2q1
+```
+
+Levantar backend y panel sin Docker:
+
+```powershell
+cd FarmamiaOperationsCenter
+powershell -NoProfile -ExecutionPolicy Bypass -File .\herramientas\verificacion\levantar-stack-mvp-local.ps1 -PostgresLocal
+```
+
+Detener backend y panel:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\herramientas\verificacion\detener-stack-mvp-local.ps1
+```
+
+El script no apaga PostgreSQL local.
+
+### Stack local con Docker
 
 Con Docker Desktop activo:
 

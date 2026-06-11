@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ObjetivoDespliegueRepositorioJpa extends JpaRepository<ObjetivoDespliegueEntidad, UUID> {
 
-    @EntityGraph(attributePaths = {"despliegue", "despliegue.paquete"})
+    @EntityGraph(attributePaths = {"despliegue", "despliegue.paquete", "oleada"})
     Optional<ObjetivoDespliegueEntidad> findFirstByEquipo_IdAndEstadoOrderByActualizadoEnDesc(
         UUID idEquipo,
         String estado
@@ -20,7 +20,11 @@ public interface ObjetivoDespliegueRepositorioJpa extends JpaRepository<Objetivo
 
     long countByDespliegue_Id(UUID idDespliegue);
 
+    @EntityGraph(attributePaths = {"equipo", "equipo.sucursal", "oleada"})
     List<ObjetivoDespliegueEntidad> findByDespliegue_Id(UUID idDespliegue);
+
+    @EntityGraph(attributePaths = {"equipo", "equipo.sucursal", "oleada"})
+    List<ObjetivoDespliegueEntidad> findByOleada_Id(UUID idOleada);
 
     @EntityGraph(attributePaths = {"despliegue", "despliegue.paquete"})
     List<ObjetivoDespliegueEntidad> findByEquipo_IdOrderByActualizadoEnDesc(UUID idEquipo);

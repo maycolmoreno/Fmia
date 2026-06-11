@@ -1,6 +1,10 @@
 param(
     [string]$ApiPort = "8081",
     [string]$PanelPort = "4200",
+    [switch]$PostgresLocal,
+    [string]$DbUrl = "jdbc:postgresql://localhost:5432/farmamia_ops",
+    [string]$DbUser = "postgres",
+    [string]$DbPassword = ".r4e3w2q1",
     [switch]$NoLevantarPanel
 )
 
@@ -59,12 +63,19 @@ function Iniciar-ProcesoOculto {
         -PassThru
 }
 
-Write-Host "Levantando PostgreSQL MVP con Docker Compose..."
-docker compose -f $compose up -d postgres
+if ($PostgresLocal) {
+    Write-Host "Usando PostgreSQL local existente en $DbUrl."
+} else {
+    Write-Host "Levantando PostgreSQL MVP con Docker Compose..."
+    docker compose -f $compose up -d postgres
+    $DbUrl = "jdbc:postgresql://localhost:5432/farmamia_ops"
+    $DbUser = "farmamia"
+    $DbPassword = "farmamia"
+}
 
-$env:FARMAMIA_DB_URL = "jdbc:postgresql://localhost:5432/farmamia_ops"
-$env:FARMAMIA_DB_USER = "farmamia"
-$env:FARMAMIA_DB_PASSWORD = "farmamia"
+$env:FARMAMIA_DB_URL = $DbUrl
+$env:FARMAMIA_DB_USER = $DbUser
+$env:FARMAMIA_DB_PASSWORD = $DbPassword
 $env:FARMAMIA_API_PORT = $ApiPort
 $env:FARMAMIA_PACKAGE_STORAGE = (Join-Path $backend "data\packages")
 $env:FARMAMIA_SEED_DEMO_ADMIN = "true"
@@ -97,6 +108,7 @@ $estado = [ordered]@{
     panelUrl = if ($panelProc) { "http://localhost:$PanelPort" } else { $null }
     logs = $logs
     compose = $compose
+    postgresLocal = [bool]$PostgresLocal
 }
 
 $estado | ConvertTo-Json -Depth 5 | Set-Content -Path $pids -Encoding UTF8

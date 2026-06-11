@@ -4,6 +4,29 @@ export interface EstadoSaludApi {
   status: string;
 }
 
+export interface RespuestaPagina<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+}
+
+export interface ResumenDashboard {
+  totalDevices: number;
+  onlineDevices: number;
+  totalPackages: number;
+  approvedPackages: number;
+  totalDeployments: number;
+  activeDeployments: number;
+  totalEvents: number;
+  criticalEvents: number;
+  totalAlerts: number;
+  openAlerts: number;
+  criticalAlerts: number;
+}
+
 export interface RespuestaLogin {
   accessToken: string;
   tokenType: string;
@@ -169,6 +192,12 @@ export interface AuditoriaAdministrativa {
 export interface EstadoDespliegue {
   deploymentId: string;
   status: string;
+  totalTargets: number;
+  completedTargets: number;
+  failedTargets: number;
+  pendingTargets: number;
+  progressPercent: number;
+  failurePercent: number;
   targetsByStatus: Record<string, number>;
 }
 

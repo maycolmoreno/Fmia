@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import {
   AlertaOperativa,
@@ -13,6 +14,8 @@ import {
   EstadoSaludApi,
   EventoActualizacion,
   PaquetePos,
+  RespuestaPagina,
+  ResumenDashboard,
   SolicitudCrearDespliegue,
   Sucursal,
   UsuarioAdministrativo
@@ -29,6 +32,10 @@ export class OperacionesApiService {
     return this.http.get<EstadoSaludApi>(`${this.baseUrl}/api/health`);
   }
 
+  obtenerResumenDashboard(): Observable<ResumenDashboard> {
+    return this.http.get<ResumenDashboard>(`${this.baseUrl}/api/dashboard/summary`);
+  }
+
   urlAbsoluta(ruta: string): string {
     if (!ruta) {
       return this.baseUrl || '/';
@@ -40,7 +47,9 @@ export class OperacionesApiService {
   }
 
   listarPaquetes(): Observable<PaquetePos[]> {
-    return this.http.get<PaquetePos[]>(`${this.baseUrl}/api/packages`);
+    return this.http.get<RespuestaPagina<PaquetePos>>(`${this.baseUrl}/api/packages/page`, {
+      params: new HttpParams().set('size', '100').set('sort', 'uploadedAt,desc')
+    }).pipe(map((pagina) => pagina.content));
   }
 
   listarSucursales(): Observable<Sucursal[]> {
@@ -48,7 +57,9 @@ export class OperacionesApiService {
   }
 
   listarEquipos(): Observable<Equipo[]> {
-    return this.http.get<Equipo[]>(`${this.baseUrl}/api/devices`);
+    return this.http.get<RespuestaPagina<Equipo>>(`${this.baseUrl}/api/devices/page`, {
+      params: new HttpParams().set('size', '100').set('sort', 'nombreEquipo,asc')
+    }).pipe(map((pagina) => pagina.content));
   }
 
   obtenerDetalleEquipo(id: string): Observable<DetalleEquipo> {
@@ -77,11 +88,40 @@ export class OperacionesApiService {
   }
 
   listarDespliegues(): Observable<Despliegue[]> {
-    return this.http.get<Despliegue[]>(`${this.baseUrl}/api/deployments`);
+    return this.http.get<RespuestaPagina<Despliegue>>(`${this.baseUrl}/api/deployments/page`, {
+      params: new HttpParams().set('size', '100').set('sort', 'createdAt,desc')
+    }).pipe(map((pagina) => pagina.content));
   }
 
   listarEventos(limite = 100): Observable<EventoActualizacion[]> {
-    return this.http.get<EventoActualizacion[]>(`${this.baseUrl}/api/update-events?limit=${limite}`);
+    return this.http.get<RespuestaPagina<EventoActualizacion>>(`${this.baseUrl}/api/update-events/page`, {
+      params: new HttpParams().set('size', String(limite)).set('sort', 'createdAt,desc')
+    }).pipe(map((pagina) => pagina.content));
+  }
+
+  listarAlertasPaginadas(
+    filtros: {
+      status?: string;
+      severity?: string;
+      type?: string;
+      deviceId?: string;
+      branchId?: string;
+      branchCode?: string;
+      hostname?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      page?: number;
+      size?: number;
+      sort?: string;
+    } = {}
+  ): Observable<RespuestaPagina<AlertaOperativa>> {
+    let parametros = new HttpParams();
+    Object.entries(filtros).forEach(([clave, valor]) => {
+      if (valor !== undefined && valor !== null && valor !== '') {
+        parametros = parametros.set(clave, String(valor));
+      }
+    });
+    return this.http.get<RespuestaPagina<AlertaOperativa>>(`${this.baseUrl}/api/alerts/page`, { params: parametros });
   }
 
   listarAlertas(
@@ -101,13 +141,10 @@ export class OperacionesApiService {
       sort?: string;
     } = {}
   ): Observable<AlertaOperativa[]> {
-    let parametros = new HttpParams().set('limit', String(limite));
-    Object.entries(filtros).forEach(([clave, valor]) => {
-      if (valor !== undefined && valor !== null && valor !== '') {
-        parametros = parametros.set(clave, String(valor));
-      }
-    });
-    return this.http.get<AlertaOperativa[]>(`${this.baseUrl}/api/alerts`, { params: parametros });
+    return this.listarAlertasPaginadas({
+      ...filtros,
+      size: filtros.size ?? limite
+    }).pipe(map((pagina) => pagina.content));
   }
 
   reconocerAlerta(id: string): Observable<AlertaOperativa> {
@@ -128,13 +165,31 @@ export class OperacionesApiService {
       to?: string;
     } = {}
   ): Observable<AuditoriaAdministrativa[]> {
-    let parametros = new HttpParams().set('limit', String(limite));
+    return this.listarAuditoriaPaginada({
+      ...filtros,
+      size: limite
+    }).pipe(map((pagina) => pagina.content));
+  }
+
+  listarAuditoriaPaginada(
+    filtros: {
+      action?: string;
+      entityType?: string;
+      actorUsername?: string;
+      from?: string;
+      to?: string;
+      page?: number;
+      size?: number;
+      sort?: string;
+    } = {}
+  ): Observable<RespuestaPagina<AuditoriaAdministrativa>> {
+    let parametros = new HttpParams();
     Object.entries(filtros).forEach(([clave, valor]) => {
-      if (valor) {
-        parametros = parametros.set(clave, valor);
+      if (valor !== undefined && valor !== null && valor !== '') {
+        parametros = parametros.set(clave, String(valor));
       }
     });
-    return this.http.get<AuditoriaAdministrativa[]>(`${this.baseUrl}/api/audit-logs`, { params: parametros });
+    return this.http.get<RespuestaPagina<AuditoriaAdministrativa>>(`${this.baseUrl}/api/audit-logs/page`, { params: parametros });
   }
 
   crearDespliegue(solicitud: SolicitudCrearDespliegue): Observable<Despliegue> {
@@ -165,7 +220,9 @@ export class OperacionesApiService {
   }
 
   listarUsuariosAdministrativos(): Observable<UsuarioAdministrativo[]> {
-    return this.http.get<UsuarioAdministrativo[]>(`${this.baseUrl}/api/admin/users`);
+    return this.http.get<RespuestaPagina<UsuarioAdministrativo>>(`${this.baseUrl}/api/admin/users/page`, {
+      params: new HttpParams().set('size', '100').set('sort', 'username,asc')
+    }).pipe(map((pagina) => pagina.content));
   }
 
   crearUsuarioAdministrativo(datos: {
