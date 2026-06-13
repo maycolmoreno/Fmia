@@ -1,12 +1,17 @@
 package com.farmamia.operations.infraestructura.persistencia.adaptador;
 
+import com.farmamia.operations.dominio.modelo.FiltroSucursales;
+import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.modelo.Sucursal;
 import com.farmamia.operations.dominio.puerto.RepositorioSucursales;
 import com.farmamia.operations.infraestructura.persistencia.entidad.SucursalEntidad;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.SucursalRepositorioJpa;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -34,6 +39,38 @@ public class RepositorioSucursalesJpaAdaptador implements RepositorioSucursales 
             .toList();
     }
 
+    @Override
+    public Pagina<Sucursal> listarPaginado(FiltroSucursales filtro) {
+        String q = minusculaANulo(filtro.q());
+        String codigo = minusculaANulo(filtro.codigo());
+        String ciudad = minusculaANulo(filtro.ciudad());
+        String zona = minusculaANulo(filtro.zona());
+        org.springframework.data.domain.Page<SucursalEntidad> pagina = sucursalRepositorioJpa.buscarConFiltros(
+            q != null,
+            nuloAValor(q),
+            codigo != null,
+            nuloAValor(codigo),
+            ciudad != null,
+            nuloAValor(ciudad),
+            zona != null,
+            nuloAValor(zona),
+            filtro.deTurno() != null,
+            filtro.deTurno() != null && filtro.deTurno(),
+            filtro.activa() != null,
+            filtro.activa() != null && filtro.activa(),
+            PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
+        );
+
+        return new Pagina<>(
+            pagina.getContent().stream().map(this::aDominio).toList(),
+            pagina.getNumber(),
+            pagina.getSize(),
+            pagina.getTotalElements(),
+            pagina.getTotalPages(),
+            pagina.hasNext()
+        );
+    }
+
     private Sucursal aDominio(SucursalEntidad entidad) {
         return new Sucursal(
             entidad.getId(),
@@ -47,5 +84,33 @@ public class RepositorioSucursalesJpaAdaptador implements RepositorioSucursales 
             entidad.getCreadoEn(),
             entidad.getActualizadoEn()
         );
+    }
+
+    private Sort aOrden(String orden) {
+        String[] partes = orden == null ? new String[0] : orden.split(",", 2);
+        String campo = partes.length > 0 ? partes[0] : "codigo";
+        Sort.Direction direccion = partes.length > 1 && "desc".equalsIgnoreCase(partes[1])
+            ? Sort.Direction.DESC
+            : Sort.Direction.ASC;
+
+        return Sort.by(direccion, switch (campo) {
+            case "code", "codigo" -> "codigo";
+            case "name", "nombre" -> "nombre";
+            case "city", "ciudad" -> "ciudad";
+            case "zone", "zona" -> "zona";
+            case "onDuty", "deTurno" -> "deTurno";
+            case "active", "activa" -> "activa";
+            case "createdAt", "creadoEn" -> "creadoEn";
+            case "updatedAt", "actualizadoEn" -> "actualizadoEn";
+            default -> "codigo";
+        });
+    }
+
+    private String minusculaANulo(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String nuloAValor(String valor) {
+        return valor == null ? "" : valor;
     }
 }

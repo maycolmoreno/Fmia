@@ -13,8 +13,11 @@ import com.farmamia.operations.infraestructura.persistencia.repositorio.Desplieg
 import com.farmamia.operations.infraestructura.persistencia.repositorio.EstadoControlDespliegueRepositorioJpa;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.ObjetivoDespliegueRepositorioJpa;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.OleadaDespliegueRepositorioJpa;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -40,17 +43,26 @@ public class RepositorioOrquestacionDesplieguesJpaAdaptador implements Repositor
     private final ObjetivoDespliegueRepositorioJpa objetivoRepositorioJpa;
     private final OleadaDespliegueRepositorioJpa oleadaRepositorioJpa;
     private final EstadoControlDespliegueRepositorioJpa controlRepositorioJpa;
+    private final Counter reintentosReautorizados;
+    private final Counter pausasAutomaticas;
 
     public RepositorioOrquestacionDesplieguesJpaAdaptador(
         DespliegueRepositorioJpa despliegueRepositorioJpa,
         ObjetivoDespliegueRepositorioJpa objetivoRepositorioJpa,
         OleadaDespliegueRepositorioJpa oleadaRepositorioJpa,
-        EstadoControlDespliegueRepositorioJpa controlRepositorioJpa
+        EstadoControlDespliegueRepositorioJpa controlRepositorioJpa,
+        MeterRegistry meterRegistry
     ) {
         this.despliegueRepositorioJpa = despliegueRepositorioJpa;
         this.objetivoRepositorioJpa = objetivoRepositorioJpa;
         this.oleadaRepositorioJpa = oleadaRepositorioJpa;
         this.controlRepositorioJpa = controlRepositorioJpa;
+        this.reintentosReautorizados = Counter.builder("farmamia.orchestration.retries.reauthorized.total")
+            .description("Objetivos fallidos reautorizados por la evaluacion de orquestacion")
+            .register(meterRegistry);
+        this.pausasAutomaticas = Counter.builder("farmamia.orchestration.auto.pauses.total")
+            .description("Pausas automaticas de campanas por umbral de fallos")
+            .register(meterRegistry);
     }
 
     @Override
@@ -80,7 +92,8 @@ public class RepositorioOrquestacionDesplieguesJpaAdaptador implements Repositor
                 solicitud.pausaAutomaticaHabilitada(),
                 solicitud.ventanaInicio(),
                 solicitud.ventanaFin(),
-                objetivosOleada.size()
+                objetivosOleada.size(),
+                solicitud.maximoEquiposParalelos()
             ));
             objetivosOleada.forEach(objetivo -> objetivo.asignarOleada(oleada));
             objetivoRepositorioJpa.saveAll(objetivosOleada);
@@ -110,13 +123,15 @@ public class RepositorioOrquestacionDesplieguesJpaAdaptador implements Repositor
         boolean huboPausa = false;
 
         for (OleadaDespliegueEntidad oleada : oleadas) {
-            MetricasOleada metricas = metricasOleada(oleada);
+            reautorizarReintentosDisponibles(oleada, control);
+            MetricasOleada metricas = metricasOleada(oleada, control.getLimiteReintentos());
             if ("RUNNING".equals(oleada.getEstado())
                 && control.isPausaAutomaticaHabilitada()
                 && metricas.porcentajeFallo().compareTo(control.getPorcentajeMaximoFallo()) > 0
             ) {
                 oleada.pausar();
                 control.pausar("Umbral de fallos superado en oleada " + oleada.getNumero());
+                pausasAutomaticas.increment();
                 huboPausa = true;
             } else if ("RUNNING".equals(oleada.getEstado()) && metricas.pendientes() == 0) {
                 if (metricas.fallidos() > 0) {
@@ -141,12 +156,15 @@ public class RepositorioOrquestacionDesplieguesJpaAdaptador implements Repositor
     public PlanOrquestacionDespliegue iniciarOleada(UUID idDespliegue, UUID idOleada) {
         EstadoControlDespliegueEntidad control = buscarControl(idDespliegue);
         OleadaDespliegueEntidad oleada = buscarOleada(idDespliegue, idOleada);
-        MetricasOleada metricas = metricasOleada(oleada);
+        MetricasOleada metricas = metricasOleada(oleada, control.getLimiteReintentos());
         if (metricas.farmaciasTurno() > 0) {
             throw new IllegalArgumentException(
                 "La oleada contiene farmacias de turno. No se puede iniciar sin excepcion operacional explicita."
             );
         }
+        List<ObjetivoDespliegueEntidad> objetivos = objetivoRepositorioJpa.findByOleada_Id(oleada.getId());
+        objetivos.forEach(ObjetivoDespliegueEntidad::autorizarDesdeOleada);
+        objetivoRepositorioJpa.saveAll(objetivos);
         oleada.iniciar();
         control.correr(oleada.getNumero() + 1);
         return aPlan(idDespliegue, control, oleadaRepositorioJpa.findByDespliegue_IdOrderByNumeroAsc(idDespliegue));
@@ -200,12 +218,12 @@ public class RepositorioOrquestacionDesplieguesJpaAdaptador implements Repositor
             control.getSiguienteNumeroOleada(),
             control.getMotivoPausa(),
             control.getEvaluadoEn(),
-            oleadas.stream().map(this::aDominio).toList()
+            oleadas.stream().map(oleada -> aDominio(oleada, control.getLimiteReintentos())).toList()
         );
     }
 
-    private OleadaOrquestacion aDominio(OleadaDespliegueEntidad oleada) {
-        MetricasOleada metricas = metricasOleada(oleada);
+    private OleadaOrquestacion aDominio(OleadaDespliegueEntidad oleada, int limiteReintentos) {
+        MetricasOleada metricas = metricasOleada(oleada, limiteReintentos);
         return new OleadaOrquestacion(
             oleada.getId(),
             oleada.getNumero(),
@@ -226,13 +244,36 @@ public class RepositorioOrquestacionDesplieguesJpaAdaptador implements Repositor
         );
     }
 
-    private MetricasOleada metricasOleada(OleadaDespliegueEntidad oleada) {
+    private void reautorizarReintentosDisponibles(
+        OleadaDespliegueEntidad oleada,
+        EstadoControlDespliegueEntidad control
+    ) {
+        if (!"RUNNING".equals(oleada.getEstado())) {
+            return;
+        }
+        OffsetDateTime ahora = OffsetDateTime.now();
+        List<ObjetivoDespliegueEntidad> objetivos = objetivoRepositorioJpa.findByOleada_Id(oleada.getId());
+        List<ObjetivoDespliegueEntidad> reintentos = objetivos.stream()
+            .filter(objetivo -> objetivo.reintentoDisponible(ahora, control.getLimiteReintentos()))
+            .peek(ObjetivoDespliegueEntidad::autorizarReintento)
+            .toList();
+        if (!reintentos.isEmpty()) {
+            objetivoRepositorioJpa.saveAll(reintentos);
+            reintentosReautorizados.increment(reintentos.size());
+        }
+    }
+
+    private MetricasOleada metricasOleada(OleadaDespliegueEntidad oleada, int limiteReintentos) {
         List<ObjetivoDespliegueEntidad> objetivos = objetivoRepositorioJpa.findByOleada_Id(oleada.getId());
         long completados = objetivos.stream().filter(objetivo -> "COMPLETED".equals(objetivo.getEstado())).count();
         long fallidos = objetivos.stream().filter(objetivo -> ESTADOS_FALLIDOS.contains(objetivo.getEstado())).count();
         long finales = objetivos.stream().filter(objetivo -> ESTADOS_FINALES.contains(objetivo.getEstado())).count();
+        long fallidosConReintentoPendiente = objetivos.stream()
+            .filter(ObjetivoDespliegueEntidad::esFalloReintentable)
+            .filter(objetivo -> !objetivo.reintentosAgotados(limiteReintentos))
+            .count();
         long farmaciasTurno = objetivos.stream().filter(objetivo -> objetivo.getEquipo().getSucursal().isDeTurno()).count();
-        long pendientes = Math.max(0, objetivos.size() - finales);
+        long pendientes = Math.max(0, objetivos.size() - finales + fallidosConReintentoPendiente);
         BigDecimal porcentajeFallo = objetivos.isEmpty()
             ? BigDecimal.ZERO
             : BigDecimal.valueOf(fallidos * 100.0 / objetivos.size()).setScale(2, RoundingMode.HALF_UP);

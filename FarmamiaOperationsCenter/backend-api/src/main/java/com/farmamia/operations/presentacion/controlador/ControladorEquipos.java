@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/devices")
+@RequestMapping({"/api/devices", "/api/equipos-pos"})
 public class ControladorEquipos {
 
     private final ConsultarCatalogoOperativoCasoUso consultarCatalogoOperativoCasoUso;

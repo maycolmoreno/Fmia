@@ -2,18 +2,18 @@
 
 ## Responsabilidad
 
-Panel web administrativo para gestionar sucursales, equipos, paquetes POS, campanas, pilotos, grupos, alertas, auditoria, activos y dashboards.
+Panel web de operaciones para gestionar farmacias, equipos POS, versiones POS, campanas POS, pilotos, grupos TRX, alertas operativas, auditoria y dashboards NOC.
 
 ## Modulos iniciales
 
 ```txt
 auth
-dashboard
-branches
-devices
-packages
-deployments
-alerts
+dashboard-noc
+farmacias
+equipos-pos
+versiones-pos
+campanas-pos
+alertas-operativas
 audit
 ```
 
@@ -21,14 +21,15 @@ audit
 
 ```txt
 Login
-Dashboard operativo
-Listado de equipos
-Detalle de equipo
-Carga de paquete POS
-Listado de paquetes
-Crear campana
-Estado de campana
-Eventos de actualizacion
+Dashboard NOC
+Listado de farmacias
+Listado de equipos POS
+Detalle operativo de equipo POS
+Carga de artefacto de version POS
+Listado de versiones POS
+Crear campana POS
+Estado de campana POS
+Eventos del agente
 Alertas operativas
 Auditoria
 ```
@@ -61,16 +62,16 @@ Pantallas implementadas:
 ```txt
 Login administrativo
 Route guard administrativo para proteger /operaciones
-Dashboard operativo
-Listado de sucursales
-Listado de equipos inventariados
-Detalle operativo de equipo
-Listado y carga de paquetes POS
-Aprobacion, retiro y descarga de paquetes
-Listado y creacion de despliegues
-Consulta de estado de despliegue
-Seleccion de equipos registrados para crear despliegues
-Listado de eventos recientes de actualizacion
+Dashboard NOC
+Listado de farmacias
+Listado de equipos POS inventariados
+Detalle operativo de equipo POS
+Listado y carga de versiones POS
+Aprobacion, retiro y descarga de versiones POS
+Listado y creacion de campanas POS
+Consulta de estado de campana POS
+Seleccion de equipos POS registrados para crear campanas POS
+Listado de eventos recientes del agente
 Listado de alertas operativas recientes
 Listado de auditoria administrativa reciente
 ```

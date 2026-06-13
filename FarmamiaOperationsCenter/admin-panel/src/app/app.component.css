@@ -146,6 +146,10 @@ h3 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.metricas-operaciones {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 .metrica-simple {
   border: 1px solid #edf1f5;
   border-radius: 8px;
@@ -169,12 +173,28 @@ h3 {
   gap: 16px;
 }
 
+.panel-operaciones {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+.tarjeta-principal {
+  grid-row: span 2;
+}
+
 .tarjeta {
   background: #ffffff;
   border: 1px solid #d9e0ea;
   border-radius: 8px;
   padding: 18px;
   box-shadow: 0 8px 18px rgb(23 33 47 / 6%);
+}
+
+.tarjeta.interna {
+  box-shadow: none;
+  background: #fbfcfe;
 }
 
 .metrica span,
@@ -189,6 +209,42 @@ h3 {
   font-size: 2rem;
 }
 
+.dashboard-noc {
+  display: grid;
+  gap: 16px;
+}
+
+.metricas-noc {
+  grid-template-columns: repeat(6, minmax(150px, 1fr));
+}
+
+.metrica-noc {
+  border-top: 5px solid #64748b;
+}
+
+.metrica-noc strong {
+  font-size: 2.35rem;
+  line-height: 1;
+}
+
+.metrica-noc.critica {
+  border-color: #b42318;
+  background: #fff7f6;
+}
+
+.metrica-noc.riesgo {
+  border-color: #d97706;
+  background: #fff8ed;
+}
+
+.bloque-noc {
+  padding: 16px;
+}
+
+.bloque-prioritario {
+  order: -1;
+}
+
 .titulo-tarjeta {
   display: flex;
   align-items: center;
@@ -200,6 +256,51 @@ h3 {
 .lista-compacta {
   display: grid;
   gap: 10px;
+}
+
+.prioridad-turno {
+  border-color: #f2b84b;
+  box-shadow: 0 10px 22px rgb(242 184 75 / 14%);
+}
+
+.lista-turno {
+  display: grid;
+  gap: 8px;
+}
+
+.fila-turno {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.3fr) repeat(6, minmax(96px, 1fr));
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.fila-turno small,
+.fila-turno span small {
+  display: block;
+  color: #68768a;
+  margin-top: 3px;
+}
+
+.fila-turno span b {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.advertencia-turno {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #f2b84b;
+  border-radius: 8px;
+  background: #fff8e8;
+  color: #6b4a05;
+  padding: 12px;
+}
+
+.advertencia-turno small {
+  color: #7b5b17;
 }
 
 .fila-compacta,
@@ -223,6 +324,33 @@ h3 {
   margin-top: 3px;
 }
 
+.fila-operacion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  border: 1px solid transparent;
+  border-bottom-color: #edf1f5;
+  background: transparent;
+  color: #17212f;
+  padding: 10px 8px;
+  text-align: left;
+}
+
+.fila-operacion.activo,
+.fila-operacion:hover {
+  border-color: #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.fila-operacion small {
+  display: block;
+  color: #68768a;
+  margin-top: 3px;
+}
+
 .estado,
 mark {
   border-radius: 999px;
@@ -237,6 +365,12 @@ mark {
 mark.critica {
   background: #fdecec;
   color: #9f1d1d;
+}
+
+.estado.riesgo,
+mark.riesgo {
+  background: #fff1e6;
+  color: #9a4d00;
 }
 
 mark.alta {
@@ -268,6 +402,10 @@ mark.baja {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin: 12px 0;
+}
+
+.resumen-operaciones {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .resumen-estado div {
@@ -324,6 +462,11 @@ mark.baja {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.operaciones-campos {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 12px;
+}
+
 .seguridad-campos {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -338,6 +481,10 @@ mark.baja {
 
 .alertas-campos {
   grid-template-columns: repeat(9, minmax(0, 1fr));
+}
+
+.equipos-campos {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 label {
@@ -438,8 +585,8 @@ textarea {
 }
 
 .tabla-sucursales .tabla-fila {
-  grid-template-columns: 100px minmax(140px, 1fr) minmax(100px, 1fr) 100px;
-  min-width: 520px;
+  grid-template-columns: minmax(150px, 1.2fr) 80px 130px minmax(150px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) 120px 140px;
+  min-width: 1120px;
 }
 
 .tabla-equipos .tabla-fila {
@@ -468,6 +615,81 @@ textarea {
 
 .tabla-eventos .tabla-fila {
   grid-template-columns: 140px minmax(130px, 1fr) 150px 150px minmax(180px, 1fr) minmax(180px, 1fr);
+  min-width: 980px;
+}
+
+.tabla-oleadas .tabla-fila {
+  grid-template-columns: minmax(150px, 1fr) 110px 150px 80px 170px minmax(220px, auto);
+  min-width: 920px;
+}
+
+.tabla-grupos-trx .tabla-fila {
+  grid-template-columns: 100px minmax(170px, 1fr) 110px 110px 110px 100px minmax(300px, auto);
+  min-width: 1020px;
+}
+
+.tabla-noc .tabla-fila {
+  grid-template-columns: minmax(180px, 1.4fr) 110px 80px 100px 120px minmax(160px, 1fr) minmax(260px, 1.4fr);
+  min-width: 1180px;
+}
+
+.tabla-noc .tabla-fila:not(.cabecera) {
+  border-left: 4px solid #e2e8f0;
+  padding-left: 8px;
+}
+
+.tabla-campanas-noc .tabla-fila {
+  grid-template-columns: minmax(220px, 1.5fr) 140px 130px 130px 130px 150px;
+  min-width: 980px;
+}
+
+.tabla-grupos-trx-noc .tabla-fila {
+  grid-template-columns: minmax(150px, 1fr) 110px 150px 130px 90px minmax(280px, 1.4fr);
+  min-width: 980px;
+}
+
+.tabla-noc strong,
+.tabla-noc small {
+  display: block;
+}
+
+.tabla-noc small {
+  color: #68768a;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+
+.detalle-tecnico-noc {
+  align-items: start;
+}
+
+.tabla-estado-campana-farmacia .tabla-fila {
+  grid-template-columns: minmax(190px, 1.3fr) 110px 80px 150px 150px 150px 80px 90px 150px minmax(220px, 1fr);
+  min-width: 1450px;
+}
+
+.tabla-equipos-campana-farmacia .tabla-fila {
+  grid-template-columns: minmax(130px, 1fr) 130px 100px minmax(160px, 1fr) minmax(180px, 1fr);
+  min-width: 820px;
+}
+
+.fila-boton {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+.fila-boton:hover {
+  background: #f4f8fb;
+}
+
+.tabla-equipos-grupo .tabla-fila {
+  grid-template-columns: minmax(140px, 1fr) minmax(180px, 1.2fr) 120px 110px 160px minmax(150px, auto);
   min-width: 980px;
 }
 
@@ -555,13 +777,22 @@ textarea {
   }
 
   .metricas,
+  .metricas-operaciones,
   .rejilla-dos,
+  .panel-operaciones,
+  .fila-turno,
   .campos,
   .despliegue-campos,
+  .operaciones-campos,
   .seguridad-campos,
   .usuarios-campos,
   .auditoria-campos,
-  .alertas-campos {
+  .alertas-campos,
+  .equipos-campos,
+  .grupos-trx-campos,
+  .grupos-trx-formulario,
+  .grupos-trx-asignacion,
+  .estado-campana-farmacia-campos {
     grid-template-columns: 1fr;
   }
 

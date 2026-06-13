@@ -15,11 +15,15 @@ public record RespuestaInstruccionAgente(
     @JsonProperty("version") String version,
     @JsonProperty("downloadUrl") String urlDescarga,
     @JsonProperty("sha256Checksum") String checksumSha256,
+    @JsonProperty("signature") String firma,
+    @JsonProperty("signatureAlgorithm") String algoritmoFirma,
+    @JsonProperty("signingKeyId") String idClaveFirma,
+    @JsonProperty("signingPublicKeyPem") String clavePublicaFirmaPem,
     @JsonProperty("officialUpdateTime") LocalTime horaOficialActualizacion,
     @JsonProperty("forceUpdateTime") LocalTime horaForzadaActualizacion,
     @JsonProperty("warnings") List<LocalTime> avisos
 ) {
     public static RespuestaInstruccionAgente vacia() {
-        return new RespuestaInstruccionAgente(false, null, null, null, null, null, null, null, null, null);
+        return new RespuestaInstruccionAgente(false, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 }

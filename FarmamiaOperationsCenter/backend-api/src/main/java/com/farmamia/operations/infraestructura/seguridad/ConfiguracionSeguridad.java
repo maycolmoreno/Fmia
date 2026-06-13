@@ -47,9 +47,11 @@ public class ConfiguracionSeguridad {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/api/health", "/api/auth/login", "/api/agent/register").permitAll()
                 .requestMatchers("/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
-                .requestMatchers("/api/packages/*/download").permitAll()
+                .requestMatchers("/api/packages/*/download", "/api/versiones-pos/*/descargar").permitAll()
                 .requestMatchers("/api/branches/**", "/api/devices/**", "/api/packages/**").authenticated()
-                .requestMatchers("/api/deployments/**", "/api/dashboard/**", "/api/update-events/**", "/api/alerts/**").authenticated()
+                .requestMatchers("/api/farmacias/**", "/api/equipos-pos/**", "/api/versiones-pos/**").authenticated()
+                .requestMatchers("/api/deployments/**", "/api/orchestration/**", "/api/dashboard/**", "/api/update-events/**", "/api/alerts/**").authenticated()
+                .requestMatchers("/api/campanas-pos/**", "/api/eventos-agente/**", "/api/grupos-trx/**").authenticated()
                 .requestMatchers("/api/audit-logs/**", "/api/admin/**").authenticated()
                 .anyRequest().permitAll()
             )

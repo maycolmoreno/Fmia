@@ -7,16 +7,29 @@ import { environment } from '../../environments/environment';
 import {
   AlertaOperativa,
   AuditoriaAdministrativa,
-  Despliegue,
-  DetalleEquipo,
-  Equipo,
+  CampanaPos,
+  CampanaGrupoTrx,
+  DetalleEquipoPos,
+  EquipoPos,
+  EstadoOperacionalFarmacia,
+  GrupoTrx,
   EstadoDespliegue,
   EstadoSaludApi,
-  EventoActualizacion,
-  PaquetePos,
+  EventoAgente,
+  VersionPos,
+  PlanOrquestacion,
+  ResumenCampanaGruposTrx,
+  ResumenEstadoCampanaFarmacia,
   RespuestaPagina,
   ResumenDashboard,
   SolicitudCrearDespliegue,
+  SolicitudPlanOrquestacion,
+  Farmacia,
+  Despliegue,
+  DetalleEquipo,
+  Equipo,
+  EventoActualizacion,
+  PaquetePos,
   Sucursal,
   UsuarioAdministrativo
 } from '../modelos/modelos-operaciones';
@@ -46,57 +59,194 @@ export class OperacionesApiService {
     return `${this.baseUrl}${ruta.startsWith('/') ? ruta : `/${ruta}`}`;
   }
 
-  listarPaquetes(): Observable<PaquetePos[]> {
-    return this.http.get<RespuestaPagina<PaquetePos>>(`${this.baseUrl}/api/packages/page`, {
-      params: new HttpParams().set('size', '100').set('sort', 'uploadedAt,desc')
+  listarVersionesPos(): Observable<VersionPos[]> {
+    return this.http.get<RespuestaPagina<VersionPos>>(`${this.baseUrl}/api/versiones-pos/page`, {
+      params: new HttpParams().set('size', '100').set('sort', 'cargadoEn,desc')
     }).pipe(map((pagina) => pagina.content));
+  }
+
+  listarPaquetes(): Observable<PaquetePos[]> {
+    return this.listarVersionesPos();
+  }
+
+  listarFarmacias(): Observable<Farmacia[]> {
+    return this.http.get<RespuestaPagina<Farmacia>>(`${this.baseUrl}/api/farmacias/page`, {
+      params: new HttpParams().set('size', '100').set('sort', 'code,asc')
+    }).pipe(map((pagina) => pagina.content));
+  }
+
+  listarEstadoFarmacias(): Observable<EstadoOperacionalFarmacia[]> {
+    return this.http.get<EstadoOperacionalFarmacia[]>(`${this.baseUrl}/api/farmacias/estado`);
+  }
+
+  listarGruposTrx(filtros: {
+    codigo?: string;
+    estado?: string;
+    activo?: boolean | '';
+    page?: number;
+    size?: number;
+    sort?: string;
+  } = {}): Observable<RespuestaPagina<GrupoTrx>> {
+    let parametros = new HttpParams();
+    Object.entries(filtros).forEach(([clave, valor]) => {
+      if (valor !== undefined && valor !== null && valor !== '') {
+        parametros = parametros.set(clave, String(valor));
+      }
+    });
+    return this.http.get<RespuestaPagina<GrupoTrx>>(`${this.baseUrl}/api/grupos-trx/page`, { params: parametros });
+  }
+
+  obtenerGrupoTrx(id: string): Observable<GrupoTrx> {
+    return this.http.get<GrupoTrx>(`${this.baseUrl}/api/grupos-trx/${id}`);
+  }
+
+  crearGrupoTrx(datos: {
+    codigo: string;
+    nombre: string;
+    descripcion?: string | null;
+    maximoEquipos?: number | null;
+    activo?: boolean | null;
+  }): Observable<GrupoTrx> {
+    return this.http.post<GrupoTrx>(`${this.baseUrl}/api/grupos-trx`, datos);
+  }
+
+  actualizarGrupoTrx(id: string, datos: {
+    codigo: string;
+    nombre: string;
+    descripcion?: string | null;
+    maximoEquipos?: number | null;
+    activo?: boolean | null;
+  }): Observable<GrupoTrx> {
+    return this.http.put<GrupoTrx>(`${this.baseUrl}/api/grupos-trx/${id}`, datos);
+  }
+
+  pausarGrupoTrx(id: string, motivo = ''): Observable<GrupoTrx> {
+    return this.http.post<GrupoTrx>(`${this.baseUrl}/api/grupos-trx/${id}/pausar`, { motivo });
+  }
+
+  reanudarGrupoTrx(id: string, motivo = ''): Observable<GrupoTrx> {
+    return this.http.post<GrupoTrx>(`${this.baseUrl}/api/grupos-trx/${id}/reanudar`, { motivo });
+  }
+
+  retirarGrupoTrx(id: string, motivo = ''): Observable<GrupoTrx> {
+    return this.http.post<GrupoTrx>(`${this.baseUrl}/api/grupos-trx/${id}/retirar`, { motivo });
+  }
+
+  asignarEquipoGrupoTrx(id: string, equipoId: string, motivo = ''): Observable<GrupoTrx> {
+    return this.http.post<GrupoTrx>(`${this.baseUrl}/api/grupos-trx/${id}/equipos/${equipoId}`, { motivo });
+  }
+
+  quitarEquipoGrupoTrx(id: string, equipoId: string, motivo = ''): Observable<GrupoTrx> {
+    return this.http.delete<GrupoTrx>(`${this.baseUrl}/api/grupos-trx/${id}/equipos/${equipoId}`, {
+      body: { motivo }
+    });
   }
 
   listarSucursales(): Observable<Sucursal[]> {
-    return this.http.get<Sucursal[]>(`${this.baseUrl}/api/branches`);
+    return this.listarFarmacias();
+  }
+
+  listarEquiposPos(): Observable<EquipoPos[]> {
+    return this.listarEquiposPosPaginados({ size: 100, sort: 'nombreEquipo,asc' })
+      .pipe(map((pagina) => pagina.content));
   }
 
   listarEquipos(): Observable<Equipo[]> {
-    return this.http.get<RespuestaPagina<Equipo>>(`${this.baseUrl}/api/devices/page`, {
-      params: new HttpParams().set('size', '100').set('sort', 'nombreEquipo,asc')
-    }).pipe(map((pagina) => pagina.content));
+    return this.listarEquiposPos();
+  }
+
+  listarEquiposPosPaginados(
+    filtros: {
+      q?: string;
+      status?: string;
+      branchCode?: string;
+      posVersion?: string;
+      agentVersion?: string;
+      lastHeartbeatFrom?: string;
+      lastHeartbeatTo?: string;
+      page?: number;
+      size?: number;
+      sort?: string;
+    } = {}
+  ): Observable<RespuestaPagina<EquipoPos>> {
+    let parametros = new HttpParams();
+    Object.entries(filtros).forEach(([clave, valor]) => {
+      if (valor !== undefined && valor !== null && valor !== '') {
+        parametros = parametros.set(clave, String(valor));
+      }
+    });
+    return this.http.get<RespuestaPagina<EquipoPos>>(`${this.baseUrl}/api/equipos-pos/page`, {
+      params: parametros
+    });
+  }
+
+  listarEquiposPaginados(filtros: Parameters<OperacionesApiService['listarEquiposPosPaginados']>[0] = {}): Observable<RespuestaPagina<Equipo>> {
+    return this.listarEquiposPosPaginados(filtros);
+  }
+
+  obtenerDetalleEquipoPos(id: string): Observable<DetalleEquipoPos> {
+    return this.http.get<DetalleEquipoPos>(`${this.baseUrl}/api/equipos-pos/${id}`);
   }
 
   obtenerDetalleEquipo(id: string): Observable<DetalleEquipo> {
-    return this.http.get<DetalleEquipo>(`${this.baseUrl}/api/devices/${id}`);
+    return this.obtenerDetalleEquipoPos(id);
   }
 
-  cargarPaquete(version: string, archivo: File): Observable<PaquetePos> {
+  cargarVersionPos(version: string, archivo: File): Observable<VersionPos> {
     const datos = new FormData();
     datos.append('version', version);
     datos.append('file', archivo);
-    return this.http.post<PaquetePos>(`${this.baseUrl}/api/packages`, datos);
+    return this.http.post<VersionPos>(`${this.baseUrl}/api/versiones-pos`, datos);
+  }
+
+  cargarPaquete(version: string, archivo: File): Observable<PaquetePos> {
+    return this.cargarVersionPos(version, archivo);
+  }
+
+  aprobarVersionPos(id: string): Observable<VersionPos> {
+    return this.http.post<VersionPos>(`${this.baseUrl}/api/versiones-pos/${id}/aprobar`, {});
   }
 
   aprobarPaquete(id: string): Observable<PaquetePos> {
-    return this.http.post<PaquetePos>(`${this.baseUrl}/api/packages/${id}/approve`, {});
+    return this.aprobarVersionPos(id);
+  }
+
+  retirarVersionPos(id: string): Observable<VersionPos> {
+    return this.http.post<VersionPos>(`${this.baseUrl}/api/versiones-pos/${id}/retirar`, {});
   }
 
   retirarPaquete(id: string): Observable<PaquetePos> {
-    return this.http.post<PaquetePos>(`${this.baseUrl}/api/packages/${id}/retire`, {});
+    return this.retirarVersionPos(id);
   }
 
-  descargarPaquete(id: string): Observable<Blob> {
-    return this.http.get(`${this.baseUrl}/api/packages/${id}/download`, {
+  descargarVersionPos(id: string): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/api/versiones-pos/${id}/descargar`, {
       responseType: 'blob'
     });
   }
 
+  descargarPaquete(id: string): Observable<Blob> {
+    return this.descargarVersionPos(id);
+  }
+
+  listarCampanasPos(): Observable<CampanaPos[]> {
+    return this.http.get<RespuestaPagina<CampanaPos>>(`${this.baseUrl}/api/campanas-pos/page`, {
+      params: new HttpParams().set('size', '100').set('sort', 'creadoEn,desc')
+    }).pipe(map((pagina) => pagina.content));
+  }
+
   listarDespliegues(): Observable<Despliegue[]> {
-    return this.http.get<RespuestaPagina<Despliegue>>(`${this.baseUrl}/api/deployments/page`, {
-      params: new HttpParams().set('size', '100').set('sort', 'createdAt,desc')
+    return this.listarCampanasPos();
+  }
+
+  listarEventosAgente(limite = 100): Observable<EventoAgente[]> {
+    return this.http.get<RespuestaPagina<EventoAgente>>(`${this.baseUrl}/api/eventos-agente/page`, {
+      params: new HttpParams().set('size', String(limite)).set('sort', 'creadoEn,desc')
     }).pipe(map((pagina) => pagina.content));
   }
 
   listarEventos(limite = 100): Observable<EventoActualizacion[]> {
-    return this.http.get<RespuestaPagina<EventoActualizacion>>(`${this.baseUrl}/api/update-events/page`, {
-      params: new HttpParams().set('size', String(limite)).set('sort', 'createdAt,desc')
-    }).pipe(map((pagina) => pagina.content));
+    return this.listarEventosAgente(limite);
   }
 
   listarAlertasPaginadas(
@@ -192,24 +342,123 @@ export class OperacionesApiService {
     return this.http.get<RespuestaPagina<AuditoriaAdministrativa>>(`${this.baseUrl}/api/audit-logs/page`, { params: parametros });
   }
 
+  crearCampanaPos(solicitud: SolicitudCrearDespliegue): Observable<CampanaPos> {
+    return this.http.post<CampanaPos>(`${this.baseUrl}/api/campanas-pos`, solicitud);
+  }
+
   crearDespliegue(solicitud: SolicitudCrearDespliegue): Observable<Despliegue> {
-    return this.http.post<Despliegue>(`${this.baseUrl}/api/deployments`, solicitud);
+    return this.crearCampanaPos(solicitud);
+  }
+
+  pausarCampanaPos(id: string): Observable<CampanaPos> {
+    return this.http.post<CampanaPos>(`${this.baseUrl}/api/campanas-pos/${id}/pausar`, {});
   }
 
   pausarDespliegue(id: string): Observable<Despliegue> {
-    return this.http.post<Despliegue>(`${this.baseUrl}/api/deployments/${id}/pause`, {});
+    return this.pausarCampanaPos(id);
+  }
+
+  reanudarCampanaPos(id: string): Observable<CampanaPos> {
+    return this.http.post<CampanaPos>(`${this.baseUrl}/api/campanas-pos/${id}/reanudar`, {});
   }
 
   reanudarDespliegue(id: string): Observable<Despliegue> {
-    return this.http.post<Despliegue>(`${this.baseUrl}/api/deployments/${id}/resume`, {});
+    return this.reanudarCampanaPos(id);
+  }
+
+  cancelarCampanaPos(id: string): Observable<CampanaPos> {
+    return this.http.post<CampanaPos>(`${this.baseUrl}/api/campanas-pos/${id}/cancelar`, {});
   }
 
   cancelarDespliegue(id: string): Observable<Despliegue> {
-    return this.http.post<Despliegue>(`${this.baseUrl}/api/deployments/${id}/cancel`, {});
+    return this.cancelarCampanaPos(id);
+  }
+
+  obtenerEstadoCampanaPos(id: string): Observable<EstadoDespliegue> {
+    return this.http.get<EstadoDespliegue>(`${this.baseUrl}/api/campanas-pos/${id}/estado-por-equipo`);
   }
 
   obtenerEstadoDespliegue(id: string): Observable<EstadoDespliegue> {
-    return this.http.get<EstadoDespliegue>(`${this.baseUrl}/api/deployments/${id}/status`);
+    return this.obtenerEstadoCampanaPos(id);
+  }
+
+  obtenerEstadoCampanaPorFarmacia(
+    id: string,
+    filtros: {
+      estadoTecnico?: string;
+      estadoOperacional?: string;
+      grupoTrx?: string;
+      deTurno?: boolean | '';
+      q?: string;
+      page?: number;
+      size?: number;
+      sort?: string;
+    } = {}
+  ): Observable<ResumenEstadoCampanaFarmacia> {
+    let parametros = new HttpParams();
+    Object.entries(filtros).forEach(([clave, valor]) => {
+      if (valor !== undefined && valor !== null && valor !== '') {
+        parametros = parametros.set(clave, String(valor));
+      }
+    });
+    return this.http.get<ResumenEstadoCampanaFarmacia>(`${this.baseUrl}/api/campanas-pos/${id}/estado-por-farmacia`, {
+      params: parametros
+    });
+  }
+
+  obtenerEstadoCampanaPorTrx(id: string): Observable<ResumenCampanaGruposTrx> {
+    return this.http.get<ResumenCampanaGruposTrx>(`${this.baseUrl}/api/campanas-pos/${id}/estado-por-trx`);
+  }
+
+  asociarGrupoTrxCampana(id: string, grupoTrxId: string): Observable<CampanaGrupoTrx> {
+    return this.http.post<CampanaGrupoTrx>(`${this.baseUrl}/api/campanas-pos/${id}/grupos-trx/${grupoTrxId}`, {});
+  }
+
+  quitarGrupoTrxCampana(id: string, grupoTrxId: string, motivo = ''): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/api/campanas-pos/${id}/grupos-trx/${grupoTrxId}`, {
+      body: { motivo }
+    });
+  }
+
+  pausarGrupoTrxCampana(id: string, grupoTrxId: string, motivo = ''): Observable<CampanaGrupoTrx> {
+    return this.http.post<CampanaGrupoTrx>(`${this.baseUrl}/api/campanas-pos/${id}/grupos-trx/${grupoTrxId}/pausar`, { motivo });
+  }
+
+  reanudarGrupoTrxCampana(id: string, grupoTrxId: string, motivo = ''): Observable<CampanaGrupoTrx> {
+    return this.http.post<CampanaGrupoTrx>(`${this.baseUrl}/api/campanas-pos/${id}/grupos-trx/${grupoTrxId}/reanudar`, { motivo });
+  }
+
+  planificarOrquestacion(id: string, solicitud: SolicitudPlanOrquestacion): Observable<PlanOrquestacion> {
+    return this.http.post<PlanOrquestacion>(`${this.baseUrl}/api/orchestration/deployments/${id}/plan`, solicitud);
+  }
+
+  obtenerPlanOrquestacion(id: string): Observable<PlanOrquestacion> {
+    return this.http.get<PlanOrquestacion>(`${this.baseUrl}/api/orchestration/deployments/${id}/plan`);
+  }
+
+  evaluarOrquestacion(id: string): Observable<PlanOrquestacion> {
+    return this.http.post<PlanOrquestacion>(`${this.baseUrl}/api/orchestration/deployments/${id}/evaluate`, {});
+  }
+
+  iniciarOleada(idDespliegue: string, idOleada: string): Observable<PlanOrquestacion> {
+    return this.http.post<PlanOrquestacion>(
+      `${this.baseUrl}/api/orchestration/deployments/${idDespliegue}/waves/${idOleada}/start`,
+      {}
+    );
+  }
+
+  pausarOleada(idDespliegue: string, idOleada: string): Observable<PlanOrquestacion> {
+    return this.http.post<PlanOrquestacion>(
+      `${this.baseUrl}/api/orchestration/deployments/${idDespliegue}/waves/${idOleada}/pause`,
+      {}
+    );
+  }
+
+  reanudarOleada(idDespliegue: string, idOleada: string): Observable<PlanOrquestacion> {
+    return this.http.post<PlanOrquestacion>(
+      `${this.baseUrl}/api/orchestration/deployments/${idDespliegue}/waves/${idOleada}/resume`,
+      {}
+    );
   }
 
   cambiarContrasena(contrasenaActual: string, contrasenaNueva: string): Observable<void> {
@@ -221,7 +470,7 @@ export class OperacionesApiService {
 
   listarUsuariosAdministrativos(): Observable<UsuarioAdministrativo[]> {
     return this.http.get<RespuestaPagina<UsuarioAdministrativo>>(`${this.baseUrl}/api/admin/users/page`, {
-      params: new HttpParams().set('size', '100').set('sort', 'username,asc')
+      params: new HttpParams().set('size', '100').set('sort', 'usuario,asc')
     }).pipe(map((pagina) => pagina.content));
   }
 

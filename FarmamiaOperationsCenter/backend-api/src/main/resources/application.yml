@@ -39,3 +39,14 @@ farmamia:
     cors-allowed-origins: ${FARMAMIA_CORS_ALLOWED_ORIGINS:http://localhost:4200,http://127.0.0.1:4200}
   paquetes:
     ruta-almacenamiento: ${FARMAMIA_PACKAGE_STORAGE:./data/packages}
+  orchestration:
+    instruction-lease-minutes: ${FARMAMIA_ORCHESTRATION_INSTRUCTION_LEASE_MINUTES:15}
+    scheduler:
+      enabled: ${FARMAMIA_ORCHESTRATION_SCHEDULER_ENABLED:true}
+      fixed-delay-ms: ${FARMAMIA_ORCHESTRATION_SCHEDULER_DELAY_MS:60000}
+  retention:
+    enabled: ${FARMAMIA_RETENTION_ENABLED:true}
+    cron: ${FARMAMIA_RETENTION_CRON:0 20 2 * * *}
+    events-days: ${FARMAMIA_RETENTION_EVENTS_DAYS:90}
+    metrics-days: ${FARMAMIA_RETENTION_METRICS_DAYS:30}
+    audit-days: ${FARMAMIA_RETENTION_AUDIT_DAYS:365}

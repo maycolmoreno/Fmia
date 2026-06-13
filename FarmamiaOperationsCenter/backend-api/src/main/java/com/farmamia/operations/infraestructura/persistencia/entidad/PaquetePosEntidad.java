@@ -32,6 +32,24 @@ public class PaquetePosEntidad {
     @Column(name = "size_bytes", nullable = false)
     private Long tamanoBytes;
 
+    @Column(name = "signature")
+    private String firma;
+
+    @Column(name = "signature_algorithm", length = 40)
+    private String algoritmoFirma;
+
+    @Column(name = "signing_key_id", length = 120)
+    private String idClaveFirma;
+
+    @Column(name = "signing_public_key_pem")
+    private String clavePublicaFirmaPem;
+
+    @Column(name = "signed_at")
+    private OffsetDateTime firmadoEn;
+
+    @Column(name = "signature_status", nullable = false, length = 40)
+    private String estadoFirma = "UNSIGNED";
+
     @Column(name = "status", nullable = false, length = 40)
     private String estado = "UPLOADED";
 
@@ -58,11 +76,33 @@ public class PaquetePosEntidad {
         String checksumSha256,
         Long tamanoBytes
     ) {
+        this(version, nombreArchivo, rutaAlmacenamiento, checksumSha256, tamanoBytes, null, null, null, null, null, "UNSIGNED");
+    }
+
+    public PaquetePosEntidad(
+        String version,
+        String nombreArchivo,
+        String rutaAlmacenamiento,
+        String checksumSha256,
+        Long tamanoBytes,
+        String firma,
+        String algoritmoFirma,
+        String idClaveFirma,
+        String clavePublicaFirmaPem,
+        OffsetDateTime firmadoEn,
+        String estadoFirma
+    ) {
         this.version = version;
         this.nombreArchivo = nombreArchivo;
         this.rutaAlmacenamiento = rutaAlmacenamiento;
         this.checksumSha256 = checksumSha256;
         this.tamanoBytes = tamanoBytes;
+        this.firma = firma;
+        this.algoritmoFirma = algoritmoFirma;
+        this.idClaveFirma = idClaveFirma;
+        this.clavePublicaFirmaPem = clavePublicaFirmaPem;
+        this.firmadoEn = firmadoEn;
+        this.estadoFirma = estadoFirma == null || estadoFirma.isBlank() ? "UNSIGNED" : estadoFirma;
         this.estado = "VALIDATED";
     }
 
@@ -88,6 +128,30 @@ public class PaquetePosEntidad {
 
     public Long getTamanoBytes() {
         return tamanoBytes;
+    }
+
+    public String getFirma() {
+        return firma;
+    }
+
+    public String getAlgoritmoFirma() {
+        return algoritmoFirma;
+    }
+
+    public String getIdClaveFirma() {
+        return idClaveFirma;
+    }
+
+    public String getClavePublicaFirmaPem() {
+        return clavePublicaFirmaPem;
+    }
+
+    public OffsetDateTime getFirmadoEn() {
+        return firmadoEn;
+    }
+
+    public String getEstadoFirma() {
+        return estadoFirma;
     }
 
     public String getEstado() {

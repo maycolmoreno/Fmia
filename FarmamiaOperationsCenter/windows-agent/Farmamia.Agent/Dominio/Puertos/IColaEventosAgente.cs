@@ -21,6 +21,8 @@ public interface IColaEventosAgente
         CancellationToken cancellationToken
     );
 
+    Task<DiagnosticoColaEventosAgente> ObtenerDiagnosticoAsync(CancellationToken cancellationToken);
+
     Task MarcarEnviandoAsync(Guid id, CancellationToken cancellationToken);
 
     Task MarcarEnviadoAsync(Guid id, CancellationToken cancellationToken);

@@ -47,6 +47,7 @@ public class ControladorOrquestacionDespliegues {
                 solicitud == null ? null : solicitud.porcentajeMaximoFallo(),
                 solicitud == null || solicitud.pausaAutomaticaHabilitada() == null || solicitud.pausaAutomaticaHabilitada(),
                 solicitud == null || solicitud.limiteReintentos() == null ? 2 : solicitud.limiteReintentos(),
+                solicitud == null || solicitud.maximoEquiposParalelos() == null ? 25 : solicitud.maximoEquiposParalelos(),
                 solicitud == null ? null : solicitud.ventanaInicio(),
                 solicitud == null ? null : solicitud.ventanaFin()
             )

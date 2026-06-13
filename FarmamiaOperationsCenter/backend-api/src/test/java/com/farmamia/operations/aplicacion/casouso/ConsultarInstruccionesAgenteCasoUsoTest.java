@@ -28,6 +28,10 @@ class ConsultarInstruccionesAgenteCasoUsoTest {
             "2026.06.2-success",
             "/api/packages/" + idPaquete + "/download",
             "abc123",
+            null,
+            null,
+            null,
+            null,
             LocalTime.of(23, 55),
             LocalTime.of(1, 0),
             List.of(LocalTime.of(0, 50), LocalTime.of(0, 55))

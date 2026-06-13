@@ -2,11 +2,13 @@ package com.farmamia.operations.infraestructura.persistencia.adaptador;
 
 import com.farmamia.operations.aplicacion.excepcion.RecursoNoEncontradoException;
 import com.farmamia.operations.dominio.modelo.FiltroPaquetesPos;
+import com.farmamia.operations.dominio.modelo.FirmaPaquetePos;
 import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.modelo.PaquetePos;
 import com.farmamia.operations.dominio.puerto.RepositorioPaquetesPos;
 import com.farmamia.operations.infraestructura.persistencia.entidad.PaquetePosEntidad;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.PaquetePosRepositorioJpa;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -17,6 +19,8 @@ import org.springframework.data.domain.Sort;
 
 @Repository
 public class RepositorioPaquetesPosJpaAdaptador implements RepositorioPaquetesPos {
+
+    private static final OffsetDateTime FECHA_NEUTRA = OffsetDateTime.parse("1970-01-01T00:00:00Z");
 
     private final PaquetePosRepositorioJpa paquetePosRepositorioJpa;
 
@@ -36,7 +40,13 @@ public class RepositorioPaquetesPosJpaAdaptador implements RepositorioPaquetesPo
             paquete.getNombreArchivo(),
             paquete.getRutaAlmacenamiento(),
             paquete.getChecksumSha256(),
-            paquete.getTamanoBytes()
+            paquete.getTamanoBytes(),
+            paquete.getFirma() == null ? null : paquete.getFirma().firma(),
+            paquete.getFirma() == null ? null : paquete.getFirma().algoritmo(),
+            paquete.getFirma() == null ? null : paquete.getFirma().idClave(),
+            paquete.getFirma() == null ? null : paquete.getFirma().clavePublicaPem(),
+            paquete.getFirma() == null ? null : paquete.getFirma().firmadoEn(),
+            paquete.getFirma() == null ? "UNSIGNED" : paquete.getFirma().estado()
         );
 
         return aDominio(paquetePosRepositorioJpa.save(entidad));
@@ -52,12 +62,20 @@ public class RepositorioPaquetesPosJpaAdaptador implements RepositorioPaquetesPo
 
     @Override
     public Pagina<PaquetePos> listarPaginado(FiltroPaquetesPos filtro) {
+        String q = minusculaANulo(filtro.q());
+        String estado = minusculaANulo(filtro.estado());
+        String version = minusculaANulo(filtro.version());
         org.springframework.data.domain.Page<PaquetePosEntidad> pagina = paquetePosRepositorioJpa.buscarConFiltros(
-            minusculaANulo(filtro.q()),
-            minusculaANulo(filtro.estado()),
-            minusculaANulo(filtro.version()),
-            filtro.cargadoDesde(),
-            filtro.cargadoHasta(),
+            q != null,
+            nuloAValor(q),
+            estado != null,
+            nuloAValor(estado),
+            version != null,
+            nuloAValor(version),
+            filtro.cargadoDesde() != null,
+            filtro.cargadoDesde() == null ? FECHA_NEUTRA : filtro.cargadoDesde(),
+            filtro.cargadoHasta() != null,
+            filtro.cargadoHasta() == null ? FECHA_NEUTRA : filtro.cargadoHasta(),
             PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
         );
 
@@ -103,9 +121,24 @@ public class RepositorioPaquetesPosJpaAdaptador implements RepositorioPaquetesPo
             entidad.getRutaAlmacenamiento(),
             entidad.getChecksumSha256(),
             entidad.getTamanoBytes(),
+            aFirma(entidad),
             entidad.getEstado(),
             entidad.getCargadoEn(),
             entidad.getAprobadoEn()
+        );
+    }
+
+    private FirmaPaquetePos aFirma(PaquetePosEntidad entidad) {
+        if (entidad.getFirma() == null || entidad.getFirma().isBlank()) {
+            return null;
+        }
+        return new FirmaPaquetePos(
+            entidad.getFirma(),
+            entidad.getAlgoritmoFirma(),
+            entidad.getIdClaveFirma(),
+            entidad.getClavePublicaFirmaPem(),
+            entidad.getFirmadoEn(),
+            entidad.getEstadoFirma()
         );
     }
 
@@ -120,6 +153,7 @@ public class RepositorioPaquetesPosJpaAdaptador implements RepositorioPaquetesPo
             case "version" -> "version";
             case "fileName", "nombreArchivo" -> "nombreArchivo";
             case "status", "estado" -> "estado";
+            case "uploadedAt", "cargadoEn" -> "cargadoEn";
             case "approvedAt", "aprobadoEn" -> "aprobadoEn";
             case "sizeBytes", "tamanoBytes" -> "tamanoBytes";
             default -> "cargadoEn";
@@ -128,5 +162,9 @@ public class RepositorioPaquetesPosJpaAdaptador implements RepositorioPaquetesPo
 
     private String minusculaANulo(String valor) {
         return valor == null || valor.isBlank() ? null : valor.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String nuloAValor(String valor) {
+        return valor == null ? "" : valor;
     }
 }

@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Text.Json;
 using Farmamia.Agent.Dominio.Modelos;
 using Farmamia.Agent.Infraestructura.Actualizacion;
 using Farmamia.Agent.Infraestructura.Configuracion;
@@ -22,6 +23,29 @@ public sealed class InfraestructuraArchivosTest
 
         var otraInstancia = new ConfiguracionLocalAgente(opciones);
         CredencialesAgente? recuperadas = await otraInstancia.LeerCredencialesAsync(CancellationToken.None);
+
+        Assert.Equal(credenciales, recuperadas);
+        string contenido = await File.ReadAllTextAsync(Path.Combine(temporal.Ruta, "State", "credenciales.json"));
+        Assert.DoesNotContain("token-tecnico", contenido);
+        Assert.Contains("proteccion", contenido);
+    }
+
+    [Fact]
+    public async Task ConfiguracionLeeCredencialesLegacySinProteccion()
+    {
+        using DirectorioTemporal temporal = new();
+        var opciones = Options.Create(new OpcionesAgente { RutaAgente = temporal.Ruta });
+        var configuracion = new ConfiguracionLocalAgente(opciones);
+        var credenciales = new CredencialesAgente(Guid.NewGuid(), "token-legacy");
+
+        await configuracion.PrepararEstructuraAsync(CancellationToken.None);
+        await File.WriteAllTextAsync(
+            Path.Combine(temporal.Ruta, "State", "credenciales.json"),
+            JsonSerializer.Serialize(credenciales, new JsonSerializerOptions(JsonSerializerDefaults.Web)),
+            CancellationToken.None
+        );
+
+        CredencialesAgente? recuperadas = await configuracion.LeerCredencialesAsync(CancellationToken.None);
 
         Assert.Equal(credenciales, recuperadas);
     }

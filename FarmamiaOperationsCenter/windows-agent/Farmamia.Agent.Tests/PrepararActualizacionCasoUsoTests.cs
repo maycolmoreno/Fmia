@@ -76,6 +76,30 @@ public sealed class PrepararActualizacionCasoUsoTests : IDisposable
     }
 
     [Fact]
+    public async Task Lock_ocupado_reporta_fallo_y_no_descarga_paquete()
+    {
+        string rutaPos = CrearPosOriginal();
+        (byte[] zip, string checksum) = CrearZipBytes(("Zabyca.Pos.Desktop.exe", "version-nueva"));
+        var cliente = ClienteConInstruccion(zip, checksum);
+
+        PrepararActualizacionCasoUso casoUso = CrearCasoUso(
+            cliente,
+            rutaPos,
+            bloqueoActualizacion: new FakeBloqueoActualizacion(null)
+        );
+
+        await casoUso.EjecutarAsync(new CredencialesAgente(Guid.NewGuid(), "token"), CancellationToken.None);
+
+        Assert.Equal("version-original", File.ReadAllText(Path.Combine(rutaPos, "Zabyca.Pos.Desktop.exe")));
+        Assert.Equal(0, cliente.IntentosDescarga);
+        Assert.Contains(cliente.Eventos, evento =>
+            evento.TipoEvento == "UPDATE_FAILED"
+            && evento.MensajeEvento?.Contains("Otra actualizacion POS ya esta en ejecucion", StringComparison.Ordinal) == true
+        );
+        Assert.Equal("FAILED", Assert.Single(cliente.Resultados).Estado);
+    }
+
+    [Fact]
     public async Task Falla_despues_de_modificar_pos_ejecuta_rollback_y_no_deja_version_rota()
     {
         string rutaPos = CrearPosOriginal();
@@ -116,7 +140,8 @@ public sealed class PrepararActualizacionCasoUsoTests : IDisposable
         string rutaPos,
         int maxIntentosDescarga = 1,
         IActualizadorPos? actualizadorPos = null,
-        FakeEstadoLocalAgente? estadoLocal = null
+        FakeEstadoLocalAgente? estadoLocal = null,
+        IBloqueoActualizacion? bloqueoActualizacion = null
     )
     {
         OpcionesAgente opciones = new()
@@ -153,6 +178,7 @@ public sealed class PrepararActualizacionCasoUsoTests : IDisposable
             new FakeAvisadorUsuario(),
             new FakeEstadoAvisosActualizacion(),
             estadoLocal ?? new FakeEstadoLocalAgente(),
+            bloqueoActualizacion ?? new FakeBloqueoActualizacion(new NoopDisposable()),
             loggerFactory.CreateLogger<PrepararActualizacionCasoUso>(),
             Options.Create(opciones)
         );
@@ -171,6 +197,10 @@ public sealed class PrepararActualizacionCasoUsoTests : IDisposable
                 "2026.06.2-success",
                 "/api/packages/demo/download",
                 checksum,
+                null,
+                null,
+                null,
+                null,
                 null,
                 null,
                 []
@@ -341,6 +371,28 @@ public sealed class PrepararActualizacionCasoUsoTests : IDisposable
         {
             Estado = estado;
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeBloqueoActualizacion : IBloqueoActualizacion
+    {
+        private readonly IDisposable? bloqueo;
+
+        public FakeBloqueoActualizacion(IDisposable? bloqueo)
+        {
+            this.bloqueo = bloqueo;
+        }
+
+        public IDisposable? IntentarAdquirir()
+        {
+            return bloqueo;
+        }
+    }
+
+    private sealed class NoopDisposable : IDisposable
+    {
+        public void Dispose()
+        {
         }
     }
 }

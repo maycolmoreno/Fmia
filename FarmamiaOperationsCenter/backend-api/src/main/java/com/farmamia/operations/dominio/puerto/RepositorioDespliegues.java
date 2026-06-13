@@ -28,4 +28,6 @@ public interface RepositorioDespliegues {
     Despliegue cancelar(UUID id);
 
     EstadoDespliegue estado(UUID id);
+
+    int contarFarmaciasTurno(UUID id);
 }

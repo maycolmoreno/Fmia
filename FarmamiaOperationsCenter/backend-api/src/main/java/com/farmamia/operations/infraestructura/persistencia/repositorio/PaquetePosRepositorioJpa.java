@@ -19,20 +19,25 @@ public interface PaquetePosRepositorioJpa extends JpaRepository<PaquetePosEntida
     @Query("""
         select paquete
         from PaquetePosEntidad paquete
-        where (:q is null
+        where (:filtrarQ = false
             or lower(paquete.version) like concat('%', :q, '%')
             or lower(paquete.nombreArchivo) like concat('%', :q, '%')
             or lower(paquete.checksumSha256) like concat('%', :q, '%'))
-          and (:estado is null or lower(paquete.estado) = :estado)
-          and (:version is null or lower(paquete.version) = :version)
-          and (:cargadoDesde is null or paquete.cargadoEn >= :cargadoDesde)
-          and (:cargadoHasta is null or paquete.cargadoEn <= :cargadoHasta)
+          and (:filtrarEstado = false or lower(paquete.estado) = :estado)
+          and (:filtrarVersion = false or lower(paquete.version) = :version)
+          and (:filtrarCargadoDesde = false or paquete.cargadoEn >= :cargadoDesde)
+          and (:filtrarCargadoHasta = false or paquete.cargadoEn <= :cargadoHasta)
         """)
     Page<PaquetePosEntidad> buscarConFiltros(
+        @Param("filtrarQ") boolean filtrarQ,
         @Param("q") String q,
+        @Param("filtrarEstado") boolean filtrarEstado,
         @Param("estado") String estado,
+        @Param("filtrarVersion") boolean filtrarVersion,
         @Param("version") String version,
+        @Param("filtrarCargadoDesde") boolean filtrarCargadoDesde,
         @Param("cargadoDesde") OffsetDateTime cargadoDesde,
+        @Param("filtrarCargadoHasta") boolean filtrarCargadoHasta,
         @Param("cargadoHasta") OffsetDateTime cargadoHasta,
         Pageable pageable
     );

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/update-events")
+@RequestMapping({"/api/update-events", "/api/eventos-agente"})
 public class ControladorEventosActualizacion {
 
     private final ConsultarCatalogoOperativoCasoUso consultarCatalogoOperativoCasoUso;

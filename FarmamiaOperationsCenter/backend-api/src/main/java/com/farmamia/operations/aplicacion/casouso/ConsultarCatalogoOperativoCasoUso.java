@@ -4,6 +4,7 @@ import com.farmamia.operations.dominio.modelo.Equipo;
 import com.farmamia.operations.dominio.modelo.EventoActualizacionRegistrado;
 import com.farmamia.operations.dominio.modelo.FiltroEquipos;
 import com.farmamia.operations.dominio.modelo.FiltroEventosActualizacion;
+import com.farmamia.operations.dominio.modelo.FiltroSucursales;
 import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.modelo.Sucursal;
 import com.farmamia.operations.dominio.puerto.RepositorioEquipos;
@@ -43,6 +44,21 @@ public class ConsultarCatalogoOperativoCasoUso {
     @Transactional(readOnly = true)
     public List<Sucursal> listarSucursales() {
         return repositorioSucursales.listar();
+    }
+
+    @Transactional(readOnly = true)
+    public Pagina<Sucursal> listarSucursalesPaginado(FiltroSucursales filtro) {
+        return repositorioSucursales.listarPaginado(new FiltroSucursales(
+            blancoANulo(filtro.q()),
+            blancoANulo(filtro.codigo()),
+            blancoANulo(filtro.ciudad()),
+            blancoANulo(filtro.zona()),
+            filtro.deTurno(),
+            filtro.activa(),
+            Math.max(0, filtro.pagina()),
+            Math.max(1, Math.min(filtro.tamano(), 200)),
+            blancoANulo(filtro.orden()) == null ? "codigo,asc" : filtro.orden()
+        ));
     }
 
     @Transactional(readOnly = true)

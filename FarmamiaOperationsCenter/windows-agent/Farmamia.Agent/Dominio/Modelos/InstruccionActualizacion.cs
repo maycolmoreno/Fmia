@@ -8,6 +8,10 @@ public sealed record InstruccionActualizacion(
     string? Version,
     string? UrlDescarga,
     string? ChecksumSha256,
+    string? Firma,
+    string? AlgoritmoFirma,
+    string? IdClaveFirma,
+    string? ClavePublicaFirmaPem,
     TimeOnly? HoraOficialActualizacion,
     TimeOnly? HoraForzadaActualizacion,
     IReadOnlyList<TimeOnly> Avisos

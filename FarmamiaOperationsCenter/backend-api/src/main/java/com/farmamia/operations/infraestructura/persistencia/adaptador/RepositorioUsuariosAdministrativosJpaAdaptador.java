@@ -48,11 +48,17 @@ public class RepositorioUsuariosAdministrativosJpaAdaptador implements Repositor
 
     @Override
     public Pagina<UsuarioAdministrativo> listarPaginado(FiltroUsuariosAdministrativos filtro) {
+        String q = minusculaANulo(filtro.q());
+        String rol = minusculaANulo(filtro.rol());
         org.springframework.data.domain.Page<UsuarioAppEntidad> pagina = usuarioAppRepositorioJpa.buscarConFiltros(
-            minusculaANulo(filtro.q()),
-            minusculaANulo(filtro.rol()),
-            filtro.activo(),
-            filtro.bloqueado(),
+            q != null,
+            nuloAValor(q),
+            rol != null,
+            nuloAValor(rol),
+            filtro.activo() != null,
+            filtro.activo() != null && filtro.activo(),
+            filtro.bloqueado() != null,
+            filtro.bloqueado() != null && filtro.bloqueado(),
             PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
         );
 
@@ -173,5 +179,9 @@ public class RepositorioUsuariosAdministrativosJpaAdaptador implements Repositor
 
     private String minusculaANulo(String valor) {
         return valor == null || valor.isBlank() ? null : valor.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String nuloAValor(String valor) {
+        return valor == null ? "" : valor;
     }
 }

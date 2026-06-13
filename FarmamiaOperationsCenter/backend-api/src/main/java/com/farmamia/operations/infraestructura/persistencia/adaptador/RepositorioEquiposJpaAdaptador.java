@@ -10,6 +10,7 @@ import com.farmamia.operations.infraestructura.persistencia.entidad.EquipoEntida
 import com.farmamia.operations.infraestructura.persistencia.entidad.SucursalEntidad;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.EquipoRepositorioJpa;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.SucursalRepositorioJpa;
+import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -21,6 +22,8 @@ import org.springframework.data.domain.Sort;
 
 @Repository
 public class RepositorioEquiposJpaAdaptador implements RepositorioEquipos {
+
+    private static final OffsetDateTime FECHA_NEUTRA = OffsetDateTime.parse("1970-01-01T00:00:00Z");
 
     private final EquipoRepositorioJpa equipoRepositorioJpa;
     private final SucursalRepositorioJpa sucursalRepositorioJpa;
@@ -70,14 +73,26 @@ public class RepositorioEquiposJpaAdaptador implements RepositorioEquipos {
 
     @Override
     public Pagina<Equipo> listarPaginado(FiltroEquipos filtro) {
+        String q = minusculaANulo(filtro.q());
+        String estado = minusculaANulo(filtro.estado());
+        String codigoSucursal = minusculaANulo(filtro.codigoSucursal());
+        String versionPos = minusculaANulo(filtro.versionPos());
+        String versionAgente = minusculaANulo(filtro.versionAgente());
         org.springframework.data.domain.Page<EquipoEntidad> pagina = equipoRepositorioJpa.buscarConFiltros(
-            minusculaANulo(filtro.q()),
-            minusculaANulo(filtro.estado()),
-            minusculaANulo(filtro.codigoSucursal()),
-            minusculaANulo(filtro.versionPos()),
-            minusculaANulo(filtro.versionAgente()),
-            filtro.ultimoLatidoDesde(),
-            filtro.ultimoLatidoHasta(),
+            q != null,
+            nuloAValor(q),
+            estado != null,
+            nuloAValor(estado),
+            codigoSucursal != null,
+            nuloAValor(codigoSucursal),
+            versionPos != null,
+            nuloAValor(versionPos),
+            versionAgente != null,
+            nuloAValor(versionAgente),
+            filtro.ultimoLatidoDesde() != null,
+            filtro.ultimoLatidoDesde() == null ? FECHA_NEUTRA : filtro.ultimoLatidoDesde(),
+            filtro.ultimoLatidoHasta() != null,
+            filtro.ultimoLatidoHasta() == null ? FECHA_NEUTRA : filtro.ultimoLatidoHasta(),
             PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
         );
 
@@ -145,5 +160,9 @@ public class RepositorioEquiposJpaAdaptador implements RepositorioEquipos {
 
     private String minusculaANulo(String valor) {
         return valor == null || valor.isBlank() ? null : valor.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String nuloAValor(String valor) {
+        return valor == null ? "" : valor;
     }
 }

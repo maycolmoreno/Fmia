@@ -136,6 +136,78 @@ public sealed class ColaEventosAgenteSqlite : IColaEventosAgente
         return eventos;
     }
 
+    public async Task<DiagnosticoColaEventosAgente> ObtenerDiagnosticoAsync(CancellationToken cancellationToken)
+    {
+        await using SqliteConnection conexion = await AbrirAsync(cancellationToken);
+        var conteos = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["PENDING"] = 0,
+            ["SENDING"] = 0,
+            ["SENT"] = 0,
+            ["FAILED"] = 0,
+            ["DEAD_LETTER"] = 0
+        };
+
+        await using (SqliteCommand comando = conexion.CreateCommand())
+        {
+            comando.CommandText = """
+                SELECT status, COUNT(*)
+                FROM outbox_events
+                GROUP BY status;
+                """;
+            await using SqliteDataReader reader = await comando.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                conteos[reader.GetString(0)] = reader.GetInt32(1);
+            }
+        }
+
+        DateTimeOffset? eventoMasAntiguoPendiente = null;
+        await using (SqliteCommand comando = conexion.CreateCommand())
+        {
+            comando.CommandText = """
+                SELECT MIN(created_at)
+                FROM outbox_events
+                WHERE status IN ('PENDING', 'FAILED');
+                """;
+            object? valor = await comando.ExecuteScalarAsync(cancellationToken);
+            if (valor is string fecha && !string.IsNullOrWhiteSpace(fecha))
+            {
+                eventoMasAntiguoPendiente = DateTimeOffset.Parse(fecha);
+            }
+        }
+
+        DateTimeOffset? ultimoDeadLetterEn = null;
+        string? ultimoErrorDeadLetter = null;
+        await using (SqliteCommand comando = conexion.CreateCommand())
+        {
+            comando.CommandText = """
+                SELECT updated_at, last_error
+                FROM outbox_events
+                WHERE status = 'DEAD_LETTER'
+                ORDER BY updated_at DESC
+                LIMIT 1;
+                """;
+            await using SqliteDataReader reader = await comando.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                ultimoDeadLetterEn = DateTimeOffset.Parse(reader.GetString(0));
+                ultimoErrorDeadLetter = reader.IsDBNull(1) ? null : reader.GetString(1);
+            }
+        }
+
+        return new DiagnosticoColaEventosAgente(
+            conteos["PENDING"],
+            conteos["SENDING"],
+            conteos["SENT"],
+            conteos["FAILED"],
+            conteos["DEAD_LETTER"],
+            eventoMasAntiguoPendiente,
+            ultimoDeadLetterEn,
+            ultimoErrorDeadLetter
+        );
+    }
+
     public Task MarcarEnviandoAsync(Guid id, CancellationToken cancellationToken)
     {
         return ActualizarEstadoAsync(id, "SENDING", null, null, cancellationToken);

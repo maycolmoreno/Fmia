@@ -57,6 +57,9 @@ public class OleadaDespliegueEntidad {
     @Column(name = "planned_targets", nullable = false)
     private int objetivosPlanificados;
 
+    @Column(name = "max_parallel_devices", nullable = false)
+    private int maximoEquiposParalelos = 25;
+
     @Column(name = "started_at")
     private OffsetDateTime iniciadoEn;
 
@@ -84,7 +87,8 @@ public class OleadaDespliegueEntidad {
         boolean pausaAutomaticaHabilitada,
         LocalTime ventanaInicio,
         LocalTime ventanaFin,
-        int objetivosPlanificados
+        int objetivosPlanificados,
+        int maximoEquiposParalelos
     ) {
         this.despliegue = despliegue;
         this.numero = numero;
@@ -96,6 +100,7 @@ public class OleadaDespliegueEntidad {
         this.ventanaInicio = ventanaInicio;
         this.ventanaFin = ventanaFin;
         this.objetivosPlanificados = objetivosPlanificados;
+        this.maximoEquiposParalelos = maximoEquiposParalelos;
     }
 
     public UUID getId() {
@@ -144,6 +149,10 @@ public class OleadaDespliegueEntidad {
 
     public int getObjetivosPlanificados() {
         return objetivosPlanificados;
+    }
+
+    public int getMaximoEquiposParalelos() {
+        return maximoEquiposParalelos;
     }
 
     public OffsetDateTime getIniciadoEn() {

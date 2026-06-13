@@ -130,6 +130,42 @@ function Validar-Zip-Agente {
     }
 }
 
+function Autorizar-PrimeraOleada {
+    param(
+        [string]$DeploymentId
+    )
+
+    $plan = Invocar-Json `
+        -Metodo "POST" `
+        -Url "$ApiBaseUrl/api/orchestration/deployments/$DeploymentId/plan" `
+        -Token $tokenAdmin `
+        -Cuerpo @{
+            maxFailurePercent      = 100
+            autoPauseEnabled       = $true
+            retryLimit             = 2
+            maxParallelDevices     = 5
+            maintenanceWindowStart = $null
+            maintenanceWindowEnd   = $null
+        }
+
+    $oleada = @($plan.waves) | Select-Object -First 1
+    if (-not $oleada) {
+        throw "La planificacion no genero oleadas para el despliegue $DeploymentId."
+    }
+
+    Invocar-Json `
+        -Metodo "POST" `
+        -Url "$ApiBaseUrl/api/orchestration/deployments/$DeploymentId/waves/$($oleada.id)/start" `
+        -Token $tokenAdmin `
+        -Cuerpo @{} | Out-Null
+
+    Invocar-Json `
+        -Metodo "POST" `
+        -Url "$ApiBaseUrl/api/orchestration/deployments/$DeploymentId/evaluate" `
+        -Token $tokenAdmin `
+        -Cuerpo @{} | Out-Null
+}
+
 $registro = @(& "$PSScriptRoot\registrar-agente-demo.ps1" `
     -ApiBaseUrl $ApiBaseUrl `
     -CodigoSucursal $CodigoSucursal `
@@ -187,6 +223,8 @@ $despliegue = Invocar-Json `
         deviceIds   = $idsEquipos
     } `
     -Token $tokenAdmin
+
+Autorizar-PrimeraOleada -DeploymentId $despliegue.id
 
 $instruccion = Invocar-Json `
     -Metodo "GET" `

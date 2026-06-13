@@ -52,7 +52,7 @@ export interface UsuarioAdministrativo {
   updatedAt: string;
 }
 
-export interface PaquetePos {
+export interface VersionPos {
   id: string;
   version: string;
   fileName: string;
@@ -64,7 +64,7 @@ export interface PaquetePos {
   approvedAt?: string | null;
 }
 
-export interface Sucursal {
+export interface Farmacia {
   id: string;
   code: string;
   name: string;
@@ -77,7 +77,62 @@ export interface Sucursal {
   updatedAt: string;
 }
 
-export interface Equipo {
+export interface EstadoOperacionalFarmacia {
+  farmaciaId: string;
+  codigoFarmacia: string;
+  nombreFarmacia: string;
+  ciudad?: string | null;
+  zona?: string | null;
+  deTurno: boolean;
+  activa: boolean;
+  estadoOperacional: string;
+  critica: boolean;
+  turnoEnRiesgo: boolean;
+  totalEquiposPos: number;
+  equiposOnline: number;
+  equiposOffline: number;
+  equiposSinLatido: number;
+  ultimoLatidoEn?: string | null;
+  alertasAbiertas: number;
+  alertasCriticas: number;
+  campanasActivas: number;
+  objetivosCampanaPendientes: number;
+  objetivosCampanaFallidos: number;
+  campanaActivaPrincipal?: string | null;
+  grupoTrxPrincipal?: string | null;
+  versionPosDominante?: string | null;
+  resumenRiesgo: string;
+}
+
+export interface EquipoGrupoTrx {
+  deviceId: string;
+  hostname: string;
+  branchId: string;
+  branchCode: string;
+  branchName: string;
+  posVersion?: string | null;
+  deviceStatus: string;
+  lastHeartbeatAt?: string | null;
+  assignedAt: string;
+}
+
+export interface GrupoTrx {
+  id: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  status: 'ACTIVO' | 'PAUSADO' | 'RETIRADO';
+  maxDevices: number;
+  active: boolean;
+  assignedDevices: number;
+  involvedBranches: number;
+  createdAt: string;
+  updatedAt: string;
+  devices: EquipoGrupoTrx[];
+  branchCodes: string[];
+}
+
+export interface EquipoPos {
   id: string;
   branchId: string;
   branchCode: string;
@@ -95,7 +150,7 @@ export interface Equipo {
   updatedAt: string;
 }
 
-export interface MetricaEquipo {
+export interface MetricaEquipoPos {
   id: string;
   posVersion?: string | null;
   diskFreeMb?: number | null;
@@ -107,7 +162,7 @@ export interface MetricaEquipo {
   collectedAt: string;
 }
 
-export interface ObjetivoEquipo {
+export interface ObjetivoCampanaEquipoPos {
   targetId: string;
   deploymentId: string;
   deploymentName: string;
@@ -125,14 +180,14 @@ export interface ObjetivoEquipo {
   updatedAt: string;
 }
 
-export interface DetalleEquipo {
-  device: Equipo;
-  lastMetric?: MetricaEquipo | null;
-  recentEvents: EventoActualizacion[];
-  deployments: ObjetivoEquipo[];
+export interface DetalleEquipoPos {
+  device: EquipoPos;
+  lastMetric?: MetricaEquipoPos | null;
+  recentEvents: EventoAgente[];
+  deployments: ObjetivoCampanaEquipoPos[];
 }
 
-export interface Despliegue {
+export interface CampanaPos {
   id: string;
   packageId: string;
   packageVersion: string;
@@ -144,7 +199,111 @@ export interface Despliegue {
   targetCount: number;
 }
 
-export interface EventoActualizacion {
+export interface EquipoEstadoCampanaFarmacia {
+  deviceId: string;
+  hostname: string;
+  deviceStatus: string;
+  targetStatus: string;
+  grupoTrx?: string | null;
+  oldVersion?: string | null;
+  newVersion?: string | null;
+  lastError?: string | null;
+  lastHeartbeatAt?: string | null;
+  rollback: boolean;
+}
+
+export interface EstadoCampanaFarmacia {
+  farmaciaId: string;
+  codigoFarmacia: string;
+  nombreFarmacia: string;
+  campanaId: string;
+  grupoTrxId?: string | null;
+  codigoGrupoTrx?: string | null;
+  deTurno: boolean;
+  totalEquiposPos: number;
+  completados: number;
+  pendientes: number;
+  fallidos: number;
+  rollbacks: number;
+  ultimoHeartbeatRelacionado?: string | null;
+  alertasCriticas: number;
+  alertasAbiertas: number;
+  estadoTecnico: string;
+  estadoOperacional: string;
+  resumenRiesgo: string;
+  devices: EquipoEstadoCampanaFarmacia[];
+}
+
+export interface ResumenEstadoCampanaFarmacia {
+  campanaId: string;
+  nombreCampana: string;
+  versionPos: string;
+  estadoCampana: string;
+  totalFarmacias: number;
+  farmaciasCompletadas: number;
+  farmaciasPendientes: number;
+  farmaciasEnProgreso: number;
+  farmaciasConErrores: number;
+  farmaciasEnRiesgo: number;
+  farmaciasCriticas: number;
+  farmaciasTurnoEnRiesgo: number;
+  avancePorcentaje: number;
+  exitoPorcentaje: number;
+  grupoTrxPeorEstado?: string | null;
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+  farmacias: EstadoCampanaFarmacia[];
+}
+
+export interface CampanaGrupoTrx {
+  id?: string | null;
+  campanaId: string;
+  nombreCampana: string;
+  versionPos: string;
+  estadoCampana: string;
+  grupoTrxId: string;
+  codigoGrupoTrx: string;
+  nombreGrupoTrx: string;
+  orden: number;
+  estado: string;
+  totalFarmacias: number;
+  farmaciasAfectadas: number;
+  farmaciasTurnoAfectadas: number;
+  farmaciasCriticas: number;
+  farmaciasPendientes: number;
+  farmaciasConFallos: number;
+  equiposPosTotales: number;
+  equiposPosCompletados: number;
+  equiposPosPendientes: number;
+  equiposPosFallidos: number;
+  rollbacks: number;
+  motivoPausa?: string | null;
+  resumenRiesgo: string;
+  iniciadoEn?: string | null;
+  finalizadoEn?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  farmacias: EstadoCampanaFarmacia[];
+}
+
+export interface ResumenCampanaGruposTrx {
+  campanaId: string;
+  nombreCampana: string;
+  versionPos: string;
+  estadoCampana: string;
+  totalGrupos: number;
+  gruposEnRiesgo: number;
+  gruposPausados: number;
+  farmaciasAfectadas: number;
+  farmaciasTurnoAfectadas: number;
+  farmaciasCriticas: number;
+  grupos: CampanaGrupoTrx[];
+}
+
+export interface EventoAgente {
   id: string;
   deviceId: string;
   hostname: string;
@@ -201,6 +360,46 @@ export interface EstadoDespliegue {
   targetsByStatus: Record<string, number>;
 }
 
+export interface OleadaOrquestacion {
+  id: string;
+  number: number;
+  name: string;
+  targetGroup?: string | null;
+  pilot: boolean;
+  status: string;
+  plannedTargets: number;
+  completedTargets: number;
+  failedTargets: number;
+  pendingTargets: number;
+  onDutyBranches: number;
+  failurePercent: number;
+  maintenanceWindowStart?: string | null;
+  maintenanceWindowEnd?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+}
+
+export interface PlanOrquestacion {
+  deploymentId: string;
+  controlStatus: string;
+  maxFailurePercent: number;
+  autoPauseEnabled: boolean;
+  retryLimit: number;
+  nextWaveNumber: number;
+  pausedReason?: string | null;
+  lastEvaluatedAt?: string | null;
+  waves: OleadaOrquestacion[];
+}
+
+export interface SolicitudPlanOrquestacion {
+  maxFailurePercent: number;
+  autoPauseEnabled: boolean;
+  retryLimit: number;
+  maxParallelDevices: number;
+  maintenanceWindowStart?: string | null;
+  maintenanceWindowEnd?: string | null;
+}
+
 export interface SolicitudCrearDespliegue {
   packageId: string;
   name: string;
@@ -210,3 +409,12 @@ export interface SolicitudCrearDespliegue {
   pilot: boolean;
   deviceIds: string[];
 }
+
+export type PaquetePos = VersionPos;
+export type Sucursal = Farmacia;
+export type Equipo = EquipoPos;
+export type MetricaEquipo = MetricaEquipoPos;
+export type ObjetivoEquipo = ObjetivoCampanaEquipoPos;
+export type DetalleEquipo = DetalleEquipoPos;
+export type Despliegue = CampanaPos;
+export type EventoActualizacion = EventoAgente;

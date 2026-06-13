@@ -7,6 +7,7 @@ import com.farmamia.operations.dominio.modelo.FiltroPaquetesPos;
 import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.modelo.PaquetePos;
 import com.farmamia.operations.dominio.puerto.AlmacenamientoPaquetes;
+import com.farmamia.operations.dominio.puerto.FirmadorPaquetesPos;
 import com.farmamia.operations.dominio.puerto.RepositorioPaquetesPos;
 import jakarta.transaction.Transactional;
 import java.io.InputStream;
@@ -19,13 +20,16 @@ public class GestionarPaquetesPosCasoUso {
 
     private final RepositorioPaquetesPos repositorioPaquetesPos;
     private final AlmacenamientoPaquetes almacenamientoPaquetes;
+    private final FirmadorPaquetesPos firmadorPaquetesPos;
 
     public GestionarPaquetesPosCasoUso(
         RepositorioPaquetesPos repositorioPaquetesPos,
-        AlmacenamientoPaquetes almacenamientoPaquetes
+        AlmacenamientoPaquetes almacenamientoPaquetes,
+        FirmadorPaquetesPos firmadorPaquetesPos
     ) {
         this.repositorioPaquetesPos = repositorioPaquetesPos;
         this.almacenamientoPaquetes = almacenamientoPaquetes;
+        this.firmadorPaquetesPos = firmadorPaquetesPos;
     }
 
     @Transactional
@@ -44,7 +48,8 @@ public class GestionarPaquetesPosCasoUso {
             archivoGuardado.nombreArchivo(),
             archivoGuardado.rutaAlmacenamiento(),
             archivoGuardado.checksumSha256(),
-            archivoGuardado.tamanoBytes()
+            archivoGuardado.tamanoBytes(),
+            firmadorPaquetesPos.firmarChecksum(archivoGuardado.checksumSha256())
         );
 
         return repositorioPaquetesPos.guardarNuevo(paquete);

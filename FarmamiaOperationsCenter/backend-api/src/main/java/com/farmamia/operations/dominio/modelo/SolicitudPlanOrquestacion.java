@@ -7,6 +7,7 @@ public record SolicitudPlanOrquestacion(
     BigDecimal porcentajeMaximoFallo,
     boolean pausaAutomaticaHabilitada,
     int limiteReintentos,
+    int maximoEquiposParalelos,
     LocalTime ventanaInicio,
     LocalTime ventanaFin
 ) {

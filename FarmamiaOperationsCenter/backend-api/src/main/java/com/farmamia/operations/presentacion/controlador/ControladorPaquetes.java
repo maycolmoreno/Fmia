@@ -7,6 +7,7 @@ import com.farmamia.operations.dominio.modelo.ArchivoPaqueteDescarga;
 import com.farmamia.operations.dominio.modelo.FiltroPaquetesPos;
 import com.farmamia.operations.dominio.modelo.Pagina;
 import com.farmamia.operations.dominio.modelo.PaquetePos;
+import com.farmamia.operations.infraestructura.observabilidad.MetricasOperativasFarmamia;
 import com.farmamia.operations.presentacion.dto.RespuestaPaquetePos;
 import com.farmamia.operations.presentacion.dto.RespuestaPagina;
 import java.io.IOException;
@@ -32,18 +33,21 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/packages")
+@RequestMapping({"/api/packages", "/api/versiones-pos"})
 public class ControladorPaquetes {
 
     private final GestionarPaquetesPosCasoUso gestionarPaquetesPosCasoUso;
     private final GestionarAuditoriaCasoUso gestionarAuditoriaCasoUso;
+    private final MetricasOperativasFarmamia metricasOperativas;
 
     public ControladorPaquetes(
         GestionarPaquetesPosCasoUso gestionarPaquetesPosCasoUso,
-        GestionarAuditoriaCasoUso gestionarAuditoriaCasoUso
+        GestionarAuditoriaCasoUso gestionarAuditoriaCasoUso,
+        MetricasOperativasFarmamia metricasOperativas
     ) {
         this.gestionarPaquetesPosCasoUso = gestionarPaquetesPosCasoUso;
         this.gestionarAuditoriaCasoUso = gestionarAuditoriaCasoUso;
+        this.metricasOperativas = metricasOperativas;
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -116,7 +120,7 @@ public class ControladorPaquetes {
         return aRespuesta(gestionarPaquetesPosCasoUso.obtener(id));
     }
 
-    @PostMapping("/{id}/approve")
+    @PostMapping({"/{id}/approve", "/{id}/aprobar"})
     public RespuestaPaquetePos aprobar(@PathVariable UUID id, Authentication autenticacion, HttpServletRequest request) {
         PermisosAdministrativos.exigirRol(
             autenticacion,
@@ -132,7 +136,7 @@ public class ControladorPaquetes {
         return respuesta;
     }
 
-    @PostMapping("/{id}/retire")
+    @PostMapping({"/{id}/retire", "/{id}/retirar"})
     public RespuestaPaquetePos retirar(@PathVariable UUID id, Authentication autenticacion, HttpServletRequest request) {
         PermisosAdministrativos.exigirRol(
             autenticacion,
@@ -148,9 +152,10 @@ public class ControladorPaquetes {
         return respuesta;
     }
 
-    @GetMapping("/{id}/download")
+    @GetMapping({"/{id}/download", "/{id}/descargar"})
     public ResponseEntity<Resource> descargar(@PathVariable UUID id) {
         ArchivoPaqueteDescarga paquete = gestionarPaquetesPosCasoUso.descargar(id);
+        metricasOperativas.registrarDescargaPaquete();
 
         return ResponseEntity.ok()
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
@@ -167,6 +172,10 @@ public class ControladorPaquetes {
             paquete.getVersion(),
             paquete.getNombreArchivo(),
             paquete.getChecksumSha256(),
+            paquete.getFirma() == null ? null : paquete.getFirma().firma(),
+            paquete.getFirma() == null ? null : paquete.getFirma().algoritmo(),
+            paquete.getFirma() == null ? null : paquete.getFirma().idClave(),
+            paquete.getFirma() == null ? "UNSIGNED" : paquete.getFirma().estado(),
             paquete.getTamanoBytes(),
             paquete.getEstado(),
             "/api/packages/" + paquete.getId() + "/download",

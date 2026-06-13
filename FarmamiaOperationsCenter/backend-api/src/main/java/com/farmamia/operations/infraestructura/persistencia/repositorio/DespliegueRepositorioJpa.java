@@ -29,19 +29,24 @@ public interface DespliegueRepositorioJpa extends JpaRepository<DespliegueEntida
         select despliegue
         from DespliegueEntidad despliegue
         join despliegue.paquete paquete
-        where (:q is null
+        where (:filtrarQ = false
             or lower(despliegue.nombre) like concat('%', :q, '%')
             or lower(coalesce(despliegue.descripcion, '')) like concat('%', :q, '%'))
-          and (:estado is null or lower(despliegue.estado) = :estado)
-          and (:versionPaquete is null or lower(paquete.version) = :versionPaquete)
-          and (:creadoDesde is null or despliegue.creadoEn >= :creadoDesde)
-          and (:creadoHasta is null or despliegue.creadoEn <= :creadoHasta)
+          and (:filtrarEstado = false or lower(despliegue.estado) = :estado)
+          and (:filtrarVersionPaquete = false or lower(paquete.version) = :versionPaquete)
+          and (:filtrarCreadoDesde = false or despliegue.creadoEn >= :creadoDesde)
+          and (:filtrarCreadoHasta = false or despliegue.creadoEn <= :creadoHasta)
         """)
     Page<DespliegueEntidad> buscarConFiltros(
+        @Param("filtrarQ") boolean filtrarQ,
         @Param("q") String q,
+        @Param("filtrarEstado") boolean filtrarEstado,
         @Param("estado") String estado,
+        @Param("filtrarVersionPaquete") boolean filtrarVersionPaquete,
         @Param("versionPaquete") String versionPaquete,
+        @Param("filtrarCreadoDesde") boolean filtrarCreadoDesde,
         @Param("creadoDesde") OffsetDateTime creadoDesde,
+        @Param("filtrarCreadoHasta") boolean filtrarCreadoHasta,
         @Param("creadoHasta") OffsetDateTime creadoHasta,
         Pageable pageable
     );

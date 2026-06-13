@@ -1,5 +1,242 @@
 # API Contract MVP
 
+## Lenguaje canonico y compatibilidad
+
+El lenguaje publico del Operations Center esta orientado al negocio Farmamia. Los endpoints nuevos deben preferir:
+
+```http
+GET /api/farmacias
+GET /api/equipos-pos
+GET /api/versiones-pos
+GET /api/campanas-pos
+GET /api/eventos-agente
+```
+
+Los endpoints legacy se mantienen por compatibilidad temporal:
+
+```http
+GET /api/branches
+GET /api/devices
+GET /api/packages
+GET /api/deployments
+GET /api/update-events
+```
+
+Ambos grupos delegan a los mismos casos de uso y devuelven el mismo payload en la etapa 1 de reorientacion de dominio. El agente Windows no se migra todavia y conserva sus rutas actuales bajo `/api/agent`.
+
+### Estado operacional de farmacias
+
+```http
+GET /api/farmacias/estado
+GET /api/farmacias/{id}/estado
+```
+
+Respuesta:
+
+```json
+{
+  "farmaciaId": "uuid",
+  "codigoFarmacia": "FM001",
+  "nombreFarmacia": "Farmacia Centro",
+  "deTurno": true,
+  "estadoOperacional": "CRITICA",
+  "critica": true,
+  "turnoEnRiesgo": true,
+  "totalEquiposPos": 3,
+  "equiposOnline": 2,
+  "equiposOffline": 1,
+  "alertasAbiertas": 1,
+  "alertasCriticas": 1,
+  "campanasActivas": 1,
+  "objetivosCampanaPendientes": 1,
+  "objetivosCampanaFallidos": 0,
+  "campanaActivaPrincipal": "Campana POS 2026.08.01",
+  "grupoTrxPrincipal": "trx001",
+  "versionPosDominante": "2026.06",
+  "resumenRiesgo": "Farmacia de turno con riesgo operativo"
+}
+```
+
+Reglas iniciales para farmacias de turno:
+
+- `POS_OFFLINE`, heartbeat vencido, `UPDATE_FAILED`, `ROLLBACK_FAILED` o campana pendiente fuera de ventana elevan la farmacia a `CRITICA`.
+- `ROLLBACK_COMPLETED` o Grupo TRX pausado con campaña pendiente elevan la farmacia a `EN_RIESGO`.
+- La creación de una campaña que incluya farmacias de turno registra auditoría `ADVERTENCIA_CAMPANA_CON_TURNO`; no bloquea todavía la operación.
+
+### Estado de campana por farmacia
+
+Lectura operacional para que el NOC vea una campana POS por impacto en farmacias.
+
+```http
+GET /api/campanas-pos/{id}/estado-por-farmacia
+```
+
+Filtros opcionales:
+
+- `estadoTecnico`
+- `estadoOperacional`
+- `grupoTrx`
+- `deTurno`
+- `q`
+- `page`
+- `size`
+- `sort`
+
+Respuesta:
+
+```json
+{
+  "campanaId": "uuid",
+  "nombreCampana": "Campana POS 2026.08.01",
+  "versionPos": "2026.08.01",
+  "estadoCampana": "RUNNING",
+  "totalFarmacias": 180,
+  "farmaciasCompletadas": 92,
+  "farmaciasPendientes": 61,
+  "farmaciasEnProgreso": 19,
+  "farmaciasConErrores": 8,
+  "farmaciasEnRiesgo": 5,
+  "farmaciasCriticas": 2,
+  "farmaciasTurnoEnRiesgo": 3,
+  "avancePorcentaje": 62.5,
+  "exitoPorcentaje": 94.0,
+  "grupoTrxPeorEstado": "trx001",
+  "page": 0,
+  "size": 20,
+  "totalElements": 180,
+  "totalPages": 9,
+  "hasNext": true,
+  "farmacias": [
+    {
+      "farmaciaId": "uuid",
+      "codigoFarmacia": "FM001",
+      "nombreFarmacia": "Farmacia Centro",
+      "campanaId": "uuid",
+      "grupoTrxId": "uuid",
+      "codigoGrupoTrx": "trx001",
+      "deTurno": true,
+      "totalEquiposPos": 3,
+      "completados": 2,
+      "pendientes": 1,
+      "fallidos": 0,
+      "rollbacks": 0,
+      "ultimoHeartbeatRelacionado": "2026-06-12T23:59:00Z",
+      "alertasCriticas": 1,
+      "alertasAbiertas": 1,
+      "estadoTecnico": "EN_PROGRESO",
+      "estadoOperacional": "CRITICA",
+      "resumenRiesgo": "Alerta critica abierta durante campana POS",
+      "devices": []
+    }
+  ]
+}
+```
+
+### Grupos TRX
+
+### Estado de campana por Grupo TRX
+
+Lectura operacional Farmacia First. Grupo TRX es mecanismo de control; las metricas principales son farmacias.
+
+```http
+GET    /api/campanas-pos/{id}/estado-por-trx
+POST   /api/campanas-pos/{id}/grupos-trx/{grupoTrxId}
+DELETE /api/campanas-pos/{id}/grupos-trx/{grupoTrxId}
+POST   /api/campanas-pos/{id}/grupos-trx/{grupoTrxId}/pausar
+POST   /api/campanas-pos/{id}/grupos-trx/{grupoTrxId}/reanudar
+```
+
+Respuesta:
+
+```json
+{
+  "campanaId": "uuid",
+  "nombreCampana": "Campana POS 2026.08.01",
+  "versionPos": "2026.08.01",
+  "estadoCampana": "RUNNING",
+  "totalGrupos": 1,
+  "gruposEnRiesgo": 1,
+  "gruposPausados": 0,
+  "farmaciasAfectadas": 8,
+  "farmaciasTurnoAfectadas": 2,
+  "farmaciasCriticas": 3,
+  "grupos": [
+    {
+      "grupoTrxId": "uuid",
+      "codigoGrupoTrx": "trx001",
+      "estado": "EN_RIESGO",
+      "totalFarmacias": 42,
+      "farmaciasAfectadas": 8,
+      "farmaciasTurnoAfectadas": 2,
+      "farmaciasCriticas": 3,
+      "farmaciasPendientes": 12,
+      "farmaciasConFallos": 4,
+      "equiposPosTotales": 126,
+      "equiposPosCompletados": 95,
+      "equiposPosPendientes": 20,
+      "equiposPosFallidos": 11,
+      "rollbacks": 2,
+      "resumenRiesgo": "3 farmacias criticas y 2 farmacias de turno afectadas",
+      "farmacias": []
+    }
+  ]
+}
+```
+
+Reglas:
+
+- `grupoTrxId` es fuente principal.
+- `targetGroup` queda como fallback legacy cuando el objetivo no tiene Grupo TRX formal.
+- Pausar un Grupo TRX dentro de campana bloquea nuevas instrucciones del agente para objetivos pendientes de ese grupo.
+- Los KPIs TRX siempre deben incluir `totalFarmacias`, `farmaciasAfectadas`, `farmaciasTurnoAfectadas` y `farmaciasCriticas`.
+
+Grupo TRX es el mecanismo operacional formal para controlar oleadas POS. El campo legacy `targetGroup` se conserva solo como compatibilidad/fallback.
+
+```http
+GET    /api/grupos-trx
+GET    /api/grupos-trx/page?codigo=trx&estado=ACTIVO&activo=true
+GET    /api/grupos-trx/{id}
+POST   /api/grupos-trx
+PUT    /api/grupos-trx/{id}
+POST   /api/grupos-trx/{id}/pausar
+POST   /api/grupos-trx/{id}/reanudar
+POST   /api/grupos-trx/{id}/retirar
+POST   /api/grupos-trx/{id}/equipos/{equipoId}
+DELETE /api/grupos-trx/{id}/equipos/{equipoId}
+```
+
+Request crear/actualizar:
+
+```json
+{
+  "codigo": "trx001",
+  "nombre": "TRX 001",
+  "descripcion": "Oleada controlada POS",
+  "maximoEquipos": 100,
+  "activo": true
+}
+```
+
+Respuesta:
+
+```json
+{
+  "id": "uuid",
+  "code": "trx001",
+  "name": "TRX 001",
+  "description": "Oleada controlada POS",
+  "status": "ACTIVO",
+  "maxDevices": 100,
+  "active": true,
+  "assignedDevices": 82,
+  "involvedBranches": 41,
+  "createdAt": "2026-06-12T10:00:00Z",
+  "updatedAt": "2026-06-12T10:00:00Z",
+  "devices": [],
+  "branchCodes": []
+}
+```
+
 ## Seguridad
 
 El agente se autentica con token tecnico por equipo.
@@ -179,4 +416,3 @@ POST /api/deployments/{id}/resume
 POST /api/deployments/{id}/cancel
 GET  /api/deployments/{id}/status
 ```
-

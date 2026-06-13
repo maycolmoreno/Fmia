@@ -16,6 +16,7 @@ import com.farmamia.operations.infraestructura.persistencia.entidad.ObjetivoDesp
 import com.farmamia.operations.infraestructura.persistencia.repositorio.EquipoRepositorioJpa;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.EventoActualizacionRepositorioJpa;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.ObjetivoDespliegueRepositorioJpa;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -26,6 +27,9 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public class RepositorioEventosActualizacionJpaAdaptador implements RepositorioEventosActualizacion {
+
+    private static final OffsetDateTime FECHA_NEUTRA = OffsetDateTime.parse("1970-01-01T00:00:00Z");
+    private static final UUID UUID_NEUTRO = new UUID(0L, 0L);
 
     private final EquipoRepositorioJpa equipoRepositorioJpa;
     private final ObjetivoDespliegueRepositorioJpa objetivoDespliegueRepositorioJpa;
@@ -93,12 +97,18 @@ public class RepositorioEventosActualizacionJpaAdaptador implements RepositorioE
 
     @Override
     public Pagina<EventoActualizacionRegistrado> listarPaginado(FiltroEventosActualizacion filtro) {
+        String tipoEvento = minusculaANulo(filtro.tipoEvento());
         org.springframework.data.domain.Page<EventoActualizacionEntidad> pagina = eventoActualizacionRepositorioJpa.buscarConFiltros(
-            filtro.idEquipo(),
-            filtro.idDespliegue(),
-            minusculaANulo(filtro.tipoEvento()),
-            filtro.desde(),
-            filtro.hasta(),
+            filtro.idEquipo() != null,
+            filtro.idEquipo() == null ? UUID_NEUTRO : filtro.idEquipo(),
+            filtro.idDespliegue() != null,
+            filtro.idDespliegue() == null ? UUID_NEUTRO : filtro.idDespliegue(),
+            tipoEvento != null,
+            nuloAValor(tipoEvento),
+            filtro.desde() != null,
+            filtro.desde() == null ? FECHA_NEUTRA : filtro.desde(),
+            filtro.hasta() != null,
+            filtro.hasta() == null ? FECHA_NEUTRA : filtro.hasta(),
             PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
         );
 
@@ -204,6 +214,7 @@ public class RepositorioEventosActualizacionJpaAdaptador implements RepositorioE
             : Sort.Direction.DESC;
 
         return Sort.by(direccion, switch (campo) {
+            case "createdAt", "creadoEn" -> "creadoEn";
             case "eventType", "tipoEvento" -> "tipoEvento";
             case "oldVersion", "versionAnterior" -> "versionAnterior";
             case "newVersion", "versionNueva" -> "versionNueva";
@@ -213,5 +224,9 @@ public class RepositorioEventosActualizacionJpaAdaptador implements RepositorioE
 
     private String minusculaANulo(String valor) {
         return valor == null || valor.isBlank() ? null : valor.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String nuloAValor(String valor) {
+        return valor == null ? "" : valor;
     }
 }

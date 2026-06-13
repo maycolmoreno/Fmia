@@ -10,6 +10,7 @@ import com.farmamia.operations.dominio.modelo.DatosRegistroAgente;
 import com.farmamia.operations.dominio.modelo.InstruccionAgente;
 import com.farmamia.operations.dominio.modelo.RegistroAgente;
 import com.farmamia.operations.dominio.modelo.ResultadoActualizacion;
+import com.farmamia.operations.infraestructura.observabilidad.MetricasOperativasFarmamia;
 import com.farmamia.operations.presentacion.dto.RespuestaInstruccionAgente;
 import com.farmamia.operations.presentacion.dto.RespuestaRegistroAgente;
 import com.farmamia.operations.presentacion.dto.SolicitudEventoAgente;
@@ -36,17 +37,20 @@ public class ControladorAgente {
     private final RegistrarLatidoCasoUso registrarLatidoCasoUso;
     private final ConsultarInstruccionesAgenteCasoUso consultarInstruccionesAgenteCasoUso;
     private final RegistrarEventoAgenteCasoUso registrarEventoAgenteCasoUso;
+    private final MetricasOperativasFarmamia metricasOperativas;
 
     public ControladorAgente(
         RegistrarAgenteCasoUso registrarAgenteCasoUso,
         RegistrarLatidoCasoUso registrarLatidoCasoUso,
         ConsultarInstruccionesAgenteCasoUso consultarInstruccionesAgenteCasoUso,
-        RegistrarEventoAgenteCasoUso registrarEventoAgenteCasoUso
+        RegistrarEventoAgenteCasoUso registrarEventoAgenteCasoUso,
+        MetricasOperativasFarmamia metricasOperativas
     ) {
         this.registrarAgenteCasoUso = registrarAgenteCasoUso;
         this.registrarLatidoCasoUso = registrarLatidoCasoUso;
         this.consultarInstruccionesAgenteCasoUso = consultarInstruccionesAgenteCasoUso;
         this.registrarEventoAgenteCasoUso = registrarEventoAgenteCasoUso;
+        this.metricasOperativas = metricasOperativas;
     }
 
     @PostMapping("/register")
@@ -82,6 +86,7 @@ public class ControladorAgente {
             solicitud.latenciaMs(),
             aBigDecimal(solicitud.porcentajePerdidaPaquetes())
         ));
+        metricasOperativas.registrarHeartbeat();
     }
 
     @GetMapping("/{idEquipo}/instructions")
@@ -101,6 +106,7 @@ public class ControladorAgente {
             solicitud.versionNueva(),
             solicitud.metadatos()
         ));
+        metricasOperativas.registrarEventoAgente(solicitud.tipoEvento());
     }
 
     @PostMapping("/{idEquipo}/update-result")
@@ -117,6 +123,7 @@ public class ControladorAgente {
             solicitud.versionNueva(),
             solicitud.mensaje()
         ));
+        metricasOperativas.registrarResultadoActualizacion(solicitud.estado());
     }
 
     private BigDecimal aBigDecimal(Double valor) {
@@ -132,6 +139,10 @@ public class ControladorAgente {
             instruccion.version(),
             instruccion.urlDescarga(),
             instruccion.checksumSha256(),
+            instruccion.firma(),
+            instruccion.algoritmoFirma(),
+            instruccion.idClaveFirma(),
+            instruccion.clavePublicaFirmaPem(),
             instruccion.horaOficialActualizacion(),
             instruccion.horaForzadaActualizacion(),
             instruccion.avisos()

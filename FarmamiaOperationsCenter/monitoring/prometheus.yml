@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - alert_rules.yml
+
+scrape_configs:
+  - job_name: farmamia-operations-api
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - localhost:8081
+        labels:
+          service: centro-operaciones-api
+          environment: piloto

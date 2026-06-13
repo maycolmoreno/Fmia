@@ -20,20 +20,24 @@ public interface UsuarioAppRepositorioJpa extends JpaRepository<UsuarioAppEntida
     @Query("""
         select usuario
         from UsuarioAppEntidad usuario
-        where (:q is null
+        where (:filtrarQ = false
             or lower(usuario.usuario) like concat('%', :q, '%')
             or lower(usuario.nombreCompleto) like concat('%', :q, '%')
             or lower(coalesce(usuario.correo, '')) like concat('%', :q, '%'))
-          and (:rol is null or lower(usuario.rol) = :rol)
-          and (:activo is null or usuario.activo = :activo)
-          and (:bloqueado is null
+          and (:filtrarRol = false or lower(usuario.rol) = :rol)
+          and (:filtrarActivo = false or usuario.activo = :activo)
+          and (:filtrarBloqueado = false
               or (:bloqueado = true and usuario.bloqueadoHasta is not null and usuario.bloqueadoHasta > current_timestamp)
               or (:bloqueado = false and (usuario.bloqueadoHasta is null or usuario.bloqueadoHasta <= current_timestamp)))
         """)
     Page<UsuarioAppEntidad> buscarConFiltros(
+        @Param("filtrarQ") boolean filtrarQ,
         @Param("q") String q,
+        @Param("filtrarRol") boolean filtrarRol,
         @Param("rol") String rol,
+        @Param("filtrarActivo") boolean filtrarActivo,
         @Param("activo") Boolean activo,
+        @Param("filtrarBloqueado") boolean filtrarBloqueado,
         @Param("bloqueado") Boolean bloqueado,
         Pageable pageable
     );

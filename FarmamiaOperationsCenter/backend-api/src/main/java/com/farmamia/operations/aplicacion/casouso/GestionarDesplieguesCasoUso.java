@@ -71,6 +71,10 @@ public class GestionarDesplieguesCasoUso {
         return repositorioDespliegues.estado(id);
     }
 
+    public int contarFarmaciasTurno(UUID id) {
+        return repositorioDespliegues.contarFarmaciasTurno(id);
+    }
+
     private String blancoANulo(String valor) {
         return valor == null || valor.isBlank() ? null : valor.trim();
     }

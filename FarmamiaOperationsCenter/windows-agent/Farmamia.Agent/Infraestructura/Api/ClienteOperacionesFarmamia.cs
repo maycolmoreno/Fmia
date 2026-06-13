@@ -106,6 +106,10 @@ public sealed class ClienteOperacionesFarmamia : IClienteOperacionesFarmamia
             instruccion.Version,
             instruccion.DownloadUrl,
             instruccion.Sha256Checksum,
+            instruccion.Signature,
+            instruccion.SignatureAlgorithm,
+            instruccion.SigningKeyId,
+            instruccion.SigningPublicKeyPem,
             instruccion.OfficialUpdateTime,
             instruccion.ForceUpdateTime,
             instruccion.Warnings ?? []
@@ -219,6 +223,10 @@ public sealed class ClienteOperacionesFarmamia : IClienteOperacionesFarmamia
         string? Version,
         string? DownloadUrl,
         [property: JsonPropertyName("sha256Checksum")] string? Sha256Checksum,
+        string? Signature,
+        string? SignatureAlgorithm,
+        string? SigningKeyId,
+        string? SigningPublicKeyPem,
         TimeOnly? OfficialUpdateTime,
         TimeOnly? ForceUpdateTime,
         IReadOnlyList<TimeOnly>? Warnings

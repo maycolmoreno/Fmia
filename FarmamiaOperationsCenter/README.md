@@ -35,6 +35,23 @@ contracts/
   Contratos REST, estados y eventos.
 ```
 
+## Lenguaje del Producto
+
+Farmamia Operations Center usa lenguaje de operacion de farmacias:
+
+```txt
+Farmacia
+Equipo POS
+Version POS
+Campana POS
+Agente POS
+Evento del agente
+Alerta operativa
+Usuario de operaciones
+```
+
+Los endpoints de negocio preferidos son `/api/farmacias`, `/api/equipos-pos`, `/api/versiones-pos`, `/api/campanas-pos` y `/api/eventos-agente`. Los endpoints legacy `/api/branches`, `/api/devices`, `/api/packages`, `/api/deployments` y `/api/update-events` siguen activos por compatibilidad temporal.
+
 ## Objetivo del MVP
 
 Actualizar el POS portable de forma centralizada, segura y auditada:
@@ -82,12 +99,13 @@ Las dependencias apuntan hacia aplicacion/dominio.
 ## Documentacion Tecnica
 
 ```txt
-Documentacion/FARMAMIA_OPERATIONS_CENTER_PLAN_FASES.md
-Documentacion/FARMAMIA_OPERATIONS_CENTER_SCHEMA_POSTGRESQL.sql
-Documentacion/FARMAMIA_OPERATIONS_CENTER_BACKLOG_TECNICO_MVP.md
-Documentacion/ESTADO_MVP.md
-Documentacion/GUIA_VERIFICACION_MVP.md
-Documentacion/CONFIGURACION_QA_PROD.md
+Documentacion/SPRINT_OPERATIONS_CENTER_PILOTO.md
+Documentacion/RUNBOOK_OPERACIONES_NOC.md
+Documentacion/OPS_002_COLA_DURABLE_AGENTE.md
+Documentacion/OPS_004_PAGINACION_FILTROS.md
+Documentacion/IDEMPOTENCIA_EVENTOS_AGENTE.md
+Documentacion/DIAGNOSTICO_REORIENTACION_FARMAMIA_OPERATIONS_CENTER.md
+Documentacion/PLAN_REFACTORIZACION_DOMINIO_FARMAMIA_OPERATIONS_CENTER.md
 ```
 
 ## Verificacion MVP

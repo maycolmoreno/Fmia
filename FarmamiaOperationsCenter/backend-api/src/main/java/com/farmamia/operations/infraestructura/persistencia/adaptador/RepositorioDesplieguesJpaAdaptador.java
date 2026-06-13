@@ -28,6 +28,8 @@ import org.springframework.data.domain.Sort;
 @Repository
 public class RepositorioDesplieguesJpaAdaptador implements RepositorioDespliegues {
 
+    private static final OffsetDateTime FECHA_NEUTRA = OffsetDateTime.parse("1970-01-01T00:00:00Z");
+
     private static final List<String> ESTADOS_COMPLETADOS = List.of("COMPLETED");
     private static final List<String> ESTADOS_FALLIDOS = List.of("FAILED", "ROLLBACK_FAILED");
     private static final List<String> ESTADOS_FINALES = List.of(
@@ -91,12 +93,20 @@ public class RepositorioDesplieguesJpaAdaptador implements RepositorioDespliegue
 
     @Override
     public Pagina<Despliegue> listarPaginado(FiltroDespliegues filtro) {
+        String q = minusculaANulo(filtro.q());
+        String estado = minusculaANulo(filtro.estado());
+        String versionPaquete = minusculaANulo(filtro.versionPaquete());
         org.springframework.data.domain.Page<DespliegueEntidad> pagina = despliegueRepositorioJpa.buscarConFiltros(
-            minusculaANulo(filtro.q()),
-            minusculaANulo(filtro.estado()),
-            minusculaANulo(filtro.versionPaquete()),
-            filtro.creadoDesde(),
-            filtro.creadoHasta(),
+            q != null,
+            nuloAValor(q),
+            estado != null,
+            nuloAValor(estado),
+            versionPaquete != null,
+            nuloAValor(versionPaquete),
+            filtro.creadoDesde() != null,
+            filtro.creadoDesde() == null ? FECHA_NEUTRA : filtro.creadoDesde(),
+            filtro.creadoHasta() != null,
+            filtro.creadoHasta() == null ? FECHA_NEUTRA : filtro.creadoHasta(),
             PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
         );
 
@@ -173,6 +183,19 @@ public class RepositorioDesplieguesJpaAdaptador implements RepositorioDespliegue
         );
     }
 
+    @Override
+    public int contarFarmaciasTurno(UUID id) {
+        buscarDespliegue(id);
+        return (int) objetivoDespliegueRepositorioJpa.findByDespliegue_Id(id)
+            .stream()
+            .filter(objetivo -> objetivo.getEquipo() != null)
+            .map(ObjetivoDespliegueEntidad::getEquipo)
+            .filter(equipo -> equipo.getSucursal() != null && equipo.getSucursal().isDeTurno())
+            .map(equipo -> equipo.getSucursal().getId())
+            .distinct()
+            .count();
+    }
+
     private long sumarEstados(Map<String, Long> conteo, List<String> estados) {
         return estados.stream()
             .mapToLong(estado -> conteo.getOrDefault(estado, 0L))
@@ -234,11 +257,16 @@ public class RepositorioDesplieguesJpaAdaptador implements RepositorioDespliegue
             case "name", "nombre" -> "nombre";
             case "status", "estado" -> "estado";
             case "scheduledAt", "programadoEn" -> "programadoEn";
+            case "createdAt", "creadoEn" -> "creadoEn";
             default -> "creadoEn";
         });
     }
 
     private String minusculaANulo(String valor) {
         return valor == null || valor.isBlank() ? null : valor.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String nuloAValor(String valor) {
+        return valor == null ? "" : valor;
     }
 }

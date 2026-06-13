@@ -11,6 +11,7 @@ public class PaquetePos {
     private final String rutaAlmacenamiento;
     private final String checksumSha256;
     private final Long tamanoBytes;
+    private final FirmaPaquetePos firma;
     private String estado;
     private final OffsetDateTime cargadoEn;
     private OffsetDateTime aprobadoEn;
@@ -22,6 +23,7 @@ public class PaquetePos {
         String rutaAlmacenamiento,
         String checksumSha256,
         Long tamanoBytes,
+        FirmaPaquetePos firma,
         String estado,
         OffsetDateTime cargadoEn,
         OffsetDateTime aprobadoEn
@@ -32,6 +34,7 @@ public class PaquetePos {
         this.rutaAlmacenamiento = rutaAlmacenamiento;
         this.checksumSha256 = checksumSha256;
         this.tamanoBytes = tamanoBytes;
+        this.firma = firma;
         this.estado = estado;
         this.cargadoEn = cargadoEn;
         this.aprobadoEn = aprobadoEn;
@@ -42,7 +45,8 @@ public class PaquetePos {
         String nombreArchivo,
         String rutaAlmacenamiento,
         String checksumSha256,
-        Long tamanoBytes
+        Long tamanoBytes,
+        FirmaPaquetePos firma
     ) {
         return new PaquetePos(
             null,
@@ -51,6 +55,7 @@ public class PaquetePos {
             rutaAlmacenamiento,
             checksumSha256,
             tamanoBytes,
+            firma,
             "VALIDATED",
             null,
             null
@@ -79,6 +84,10 @@ public class PaquetePos {
 
     public Long getTamanoBytes() {
         return tamanoBytes;
+    }
+
+    public FirmaPaquetePos getFirma() {
+        return firma;
     }
 
     public String getEstado() {

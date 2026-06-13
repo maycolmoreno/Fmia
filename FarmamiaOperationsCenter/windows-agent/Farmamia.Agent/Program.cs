@@ -32,6 +32,7 @@ builder.Services.AddSingleton<IInventarioEquipo, InventarioWindows>();
 builder.Services.AddSingleton<IAlmacenamientoPaquetes, AlmacenamientoPaquetesLocal>();
 builder.Services.AddSingleton<IRespaldoPos, RespaldoPosLocal>();
 builder.Services.AddSingleton<IActualizadorPos, ActualizadorPosZip>();
+builder.Services.AddSingleton<IBloqueoActualizacion, BloqueoActualizacionMutex>();
 builder.Services.AddSingleton<IProcesoPos, ProcesoPosWindows>();
 builder.Services.AddSingleton<IAvisadorUsuario, AvisadorUsuarioArchivo>();
 builder.Services.AddSingleton<IEstadoAvisosActualizacion, EstadoAvisosActualizacionLocal>();

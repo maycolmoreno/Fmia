@@ -1,0 +1,57 @@
+groups:
+  - name: farmamia-operations-piloto
+    rules:
+      - alert: FarmamiaApiHigh5xxRate
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_server_requests_seconds_count[5m])), 1)
+          ) > 0.02
+        for: 5m
+        labels:
+          severity: critical
+          area: api
+        annotations:
+          summary: API 5xx supera 2% durante 5 minutos
+          description: Revisar logs de backend, base de datos y ultimos despliegues del centro de operaciones.
+
+      - alert: FarmamiaCriticalAlertsOpen
+        expr: farmamia_alerts_critical_open > 20
+        for: 5m
+        labels:
+          severity: critical
+          area: noc
+        annotations:
+          summary: Mas de 20 alertas criticas abiertas
+          description: Priorizar triage NOC y pausar campanas activas si hay correlacion con despliegues.
+
+      - alert: FarmamiaDeploymentAutoPaused
+        expr: increase(farmamia_orchestration_auto_pauses_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          area: deployments
+        annotations:
+          summary: Una campana fue pausada automaticamente
+          description: Revisar runtime-status de la campana y fallos por oleada antes de reanudar.
+
+      - alert: FarmamiaHeartbeatDrop
+        expr: sum(rate(farmamia_agent_heartbeats_total[10m])) == 0
+        for: 10m
+        labels:
+          severity: warning
+          area: agents
+        annotations:
+          summary: No se reciben heartbeats de agentes
+          description: Validar conectividad entre farmacias y API central.
+
+      - alert: FarmamiaDbConnectionsPending
+        expr: hikaricp_connections_pending > 0
+        for: 5m
+        labels:
+          severity: warning
+          area: database
+        annotations:
+          summary: Hay conexiones pendientes en HikariCP
+          description: Revisar saturacion de PostgreSQL, queries lentas y pool de conexiones.

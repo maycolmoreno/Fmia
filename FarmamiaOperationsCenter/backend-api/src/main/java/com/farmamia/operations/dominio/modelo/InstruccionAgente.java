@@ -12,11 +12,15 @@ public record InstruccionAgente(
     String version,
     String urlDescarga,
     String checksumSha256,
+    String firma,
+    String algoritmoFirma,
+    String idClaveFirma,
+    String clavePublicaFirmaPem,
     LocalTime horaOficialActualizacion,
     LocalTime horaForzadaActualizacion,
     List<LocalTime> avisos
 ) {
     public static InstruccionAgente vacia() {
-        return new InstruccionAgente(false, null, null, null, null, null, null, null, null, null);
+        return new InstruccionAgente(false, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 }

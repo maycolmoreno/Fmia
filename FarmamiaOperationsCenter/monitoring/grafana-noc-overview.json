@@ -1,0 +1,76 @@
+{
+  "title": "Farmamia NOC Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Equipos online",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        { "expr": "farmamia_devices_online", "legendFormat": "online" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Equipos offline",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        { "expr": "farmamia_devices_offline", "legendFormat": "offline" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Alertas criticas abiertas",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        { "expr": "farmamia_alerts_critical_open", "legendFormat": "criticas" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Despliegues activos",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        { "expr": "farmamia_deployments_active", "legendFormat": "activos" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Heartbeats por minuto",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 7 },
+      "targets": [
+        { "expr": "sum(rate(farmamia_agent_heartbeats_total[1m])) * 60", "legendFormat": "heartbeats/min" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Eventos por tipo",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 7 },
+      "targets": [
+        { "expr": "sum by (event_type) (rate(farmamia_agent_events_total[5m]))", "legendFormat": "{{event_type}}" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Resultados de actualizacion",
+      "gridPos": { "x": 0, "y": 11, "w": 12, "h": 7 },
+      "targets": [
+        { "expr": "sum by (status) (rate(farmamia_agent_update_results_total[5m]))", "legendFormat": "{{status}}" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Autopausas de campanas",
+      "gridPos": { "x": 12, "y": 11, "w": 12, "h": 7 },
+      "targets": [
+        { "expr": "increase(farmamia_orchestration_auto_pauses_total[1h])", "legendFormat": "autopausas/h" }
+      ]
+    }
+  ]
+}

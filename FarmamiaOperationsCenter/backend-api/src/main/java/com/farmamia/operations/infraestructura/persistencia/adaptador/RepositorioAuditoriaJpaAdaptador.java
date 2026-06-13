@@ -13,6 +13,7 @@ import com.farmamia.operations.infraestructura.persistencia.entidad.AuditoriaEnt
 import com.farmamia.operations.infraestructura.persistencia.entidad.UsuarioAppEntidad;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.AuditoriaRepositorioJpa;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.UsuarioAppRepositorioJpa;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -22,6 +23,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public class RepositorioAuditoriaJpaAdaptador implements RepositorioAuditoria {
+
+    private static final OffsetDateTime FECHA_NEUTRA = OffsetDateTime.parse("1970-01-01T00:00:00Z");
 
     private final AuditoriaRepositorioJpa auditoriaRepositorioJpa;
     private final UsuarioAppRepositorioJpa usuarioAppRepositorioJpa;
@@ -64,12 +67,20 @@ public class RepositorioAuditoriaJpaAdaptador implements RepositorioAuditoria {
 
     @Override
     public List<AuditoriaRegistrada> listarConFiltros(FiltroAuditoria filtro) {
+        String accion = minusculaANulo(filtro.accion());
+        String tipoEntidad = minusculaANulo(filtro.tipoEntidad());
+        String usuarioActor = minusculaANulo(filtro.usuarioActor());
         return auditoriaRepositorioJpa.buscarConFiltros(
-            minusculaANulo(filtro.accion()),
-            minusculaANulo(filtro.tipoEntidad()),
-            minusculaANulo(filtro.usuarioActor()),
-            filtro.desde(),
-            filtro.hasta(),
+            accion != null,
+            nuloAValor(accion),
+            tipoEntidad != null,
+            nuloAValor(tipoEntidad),
+            usuarioActor != null,
+            nuloAValor(usuarioActor),
+            filtro.desde() != null,
+            filtro.desde() == null ? FECHA_NEUTRA : filtro.desde(),
+            filtro.hasta() != null,
+            filtro.hasta() == null ? FECHA_NEUTRA : filtro.hasta(),
             PageRequest.of(0, filtro.limite())
         )
             .stream()
@@ -79,12 +90,20 @@ public class RepositorioAuditoriaJpaAdaptador implements RepositorioAuditoria {
 
     @Override
     public Pagina<AuditoriaRegistrada> listarPaginado(FiltroAuditoriaPaginada filtro) {
+        String accion = minusculaANulo(filtro.accion());
+        String tipoEntidad = minusculaANulo(filtro.tipoEntidad());
+        String usuarioActor = minusculaANulo(filtro.usuarioActor());
         org.springframework.data.domain.Page<AuditoriaEntidad> pagina = auditoriaRepositorioJpa.buscarConFiltrosPaginado(
-            minusculaANulo(filtro.accion()),
-            minusculaANulo(filtro.tipoEntidad()),
-            minusculaANulo(filtro.usuarioActor()),
-            filtro.desde(),
-            filtro.hasta(),
+            accion != null,
+            nuloAValor(accion),
+            tipoEntidad != null,
+            nuloAValor(tipoEntidad),
+            usuarioActor != null,
+            nuloAValor(usuarioActor),
+            filtro.desde() != null,
+            filtro.desde() == null ? FECHA_NEUTRA : filtro.desde(),
+            filtro.hasta() != null,
+            filtro.hasta() == null ? FECHA_NEUTRA : filtro.hasta(),
             PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
         );
 
@@ -153,5 +172,9 @@ public class RepositorioAuditoriaJpaAdaptador implements RepositorioAuditoria {
 
     private String minusculaANulo(String valor) {
         return valor == null || valor.isBlank() ? null : valor.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String nuloAValor(String valor) {
+        return valor == null ? "" : valor;
     }
 }

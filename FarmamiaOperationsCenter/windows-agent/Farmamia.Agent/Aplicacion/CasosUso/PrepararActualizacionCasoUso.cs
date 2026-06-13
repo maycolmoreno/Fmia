@@ -2,6 +2,8 @@ using Farmamia.Agent.Dominio.Modelos;
 using Farmamia.Agent.Dominio.Puertos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Farmamia.Agent.Aplicacion.CasosUso;
 
@@ -19,6 +21,7 @@ public sealed class PrepararActualizacionCasoUso
     private readonly IAvisadorUsuario avisadorUsuario;
     private readonly IEstadoAvisosActualizacion estadoAvisosActualizacion;
     private readonly IEstadoLocalAgente estadoLocalAgente;
+    private readonly IBloqueoActualizacion bloqueoActualizacion;
     private readonly ILogger<PrepararActualizacionCasoUso> logger;
     private readonly OpcionesAgente opciones;
 
@@ -33,6 +36,7 @@ public sealed class PrepararActualizacionCasoUso
         IAvisadorUsuario avisadorUsuario,
         IEstadoAvisosActualizacion estadoAvisosActualizacion,
         IEstadoLocalAgente estadoLocalAgente,
+        IBloqueoActualizacion bloqueoActualizacion,
         ILogger<PrepararActualizacionCasoUso> logger,
         IOptions<OpcionesAgente> opciones
     )
@@ -47,6 +51,7 @@ public sealed class PrepararActualizacionCasoUso
         this.avisadorUsuario = avisadorUsuario;
         this.estadoAvisosActualizacion = estadoAvisosActualizacion;
         this.estadoLocalAgente = estadoLocalAgente;
+        this.bloqueoActualizacion = bloqueoActualizacion;
         this.logger = logger;
         this.opciones = opciones.Value;
     }
@@ -77,6 +82,20 @@ public sealed class PrepararActualizacionCasoUso
             await clienteOperaciones.ReportarEventoAsync(
                 credenciales,
                 Evento(instruccion, "POS_ACTIVITY_DETECTED", "POS activo; actualizacion diferida hasta hora forzada", inventario, null),
+                cancellationToken
+            );
+            return;
+        }
+
+        using IDisposable? bloqueo = bloqueoActualizacion.IntentarAdquirir();
+        if (bloqueo is null)
+        {
+            await ReportarFalloSinRollbackAsync(
+                credenciales,
+                instruccion,
+                inventario,
+                "UPDATE_FAILED",
+                "Otra actualizacion POS ya esta en ejecucion en este equipo",
                 cancellationToken
             );
             return;
@@ -118,6 +137,31 @@ public sealed class PrepararActualizacionCasoUso
         await clienteOperaciones.ReportarEventoAsync(
             credenciales,
             Evento(instruccion, "CHECKSUM_VALIDATED", "Checksum SHA-256 validado", inventario, archivo),
+            cancellationToken
+        );
+
+        if (!FirmaValida(instruccion))
+        {
+            await clienteOperaciones.ReportarEventoAsync(
+                credenciales,
+                Evento(instruccion, "SIGNATURE_VALIDATION_FAILED", "Firma digital de paquete invalida", inventario, archivo),
+                cancellationToken
+            );
+            await ReportarResultadoFallidoAsync(
+                credenciales,
+                instruccion,
+                inventario,
+                "FAILED",
+                "Firma digital de paquete invalida",
+                cancellationToken
+            );
+            await GuardarEstadoAsync("SIGNATURE_VALIDATION_FAILED", instruccion, inventario, "FAILED", "Firma digital invalida", cancellationToken);
+            throw new InvalidOperationException("Firma digital de paquete invalida");
+        }
+
+        await clienteOperaciones.ReportarEventoAsync(
+            credenciales,
+            Evento(instruccion, "SIGNATURE_VALIDATED", "Firma digital de paquete validada", inventario, archivo),
             cancellationToken
         );
 
@@ -357,6 +401,8 @@ public sealed class PrepararActualizacionCasoUso
             metadatos["localPath"] = archivo.RutaArchivo;
             metadatos["sizeBytes"] = archivo.TamanoBytes;
             metadatos["sha256"] = archivo.ChecksumSha256;
+            metadatos["signatureStatus"] = string.IsNullOrWhiteSpace(instruccion.Firma) ? "UNSIGNED" : "VALIDATED";
+            metadatos["signingKeyId"] = instruccion.IdClaveFirma;
         }
 
         if (respaldo is not null)
@@ -436,6 +482,34 @@ public sealed class PrepararActualizacionCasoUso
             opciones.BackoffInicialSegundos * (int)Math.Pow(2, Math.Max(0, intento - 1))
         );
         return TimeSpan.FromSeconds(Math.Max(1, segundos));
+    }
+
+    private static bool FirmaValida(InstruccionActualizacion instruccion)
+    {
+        if (string.IsNullOrWhiteSpace(instruccion.Firma)
+            || string.IsNullOrWhiteSpace(instruccion.ClavePublicaFirmaPem))
+        {
+            return true;
+        }
+
+        if (!string.Equals(instruccion.AlgoritmoFirma, "SHA256withRSA", StringComparison.OrdinalIgnoreCase)
+            || string.IsNullOrWhiteSpace(instruccion.ChecksumSha256))
+        {
+            return false;
+        }
+
+        try
+        {
+            using RSA rsa = RSA.Create();
+            rsa.ImportFromPem(instruccion.ClavePublicaFirmaPem);
+            byte[] datos = Encoding.UTF8.GetBytes(instruccion.ChecksumSha256);
+            byte[] firma = Convert.FromBase64String(instruccion.Firma);
+            return rsa.VerifyData(datos, firma, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private async Task ReportarFalloSinRollbackAsync(

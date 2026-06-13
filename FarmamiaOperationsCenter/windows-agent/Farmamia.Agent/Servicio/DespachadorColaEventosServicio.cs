@@ -17,6 +17,7 @@ public sealed class DespachadorColaEventosServicio : BackgroundService
     private readonly ILogger<DespachadorColaEventosServicio> logger;
     private readonly OpcionesAgente opciones;
     private readonly Random jitter = new();
+    private DateTimeOffset ultimoDiagnostico = DateTimeOffset.MinValue;
 
     public DespachadorColaEventosServicio(
         IColaEventosAgente colaEventos,
@@ -43,7 +44,7 @@ public sealed class DespachadorColaEventosServicio : BackgroundService
         {
             try
             {
-                await DespacharPendientesAsync(stoppingToken);
+                await DespacharPendientesUnaVezAsync(stoppingToken);
             }
             catch (Exception ex)
             {
@@ -54,11 +55,12 @@ public sealed class DespachadorColaEventosServicio : BackgroundService
         }
     }
 
-    private async Task DespacharPendientesAsync(CancellationToken cancellationToken)
+    public async Task DespacharPendientesUnaVezAsync(CancellationToken cancellationToken)
     {
         CredencialesAgente? credenciales = await configuracionLocal.LeerCredencialesAsync(cancellationToken);
         if (credenciales is null)
         {
+            await RegistrarDiagnosticoAsync(cancellationToken);
             return;
         }
 
@@ -72,6 +74,8 @@ public sealed class DespachadorColaEventosServicio : BackgroundService
         {
             await DespacharUnoAsync(credenciales, pendiente, cancellationToken);
         }
+
+        await RegistrarDiagnosticoAsync(cancellationToken);
     }
 
     private async Task DespacharUnoAsync(
@@ -113,6 +117,37 @@ public sealed class DespachadorColaEventosServicio : BackgroundService
                 "No se pudo despachar evento en cola {IdEvento}. Intentos: {Intentos}",
                 pendiente.Id,
                 pendiente.CantidadIntentos + 1
+            );
+        }
+    }
+
+    private async Task RegistrarDiagnosticoAsync(CancellationToken cancellationToken)
+    {
+        DateTimeOffset ahora = DateTimeOffset.UtcNow;
+        if (ultimoDiagnostico.AddMinutes(1) > ahora)
+        {
+            return;
+        }
+
+        ultimoDiagnostico = ahora;
+        DiagnosticoColaEventosAgente diagnostico = await colaEventos.ObtenerDiagnosticoAsync(cancellationToken);
+        logger.LogInformation(
+            "Diagnostico cola eventos: pendientes={Pendientes}, enviando={Enviando}, enviados={Enviados}, fallidos={Fallidos}, deadLetter={DeadLetter}, pendienteMasAntiguo={PendienteMasAntiguo}",
+            diagnostico.Pendientes,
+            diagnostico.Enviando,
+            diagnostico.Enviados,
+            diagnostico.Fallidos,
+            diagnostico.DeadLetter,
+            diagnostico.EventoMasAntiguoPendiente
+        );
+
+        if (diagnostico.DeadLetter > 0)
+        {
+            logger.LogError(
+                "ALERTA OPERATIVA: cola de eventos contiene {DeadLetter} eventos DEAD_LETTER. Ultimo={UltimoDeadLetterEn}. Error={UltimoError}",
+                diagnostico.DeadLetter,
+                diagnostico.UltimoDeadLetterEn,
+                diagnostico.UltimoErrorDeadLetter
             );
         }
     }

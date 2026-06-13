@@ -52,12 +52,16 @@ public class OrquestarDesplieguesCasoUso {
             ? BigDecimal.TEN
             : solicitud.porcentajeMaximoFallo().max(BigDecimal.ZERO).min(BigDecimal.valueOf(100));
         int limiteReintentos = Math.max(0, Math.min(solicitud.limiteReintentos(), 10));
+        int maximoEquiposParalelos = solicitud.maximoEquiposParalelos() <= 0
+            ? 25
+            : Math.min(solicitud.maximoEquiposParalelos(), 500);
         LocalTime ventanaInicio = solicitud.ventanaInicio();
         LocalTime ventanaFin = solicitud.ventanaFin();
         return new SolicitudPlanOrquestacion(
             porcentaje,
             solicitud.pausaAutomaticaHabilitada(),
             limiteReintentos,
+            maximoEquiposParalelos,
             ventanaInicio,
             ventanaFin
         );

@@ -23,6 +23,7 @@ public class FiltroAutenticacionAdministrativa extends OncePerRequestFilter {
         "/api/devices",
         "/api/packages",
         "/api/deployments",
+        "/api/orchestration",
         "/api/dashboard",
         "/api/update-events",
         "/api/alerts",

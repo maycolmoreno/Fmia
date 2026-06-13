@@ -13,6 +13,7 @@ import com.farmamia.operations.infraestructura.persistencia.entidad.UsuarioAppEn
 import com.farmamia.operations.infraestructura.persistencia.repositorio.AlertaRepositorioJpa;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.EquipoRepositorioJpa;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.UsuarioAppRepositorioJpa;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -22,6 +23,9 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
+
+    private static final OffsetDateTime FECHA_NEUTRA = OffsetDateTime.parse("1970-01-01T00:00:00Z");
+    private static final UUID UUID_NEUTRO = new UUID(0L, 0L);
 
     private final EquipoRepositorioJpa equipoRepositorioJpa;
     private final AlertaRepositorioJpa alertaRepositorioJpa;
@@ -44,7 +48,7 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
 
         alertaRepositorioJpa.save(new AlertaEntidad(
             equipo,
-            alerta.severidad(),
+            severidadOperacional(alerta, equipo),
             alerta.tipoAlerta(),
             alerta.titulo(),
             alerta.mensaje()
@@ -61,16 +65,30 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
 
     @Override
     public List<AlertaRegistrada> listarConFiltros(FiltroAlertas filtro) {
+        String estado = minusculaANulo(filtro.estado());
+        String severidad = minusculaANulo(filtro.severidad());
+        String tipo = minusculaANulo(filtro.tipo());
+        String codigoSucursal = minusculaANulo(filtro.codigoSucursal());
+        String nombreEquipo = minusculaANulo(filtro.nombreEquipo());
         return alertaRepositorioJpa.buscarConFiltros(
-            minusculaANulo(filtro.estado()),
-            minusculaANulo(filtro.severidad()),
-            minusculaANulo(filtro.tipo()),
-            filtro.idEquipo(),
-            filtro.idSucursal(),
-            minusculaANulo(filtro.codigoSucursal()),
-            minusculaANulo(filtro.nombreEquipo()),
-            filtro.fechaDesde(),
-            filtro.fechaHasta(),
+            estado != null,
+            nuloAValor(estado),
+            severidad != null,
+            nuloAValor(severidad),
+            tipo != null,
+            nuloAValor(tipo),
+            filtro.idEquipo() != null,
+            filtro.idEquipo() == null ? UUID_NEUTRO : filtro.idEquipo(),
+            filtro.idSucursal() != null,
+            filtro.idSucursal() == null ? UUID_NEUTRO : filtro.idSucursal(),
+            codigoSucursal != null,
+            nuloAValor(codigoSucursal),
+            nombreEquipo != null,
+            nuloAValor(nombreEquipo),
+            filtro.fechaDesde() != null,
+            filtro.fechaDesde() == null ? FECHA_NEUTRA : filtro.fechaDesde(),
+            filtro.fechaHasta() != null,
+            filtro.fechaHasta() == null ? FECHA_NEUTRA : filtro.fechaHasta(),
             PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
         )
             .stream()
@@ -80,16 +98,30 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
 
     @Override
     public Pagina<AlertaRegistrada> listarPaginado(FiltroAlertas filtro) {
+        String estado = minusculaANulo(filtro.estado());
+        String severidad = minusculaANulo(filtro.severidad());
+        String tipo = minusculaANulo(filtro.tipo());
+        String codigoSucursal = minusculaANulo(filtro.codigoSucursal());
+        String nombreEquipo = minusculaANulo(filtro.nombreEquipo());
         org.springframework.data.domain.Page<AlertaEntidad> pagina = alertaRepositorioJpa.buscarConFiltrosPaginado(
-            minusculaANulo(filtro.estado()),
-            minusculaANulo(filtro.severidad()),
-            minusculaANulo(filtro.tipo()),
-            filtro.idEquipo(),
-            filtro.idSucursal(),
-            minusculaANulo(filtro.codigoSucursal()),
-            minusculaANulo(filtro.nombreEquipo()),
-            filtro.fechaDesde(),
-            filtro.fechaHasta(),
+            estado != null,
+            nuloAValor(estado),
+            severidad != null,
+            nuloAValor(severidad),
+            tipo != null,
+            nuloAValor(tipo),
+            filtro.idEquipo() != null,
+            filtro.idEquipo() == null ? UUID_NEUTRO : filtro.idEquipo(),
+            filtro.idSucursal() != null,
+            filtro.idSucursal() == null ? UUID_NEUTRO : filtro.idSucursal(),
+            codigoSucursal != null,
+            nuloAValor(codigoSucursal),
+            nombreEquipo != null,
+            nuloAValor(nombreEquipo),
+            filtro.fechaDesde() != null,
+            filtro.fechaDesde() == null ? FECHA_NEUTRA : filtro.fechaDesde(),
+            filtro.fechaHasta() != null,
+            filtro.fechaHasta() == null ? FECHA_NEUTRA : filtro.fechaHasta(),
             PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
         );
 
@@ -168,7 +200,23 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
         return Sort.by(direccion, campo);
     }
 
+    private String severidadOperacional(AlertaEquipo alerta, EquipoEntidad equipo) {
+        if (equipo.getSucursal() == null || !equipo.getSucursal().isDeTurno()) {
+            return alerta.severidad();
+        }
+
+        return switch (alerta.tipoAlerta()) {
+            case "UPDATE_FAILED", "ROLLBACK_FAILED", "POS_OFFLINE", "DEVICE_OFFLINE", "HEARTBEAT_STALE", "CAMPANA_PENDIENTE_FUERA_VENTANA" -> "CRITICAL";
+            case "ROLLBACK_COMPLETED" -> "HIGH";
+            default -> alerta.severidad();
+        };
+    }
+
     private String minusculaANulo(String valor) {
         return valor == null || valor.isBlank() ? null : valor.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String nuloAValor(String valor) {
+        return valor == null ? "" : valor;
     }
 }

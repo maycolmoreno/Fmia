@@ -26,24 +26,31 @@ public interface EquipoRepositorioJpa extends JpaRepository<EquipoEntidad, UUID>
         select equipo
         from EquipoEntidad equipo
         join equipo.sucursal sucursal
-        where (:q is null
+        where (:filtrarQ = false
             or lower(equipo.nombreEquipo) like concat('%', :q, '%')
             or lower(coalesce(equipo.direccionIp, '')) like concat('%', :q, '%')
             or lower(coalesce(equipo.direccionMac, '')) like concat('%', :q, '%'))
-          and (:estado is null or lower(equipo.estado) = :estado)
-          and (:codigoSucursal is null or lower(sucursal.codigo) = :codigoSucursal)
-          and (:versionPos is null or lower(coalesce(equipo.versionPos, '')) = :versionPos)
-          and (:versionAgente is null or lower(coalesce(equipo.versionAgente, '')) = :versionAgente)
-          and (:ultimoLatidoDesde is null or equipo.ultimoLatidoEn >= :ultimoLatidoDesde)
-          and (:ultimoLatidoHasta is null or equipo.ultimoLatidoEn <= :ultimoLatidoHasta)
+          and (:filtrarEstado = false or lower(equipo.estado) = :estado)
+          and (:filtrarCodigoSucursal = false or lower(sucursal.codigo) = :codigoSucursal)
+          and (:filtrarVersionPos = false or lower(coalesce(equipo.versionPos, '')) = :versionPos)
+          and (:filtrarVersionAgente = false or lower(coalesce(equipo.versionAgente, '')) = :versionAgente)
+          and (:filtrarUltimoLatidoDesde = false or equipo.ultimoLatidoEn >= :ultimoLatidoDesde)
+          and (:filtrarUltimoLatidoHasta = false or equipo.ultimoLatidoEn <= :ultimoLatidoHasta)
         """)
     Page<EquipoEntidad> buscarConFiltros(
+        @Param("filtrarQ") boolean filtrarQ,
         @Param("q") String q,
+        @Param("filtrarEstado") boolean filtrarEstado,
         @Param("estado") String estado,
+        @Param("filtrarCodigoSucursal") boolean filtrarCodigoSucursal,
         @Param("codigoSucursal") String codigoSucursal,
+        @Param("filtrarVersionPos") boolean filtrarVersionPos,
         @Param("versionPos") String versionPos,
+        @Param("filtrarVersionAgente") boolean filtrarVersionAgente,
         @Param("versionAgente") String versionAgente,
+        @Param("filtrarUltimoLatidoDesde") boolean filtrarUltimoLatidoDesde,
         @Param("ultimoLatidoDesde") OffsetDateTime ultimoLatidoDesde,
+        @Param("filtrarUltimoLatidoHasta") boolean filtrarUltimoLatidoHasta,
         @Param("ultimoLatidoHasta") OffsetDateTime ultimoLatidoHasta,
         Pageable pageable
     );

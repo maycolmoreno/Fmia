@@ -156,6 +156,17 @@ public class RegistrarEventoAgenteCasoUso {
     }
 
     private void generarAlertaSiCorresponde(UUID idEquipo, ResultadoActualizacion resultado) {
+        if (ESTADO_ROLLBACK_COMPLETADO.equals(resultado.estado())) {
+            repositorioAlertas.guardar(new AlertaEquipo(
+                idEquipo,
+                "WARNING",
+                "ROLLBACK_COMPLETED",
+                "Rollback POS completado",
+                resultado.mensaje()
+            ));
+            return;
+        }
+
         if (!esFallo(resultado.estado())) {
             return;
         }
