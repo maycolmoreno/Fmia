@@ -22,6 +22,7 @@ import {
   ResumenEstadoCampanaFarmacia,
   RespuestaPagina,
   ResumenDashboard,
+  ResumenNocDashboard,
   SolicitudCrearDespliegue,
   SolicitudPlanOrquestacion,
   Farmacia,
@@ -47,6 +48,10 @@ export class OperacionesApiService {
 
   obtenerResumenDashboard(): Observable<ResumenDashboard> {
     return this.http.get<ResumenDashboard>(`${this.baseUrl}/api/dashboard/summary`);
+  }
+
+  obtenerResumenNoc(): Observable<ResumenNocDashboard> {
+    return this.http.get<ResumenNocDashboard>(`${this.baseUrl}/api/dashboard/resumen-noc`);
   }
 
   urlAbsoluta(ruta: string): string {
@@ -263,6 +268,7 @@ export class OperacionesApiService {
       page?: number;
       size?: number;
       sort?: string;
+      networkEvent?: boolean;
     } = {}
   ): Observable<RespuestaPagina<AlertaOperativa>> {
     let parametros = new HttpParams();
@@ -289,6 +295,7 @@ export class OperacionesApiService {
       page?: number;
       size?: number;
       sort?: string;
+      networkEvent?: boolean;
     } = {}
   ): Observable<AlertaOperativa[]> {
     return this.listarAlertasPaginadas({

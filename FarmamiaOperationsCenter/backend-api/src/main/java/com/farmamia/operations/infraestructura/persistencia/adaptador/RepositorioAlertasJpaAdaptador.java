@@ -2,6 +2,7 @@ package com.farmamia.operations.infraestructura.persistencia.adaptador;
 
 import com.farmamia.operations.aplicacion.excepcion.RecursoNoEncontradoException;
 import com.farmamia.operations.dominio.modelo.AlertaEquipo;
+import com.farmamia.operations.dominio.modelo.AlertaRed;
 import com.farmamia.operations.dominio.modelo.AlertaRegistrada;
 import com.farmamia.operations.dominio.modelo.FiltroAlertas;
 import com.farmamia.operations.dominio.modelo.Pagina;
@@ -12,6 +13,7 @@ import com.farmamia.operations.infraestructura.persistencia.entidad.SucursalEnti
 import com.farmamia.operations.infraestructura.persistencia.entidad.UsuarioAppEntidad;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.AlertaRepositorioJpa;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.EquipoRepositorioJpa;
+import com.farmamia.operations.infraestructura.persistencia.repositorio.SucursalRepositorioJpa;
 import com.farmamia.operations.infraestructura.persistencia.repositorio.UsuarioAppRepositorioJpa;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -30,15 +32,18 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
     private final EquipoRepositorioJpa equipoRepositorioJpa;
     private final AlertaRepositorioJpa alertaRepositorioJpa;
     private final UsuarioAppRepositorioJpa usuarioAppRepositorioJpa;
+    private final SucursalRepositorioJpa sucursalRepositorioJpa;
 
     public RepositorioAlertasJpaAdaptador(
         EquipoRepositorioJpa equipoRepositorioJpa,
         AlertaRepositorioJpa alertaRepositorioJpa,
-        UsuarioAppRepositorioJpa usuarioAppRepositorioJpa
+        UsuarioAppRepositorioJpa usuarioAppRepositorioJpa,
+        SucursalRepositorioJpa sucursalRepositorioJpa
     ) {
         this.equipoRepositorioJpa = equipoRepositorioJpa;
         this.alertaRepositorioJpa = alertaRepositorioJpa;
         this.usuarioAppRepositorioJpa = usuarioAppRepositorioJpa;
+        this.sucursalRepositorioJpa = sucursalRepositorioJpa;
     }
 
     @Override
@@ -53,6 +58,13 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
             alerta.titulo(),
             alerta.mensaje()
         ));
+    }
+
+    @Override
+    public void guardarAlertaRed(AlertaRed alerta) {
+        SucursalEntidad sucursal = sucursalRepositorioJpa.findByCodigo(alerta.codigoSucursal())
+            .orElseThrow(() -> new RecursoNoEncontradoException("Farmacia no encontrada: " + alerta.codigoSucursal()));
+        alertaRepositorioJpa.save(new AlertaEntidad(sucursal, alerta.severidad(), alerta.tipoAlerta(), alerta.titulo(), alerta.mensaje()));
     }
 
     @Override
@@ -89,6 +101,8 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
             filtro.fechaDesde() == null ? FECHA_NEUTRA : filtro.fechaDesde(),
             filtro.fechaHasta() != null,
             filtro.fechaHasta() == null ? FECHA_NEUTRA : filtro.fechaHasta(),
+            filtro.eventoDeRed() != null,
+            filtro.eventoDeRed() != null && filtro.eventoDeRed(),
             PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
         )
             .stream()
@@ -122,6 +136,8 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
             filtro.fechaDesde() == null ? FECHA_NEUTRA : filtro.fechaDesde(),
             filtro.fechaHasta() != null,
             filtro.fechaHasta() == null ? FECHA_NEUTRA : filtro.fechaHasta(),
+            filtro.eventoDeRed() != null,
+            filtro.eventoDeRed() != null && filtro.eventoDeRed(),
             PageRequest.of(filtro.pagina(), filtro.tamano(), aOrden(filtro.orden()))
         );
 
@@ -151,13 +167,13 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
 
     private AlertaRegistrada aDominio(AlertaEntidad alerta) {
         EquipoEntidad equipo = alerta.getEquipo();
-        SucursalEntidad sucursal = equipo.getSucursal();
+        SucursalEntidad sucursal = equipo != null ? equipo.getSucursal() : alerta.getSucursal();
         return new AlertaRegistrada(
             alerta.getId(),
-            equipo.getId(),
-            equipo.getNombreEquipo(),
-            sucursal.getId(),
-            sucursal.getCodigo(),
+            equipo != null ? equipo.getId() : null,
+            equipo != null ? equipo.getNombreEquipo() : null,
+            sucursal != null ? sucursal.getId() : null,
+            sucursal != null ? sucursal.getCodigo() : alerta.getCodigoSucursalRed(),
             alerta.getSeveridad(),
             alerta.getTipoAlerta(),
             alerta.getTitulo(),
@@ -167,7 +183,8 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
             alerta.getReconocidaPor() == null ? null : alerta.getReconocidaPor().getUsuario(),
             alerta.getReconocidaEn(),
             alerta.getCerradaPor() == null ? null : alerta.getCerradaPor().getUsuario(),
-            alerta.getCerradaEn()
+            alerta.getCerradaEn(),
+            alerta.isEventoDeRed()
         );
     }
 

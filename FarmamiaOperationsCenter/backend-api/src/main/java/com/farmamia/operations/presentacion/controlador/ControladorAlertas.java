@@ -52,6 +52,7 @@ public class ControladorAlertas {
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(required = false) Integer size,
         @RequestParam(required = false) String sort,
+        @RequestParam(name = "networkEvent", required = false) Boolean networkEvent,
         Authentication autenticacion
     ) {
         PermisosAdministrativos.exigirRol(
@@ -74,7 +75,8 @@ public class ControladorAlertas {
                 dateTo,
                 page,
                 tamano,
-                sort
+                sort,
+                networkEvent
             ))
             .stream()
             .map(this::aRespuesta)
@@ -95,6 +97,7 @@ public class ControladorAlertas {
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "50") int size,
         @RequestParam(defaultValue = "abiertaEn,desc") String sort,
+        @RequestParam(name = "networkEvent", required = false) Boolean networkEvent,
         Authentication autenticacion
     ) {
         PermisosAdministrativos.exigirRol(
@@ -116,7 +119,8 @@ public class ControladorAlertas {
             dateTo,
             page,
             size,
-            sort
+            sort,
+            networkEvent
         ));
         return aRespuestaPagina(pagina);
     }
@@ -153,7 +157,8 @@ public class ControladorAlertas {
             alerta.reconocidaPor(),
             alerta.reconocidaEn(),
             alerta.cerradaPor(),
-            alerta.cerradaEn()
+            alerta.cerradaEn(),
+            alerta.eventoDeRed()
         );
     }
 
@@ -188,7 +193,7 @@ public class ControladorAlertas {
                 "status", alerta.estado(),
                 "severity", alerta.severidad(),
                 "alertType", alerta.tipoAlerta(),
-                "device", alerta.nombreEquipo()
+                "device", alerta.nombreEquipo() != null ? alerta.nombreEquipo() : "[red:" + alerta.codigoSucursal() + "]"
             ),
             direccionIp(request)
         ));

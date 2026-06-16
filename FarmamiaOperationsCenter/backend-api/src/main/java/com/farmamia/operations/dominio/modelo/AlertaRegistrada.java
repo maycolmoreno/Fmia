@@ -18,6 +18,7 @@ public record AlertaRegistrada(
     String reconocidaPor,
     OffsetDateTime reconocidaEn,
     String cerradaPor,
-    OffsetDateTime cerradaEn
+    OffsetDateTime cerradaEn,
+    boolean eventoDeRed
 ) {
 }

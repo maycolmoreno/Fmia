@@ -9,6 +9,7 @@ import com.farmamia.operations.infraestructura.persistencia.repositorio.Sucursal
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -28,6 +29,11 @@ public class RepositorioSucursalesJpaAdaptador implements RepositorioSucursales 
         return sucursalRepositorioJpa.findByCodigo(codigoSucursal)
             .orElseGet(() -> sucursalRepositorioJpa.save(new SucursalEntidad(codigoSucursal, codigoSucursal)))
             .getId();
+    }
+
+    @Override
+    public Optional<Sucursal> buscarPorCodigo(String codigo) {
+        return sucursalRepositorioJpa.findByCodigo(codigo).map(this::aDominio);
     }
 
     @Override

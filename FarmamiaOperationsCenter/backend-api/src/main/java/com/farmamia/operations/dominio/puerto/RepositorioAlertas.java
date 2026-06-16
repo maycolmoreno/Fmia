@@ -1,6 +1,7 @@
 package com.farmamia.operations.dominio.puerto;
 
 import com.farmamia.operations.dominio.modelo.AlertaEquipo;
+import com.farmamia.operations.dominio.modelo.AlertaRed;
 import com.farmamia.operations.dominio.modelo.AlertaRegistrada;
 import com.farmamia.operations.dominio.modelo.FiltroAlertas;
 import com.farmamia.operations.dominio.modelo.Pagina;
@@ -10,6 +11,8 @@ import java.util.UUID;
 public interface RepositorioAlertas {
 
     void guardar(AlertaEquipo alerta);
+
+    void guardarAlertaRed(AlertaRed alerta);
 
     List<AlertaRegistrada> listarRecientes(int limite);
 

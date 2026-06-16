@@ -62,7 +62,8 @@ public class ConsultarAlertasCasoUso {
             filtro.fechaHasta(),
             Math.max(0, filtro.pagina()),
             Math.max(1, Math.min(filtro.tamano(), 200)),
-            limpiar(filtro.orden())
+            limpiar(filtro.orden()),
+            filtro.eventoDeRed()
         );
     }
 }

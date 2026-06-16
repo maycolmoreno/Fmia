@@ -25,6 +25,8 @@ public interface ObjetivoDespliegueRepositorioJpa extends JpaRepository<Objetivo
 
     long countByDespliegue_Id(UUID idDespliegue);
 
+    long countByDespliegue_IdAndEstadoIn(UUID idDespliegue, List<String> estados);
+
     @EntityGraph(attributePaths = {"equipo", "equipo.sucursal", "oleada", "grupoTrx"})
     List<ObjetivoDespliegueEntidad> findByDespliegue_Id(UUID idDespliegue);
 

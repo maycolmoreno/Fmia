@@ -1,13 +1,14 @@
 package com.farmamia.operations.infraestructura.persistencia.repositorio;
 
 import com.farmamia.operations.infraestructura.persistencia.entidad.EquipoEntidad;
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.time.OffsetDateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -16,6 +17,15 @@ public interface EquipoRepositorioJpa extends JpaRepository<EquipoEntidad, UUID>
     Optional<EquipoEntidad> findByNombreEquipo(String nombreEquipo);
 
     long countByEstado(String estado);
+
+    @Query("""
+        select equipo.versionPos
+        from EquipoEntidad equipo
+        where equipo.estado = 'ONLINE' and equipo.versionPos is not null
+        group by equipo.versionPos
+        order by count(equipo.id) desc
+        """)
+    List<String> findVersionesPosPorFrecuencia(Pageable pageable);
 
     @Override
     @EntityGraph(attributePaths = "sucursal")

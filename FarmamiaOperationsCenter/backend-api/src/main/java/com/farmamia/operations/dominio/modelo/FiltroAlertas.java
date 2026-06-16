@@ -15,6 +15,7 @@ public record FiltroAlertas(
     OffsetDateTime fechaHasta,
     int pagina,
     int tamano,
-    String orden
+    String orden,
+    Boolean eventoDeRed
 ) {
 }

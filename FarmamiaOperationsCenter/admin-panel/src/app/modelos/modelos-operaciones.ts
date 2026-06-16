@@ -319,9 +319,9 @@ export interface EventoAgente {
 
 export interface AlertaOperativa {
   id: string;
-  deviceId: string;
-  hostname: string;
-  branchId: string;
+  deviceId?: string | null;
+  hostname?: string | null;
+  branchId?: string | null;
   branchCode: string;
   severity: string;
   alertType: string;
@@ -329,6 +329,7 @@ export interface AlertaOperativa {
   message?: string | null;
   status: string;
   openedAt: string;
+  networkEvent?: boolean | null;
   acknowledgedBy?: string | null;
   acknowledgedAt?: string | null;
   closedBy?: string | null;
@@ -409,6 +410,68 @@ export interface SolicitudCrearDespliegue {
   pilot: boolean;
   deviceIds: string[];
 }
+
+// --- NOC Dashboard ---
+
+export interface FarmaciaCriticaNoc {
+  id: string;
+  code: string;
+  name: string;
+  onDuty: boolean;
+  operationalStatus: string;
+  critical: boolean;
+  dutyAtRisk: boolean;
+  criticalAlerts: number;
+  riskSummary: string;
+}
+
+export interface EstadoRedNoc {
+  linkDown: number;
+  highLatency: number;
+  vpnDown: number;
+}
+
+export interface EstadoPosNoc {
+  total: number;
+  online: number;
+  offline: number;
+  atRisk: number;
+  currentVersion: string | null;
+}
+
+export interface CampanaActivaNoc {
+  id: string;
+  name: string;
+  posVersion: string | null;
+  progressPercent: number;
+  totalDevices: number;
+  completed: number;
+  failed: number;
+}
+
+export interface AlertaResumenNoc {
+  id: string;
+  farmId: string | null;
+  farmCode: string | null;
+  severity: string;
+  alertType: string;
+  title: string;
+  status: string;
+  openedAt: string;
+  networkEvent: boolean;
+}
+
+export interface ResumenNocDashboard {
+  criticFarms: FarmaciaCriticaNoc[];
+  atRiskFarms: FarmaciaCriticaNoc[];
+  network: EstadoRedNoc;
+  pos: EstadoPosNoc;
+  activeCampaign: CampanaActivaNoc | null;
+  recentAlerts: AlertaResumenNoc[];
+  generatedAt: string;
+}
+
+// --- type aliases (backwards compat) ---
 
 export type PaquetePos = VersionPos;
 export type Sucursal = Farmacia;

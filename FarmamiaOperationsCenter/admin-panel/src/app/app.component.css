@@ -388,6 +388,11 @@ mark.baja {
   color: #147a45;
 }
 
+mark.red-event {
+  background: #e6f0ff;
+  color: #2b5fa8;
+}
+
 .estado-grande {
   display: inline-block;
   border-radius: 6px;

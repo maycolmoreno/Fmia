@@ -33,6 +33,7 @@ import {
   VersionPos,
   UsuarioAdministrativo
 } from './modelos/modelos-operaciones';
+import { DashboardNocComponent } from './dashboard-noc/dashboard-noc.component';
 import { OperacionesApiService } from './servicios/operaciones-api.service';
 import { SesionAdminService } from './servicios/sesion-admin.service';
 
@@ -41,7 +42,7 @@ type Vista = 'dashboard' | 'operaciones' | 'equipos' | 'paquetes' | 'despliegues
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet],
+  imports: [CommonModule, FormsModule, RouterOutlet, DashboardNocComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
@@ -180,6 +181,7 @@ export class AppComponent implements OnInit {
     branchCode: '',
     dateFrom: '',
     dateTo: '',
+    networkEvent: undefined as boolean | undefined,
     page: 0,
     size: 20,
     sort: 'openedAt,desc'
@@ -338,10 +340,6 @@ export class AppComponent implements OnInit {
     return this.resumenDashboard?.totalPackages ?? this.versionesPos.length;
   }
 
-  get totalDesplieguesDashboard(): number {
-    return this.resumenDashboard?.totalDeployments ?? this.campanasPos.length;
-  }
-
   get totalEventosDashboard(): number {
     return this.resumenDashboard?.totalEvents ?? this.eventosAgente.length;
   }
@@ -354,12 +352,6 @@ export class AppComponent implements OnInit {
     return this.alertasDashboard
       .filter((alerta) => alerta.severity === 'CRITICAL')
       .slice(0, 5);
-  }
-
-  get alertasOperativasDashboard(): AlertaOperativa[] {
-    return [...this.alertasDashboard]
-      .sort((a, b) => this.prioridadSeveridad(b.severity) - this.prioridadSeveridad(a.severity))
-      .slice(0, 6);
   }
 
   get farmaciasCriticas(): EstadoOperacionalFarmacia[] {
@@ -470,24 +462,6 @@ export class AppComponent implements OnInit {
     return this.campanasPos.filter((campana) =>
       ['SCHEDULED', 'APPROVED', 'PILOT_RUNNING', 'RUNNING', 'PAUSED'].includes(campana.status)
     );
-  }
-
-  get campanasDashboard(): CampanaPos[] {
-    const prioridad = ['PAUSED', 'RUNNING', 'PILOT_RUNNING', 'SCHEDULED', 'APPROVED'];
-    return [...this.campanasOperativas]
-      .sort((a, b) => prioridad.indexOf(a.status) - prioridad.indexOf(b.status))
-      .slice(0, 6);
-  }
-
-  get gruposTrxDashboard(): GrupoTrx[] {
-    const prioridad = ['PAUSADO', 'ACTIVO', 'RETIRADO'];
-    return [...this.gruposTrx]
-      .sort((a, b) => prioridad.indexOf(a.status) - prioridad.indexOf(b.status))
-      .slice(0, 6);
-  }
-
-  get eventosTecnicosDashboard(): EventoAgente[] {
-    return this.eventosAgente.slice(0, 6);
   }
 
   get gruposTrxActivos(): number {
@@ -962,6 +936,7 @@ export class AppComponent implements OnInit {
       branchCode: this.alertasFiltros.branchCode.trim(),
       dateFrom: this.normalizarFecha(this.alertasFiltros.dateFrom) ?? undefined,
       dateTo: this.normalizarFecha(this.alertasFiltros.dateTo) ?? undefined,
+      networkEvent: this.alertasFiltros.networkEvent,
       page: this.alertasFiltros.page,
       size: this.alertasFiltros.size,
       sort: this.alertasFiltros.sort
@@ -999,6 +974,7 @@ export class AppComponent implements OnInit {
       branchCode: '',
       dateFrom: '',
       dateTo: '',
+      networkEvent: undefined,
       page: 0,
       size: 20,
       sort: 'openedAt,desc'

@@ -45,7 +45,7 @@ public class ConfiguracionSeguridad {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/health", "/api/health", "/api/auth/login", "/api/agent/register").permitAll()
+                .requestMatchers("/actuator/health", "/api/health", "/api/auth/login", "/api/agent/register", "/api/webhooks/**").permitAll()
                 .requestMatchers("/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                 .requestMatchers("/api/packages/*/download", "/api/versiones-pos/*/descargar").permitAll()
                 .requestMatchers("/api/branches/**", "/api/devices/**", "/api/packages/**").authenticated()

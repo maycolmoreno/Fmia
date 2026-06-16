@@ -24,6 +24,10 @@ public class AlertaEntidad {
     @JoinColumn(name = "device_id")
     private EquipoEntidad equipo;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branch_id")
+    private SucursalEntidad sucursal;
+
     @Column(name = "severity", nullable = false, length = 20)
     private String severidad;
 
@@ -38,6 +42,12 @@ public class AlertaEntidad {
 
     @Column(name = "status", nullable = false, length = 30)
     private String estado = "OPEN";
+
+    @Column(name = "network_event", nullable = false)
+    private boolean eventoDeRed;
+
+    @Column(name = "branch_code_red", length = 30)
+    private String codigoSucursalRed;
 
     @CreationTimestamp
     @Column(name = "opened_at", nullable = false, updatable = false)
@@ -68,12 +78,34 @@ public class AlertaEntidad {
         this.mensaje = mensaje;
     }
 
+    public AlertaEntidad(SucursalEntidad sucursal, String severidad, String tipoAlerta, String titulo, String mensaje) {
+        this.sucursal = sucursal;
+        this.severidad = severidad;
+        this.tipoAlerta = tipoAlerta;
+        this.titulo = titulo;
+        this.mensaje = mensaje;
+        this.eventoDeRed = true;
+        this.codigoSucursalRed = sucursal != null ? sucursal.getCodigo() : null;
+    }
+
     public UUID getId() {
         return id;
     }
 
     public EquipoEntidad getEquipo() {
         return equipo;
+    }
+
+    public SucursalEntidad getSucursal() {
+        return sucursal;
+    }
+
+    public boolean isEventoDeRed() {
+        return eventoDeRed;
+    }
+
+    public String getCodigoSucursalRed() {
+        return codigoSucursalRed;
     }
 
     public String getSeveridad() {

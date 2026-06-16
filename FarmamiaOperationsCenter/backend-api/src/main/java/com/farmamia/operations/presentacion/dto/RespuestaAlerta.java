@@ -19,6 +19,7 @@ public record RespuestaAlerta(
     @JsonProperty("acknowledgedBy") String reconocidaPor,
     @JsonProperty("acknowledgedAt") OffsetDateTime reconocidaEn,
     @JsonProperty("closedBy") String cerradaPor,
-    @JsonProperty("closedAt") OffsetDateTime cerradaEn
+    @JsonProperty("closedAt") OffsetDateTime cerradaEn,
+    @JsonProperty("networkEvent") boolean eventoDeRed
 ) {
 }

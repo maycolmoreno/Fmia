@@ -93,194 +93,7 @@
     <div class="alerta exito" *ngIf="mensaje">{{ mensaje }}</div>
     <div class="alerta error" *ngIf="error">{{ error }}</div>
 
-    <section class="vista dashboard-noc" *ngIf="vistaActiva === 'dashboard'">
-      <article class="tarjeta prioridad-turno bloque-noc bloque-prioritario">
-        <div class="titulo-tarjeta">
-          <div>
-            <h2>Farmacias de turno en riesgo</h2>
-            <small>Primera lectura operacional del NOC</small>
-          </div>
-          <button type="button" class="boton pequeno secundario" (click)="cambiarVista('equipos')">Abrir farmacias</button>
-        </div>
-        <div class="lista-turno">
-          <div class="fila-turno" *ngFor="let farmacia of farmaciasTurnoEnRiesgo.slice(0, 8)">
-            <div>
-              <strong>{{ farmacia.codigoFarmacia }} - {{ farmacia.nombreFarmacia }}</strong>
-              <small>{{ farmacia.ciudad || 'Ciudad N/D' }} | {{ farmacia.resumenRiesgo }}</small>
-            </div>
-            <span><b>{{ farmacia.estadoOperacional }}</b><small>estado</small></span>
-            <span><b>{{ farmacia.equiposOffline }}</b><small>POS offline</small></span>
-            <span><b>{{ farmacia.alertasCriticas }}</b><small>alertas criticas</small></span>
-            <span><b>{{ farmacia.campanaActivaPrincipal || 'N/D' }}</b><small>campana activa</small></span>
-            <span><b>{{ farmacia.grupoTrxPrincipal || 'N/D' }}</b><small>grupo TRX</small></span>
-            <span><b>{{ farmacia.ultimoLatidoEn ? (farmacia.ultimoLatidoEn | date:'short') : 'Sin latido' }}</b><small>ultimo heartbeat</small></span>
-          </div>
-          <p class="vacio" *ngIf="farmaciasTurnoEnRiesgo.length === 0">Sin farmacias de turno en riesgo.</p>
-        </div>
-      </article>
-
-      <div class="metricas metricas-noc">
-        <article class="tarjeta metrica metrica-noc" [class.critica]="farmaciasTurnoEnRiesgo.length > 0">
-          <span>Turno en riesgo</span>
-          <strong>{{ farmaciasTurnoEnRiesgo.length }}</strong>
-          <small>farmacias con prioridad maxima</small>
-        </article>
-        <article class="tarjeta metrica metrica-noc" [class.critica]="farmaciasCriticas.length > 0">
-          <span>Farmacias criticas</span>
-          <strong>{{ farmaciasCriticas.length }}</strong>
-          <small>de {{ totalFarmaciasDashboard }} farmacias</small>
-        </article>
-        <article class="tarjeta metrica metrica-noc" [class.riesgo]="campanasOperativas.length > 0">
-          <span>Campanas POS activas</span>
-          <strong>{{ campanasOperativas.length }}</strong>
-          <small>{{ totalDesplieguesDashboard }} campanas totales</small>
-        </article>
-        <article class="tarjeta metrica metrica-noc" [class.riesgo]="gruposTrxPausados > 0">
-          <span>Grupos TRX pausados</span>
-          <strong>{{ gruposTrxPausados }}</strong>
-          <small>{{ gruposTrxActivos }} activos</small>
-        </article>
-        <article class="tarjeta metrica metrica-noc" [class.critica]="alertasAbiertas > 0">
-          <span>Alertas abiertas</span>
-          <strong>{{ alertasAbiertas }}</strong>
-          <small>{{ alertasCriticasDashboard.length }} criticas recientes</small>
-        </article>
-        <article class="tarjeta metrica metrica-noc">
-          <span>Plataforma central</span>
-          <strong>{{ salud?.status || 'SIN DATOS' }}</strong>
-          <small>{{ salud?.serverTime | date:'short' }}</small>
-        </article>
-      </div>
-
-      <article class="tarjeta bloque-noc">
-        <div class="titulo-tarjeta">
-          <div>
-            <h2>Farmacias criticas</h2>
-            <small>Impacto por farmacia antes que por equipo</small>
-          </div>
-          <button type="button" class="boton pequeno secundario" (click)="cambiarVista('equipos')">Abrir farmacias</button>
-        </div>
-        <div class="tabla tabla-noc">
-          <div class="tabla-fila cabecera">
-            <span>Farmacia</span>
-            <span>Estado</span>
-            <span>Turno</span>
-            <span>POS offline</span>
-            <span>Alertas criticas</span>
-            <span>Campana / TRX</span>
-            <span>Riesgo</span>
-          </div>
-          <div class="tabla-fila" *ngFor="let farmacia of farmaciasCriticas.slice(0, 8)">
-            <span><strong>{{ farmacia.codigoFarmacia }}</strong><small>{{ farmacia.nombreFarmacia }}</small></span>
-            <span class="estado critica">{{ farmacia.estadoOperacional }}</span>
-            <span>{{ farmacia.deTurno ? 'Si' : 'No' }}</span>
-            <span>{{ farmacia.equiposOffline }}</span>
-            <span>{{ farmacia.alertasCriticas }}</span>
-            <span><strong>{{ farmacia.campanaActivaPrincipal || 'N/D' }}</strong><small>{{ farmacia.grupoTrxPrincipal || 'Sin TRX' }}</small></span>
-            <span>{{ farmacia.resumenRiesgo }}</span>
-          </div>
-        </div>
-        <p class="vacio" *ngIf="farmaciasCriticas.length === 0">Sin farmacias criticas.</p>
-      </article>
-
-      <article class="tarjeta bloque-noc">
-        <div class="titulo-tarjeta">
-          <div>
-            <h2>Campanas POS</h2>
-            <small>Control de impacto por farmacias y version POS</small>
-          </div>
-          <button type="button" class="boton pequeno secundario" (click)="cambiarVista('despliegues')">Abrir campanas</button>
-        </div>
-        <div class="tabla tabla-noc tabla-campanas-noc">
-          <div class="tabla-fila cabecera">
-            <span>Campana</span>
-            <span>Version POS</span>
-            <span>Estado</span>
-            <span>Objetivos</span>
-            <span>Programacion</span>
-            <span>Lectura NOC</span>
-          </div>
-          <div class="tabla-fila" *ngFor="let campana of campanasDashboard">
-            <span><strong>{{ campana.name }}</strong><small>{{ campana.id }}</small></span>
-            <span>{{ campana.packageVersion || 'Version pendiente' }}</span>
-            <span class="estado" [class.critica]="campana.status === 'PAUSED'" [class.riesgo]="campana.status === 'RUNNING' || campana.status === 'PILOT_RUNNING'">{{ campana.status }}</span>
-            <span>{{ campana.targetCount }} objetivos POS</span>
-            <span>{{ campana.scheduledAt ? (campana.scheduledAt | date:'short') : 'Sin programacion' }}</span>
-            <span>Revisar farmacias impactadas y TRX asociado</span>
-          </div>
-        </div>
-        <p class="vacio" *ngIf="campanasDashboard.length === 0">Sin campanas POS activas.</p>
-      </article>
-
-      <article class="tarjeta bloque-noc">
-        <div class="titulo-tarjeta">
-          <div>
-            <h2>Grupos TRX</h2>
-            <small>Mecanismo de control de oleadas, subordinado al impacto por farmacia</small>
-          </div>
-          <button type="button" class="boton pequeno secundario" (click)="cambiarVista('gruposTrx')">Abrir TRX</button>
-        </div>
-        <div class="tabla tabla-noc tabla-grupos-trx-noc">
-          <div class="tabla-fila cabecera">
-            <span>Grupo TRX</span>
-            <span>Estado</span>
-            <span>Farmacias involucradas</span>
-            <span>Equipos asignados</span>
-            <span>Limite</span>
-            <span>Lectura NOC</span>
-          </div>
-          <div class="tabla-fila" *ngFor="let grupo of gruposTrxDashboard">
-            <span><strong>{{ grupo.code }}</strong><small>{{ grupo.name }}</small></span>
-            <span class="estado" [class.critica]="grupo.status === 'PAUSADO'" [class.riesgo]="grupo.status === 'ACTIVO'">{{ grupo.status }}</span>
-            <span>{{ grupo.involvedBranches }}</span>
-            <span>{{ grupo.assignedDevices }}</span>
-            <span>{{ grupo.maxDevices }}</span>
-            <span>{{ grupo.status === 'PAUSADO' ? 'Revisar farmacias pendientes antes de reanudar' : 'Disponible para oleadas controladas' }}</span>
-          </div>
-        </div>
-        <p class="vacio" *ngIf="gruposTrxDashboard.length === 0">Sin Grupos TRX registrados.</p>
-      </article>
-
-      <div class="rejilla-dos detalle-tecnico-noc">
-        <article class="tarjeta" *ngIf="sesion.puedeVerEventosYAlertas()">
-          <div class="titulo-tarjeta">
-            <div>
-              <h2>Alertas operativas</h2>
-              <small>Detalle tecnico para diagnostico, despues de ubicar la farmacia</small>
-            </div>
-          </div>
-          <div class="lista-compacta">
-            <div class="fila-compacta" *ngFor="let alerta of alertasOperativasDashboard">
-              <div>
-                <strong>{{ alerta.title }}</strong>
-                <small>{{ alerta.branchCode || 'Farmacia N/D' }} | {{ alerta.hostname || 'POS N/D' }} | {{ alerta.openedAt | date:'short' }}</small>
-              </div>
-              <span class="estado" [class.critica]="alerta.severity === 'CRITICAL'" [class.riesgo]="alerta.severity === 'HIGH'">{{ alerta.severity }}</span>
-            </div>
-            <p class="vacio" *ngIf="alertasOperativasDashboard.length === 0">Sin alertas operativas recientes.</p>
-          </div>
-        </article>
-
-        <article class="tarjeta" *ngIf="sesion.puedeVerEventosYAlertas()">
-          <div class="titulo-tarjeta">
-            <div>
-              <h2>Eventos del agente</h2>
-              <small>Trazabilidad tecnica de actualizacion y rollback</small>
-            </div>
-          </div>
-          <div class="lista-compacta">
-            <div class="fila-compacta" *ngFor="let evento of eventosTecnicosDashboard">
-              <div>
-                <strong>{{ evento.eventType }}</strong>
-                <small>{{ evento.hostname }} | {{ evento.createdAt | date:'short' }}</small>
-              </div>
-              <span class="estado">{{ evento.newVersion || 'N/D' }}</span>
-            </div>
-            <p class="vacio" *ngIf="eventosTecnicosDashboard.length === 0">Sin eventos del agente registrados.</p>
-          </div>
-        </article>
-      </div>
-    </section>
+    <app-dashboard-noc *ngIf="vistaActiva === 'dashboard'"></app-dashboard-noc>
 
     <section class="vista" *ngIf="vistaActiva === 'operaciones'">
       <div class="metricas metricas-operaciones">
@@ -449,7 +262,7 @@
             <div class="fila-compacta" *ngFor="let alerta of alertasCriticasDashboard">
               <div>
                 <strong>{{ alerta.title }}</strong>
-                <small>{{ alerta.hostname }} | {{ alerta.openedAt | date:'short' }}</small>
+                <small>{{ alerta.hostname || alerta.branchCode }} | {{ alerta.openedAt | date:'short' }}</small>
               </div>
               <span class="estado critica">{{ alerta.severity }}</span>
             </div>
@@ -1465,6 +1278,14 @@
             </select>
           </label>
           <label>
+            Origen
+            <select [(ngModel)]="alertasFiltros.networkEvent">
+              <option [ngValue]="undefined">Todos</option>
+              <option [ngValue]="true">Solo eventos de red</option>
+              <option [ngValue]="false">Solo equipos POS</option>
+            </select>
+          </label>
+          <label>
             Equipo POS
             <input type="text" [(ngModel)]="alertasFiltros.hostname" placeholder="POS-DEMO">
           </label>
@@ -1516,10 +1337,10 @@
           </div>
           <div class="tabla-fila" *ngFor="let alerta of alertas">
             <span>{{ alerta.openedAt | date:'short' }}</span>
-            <span>{{ alerta.hostname }}</span>
+            <span>{{ alerta.hostname || '—' }}</span>
             <span>{{ alerta.branchCode }}</span>
             <span><mark class="severidad" [class.critica]="alerta.severity === 'CRITICAL'" [class.alta]="alerta.severity === 'HIGH'" [class.media]="alerta.severity === 'MEDIUM'" [class.baja]="alerta.severity === 'LOW'">{{ alerta.severity }}</mark></span>
-            <span>{{ alerta.alertType }}</span>
+            <span>{{ alerta.alertType }} <mark *ngIf="alerta.networkEvent" class="severidad red-event">RED</mark></span>
             <span>{{ alerta.status }}</span>
             <span class="texto-corto">
               {{ alerta.acknowledgedBy ? ('Reconocida por ' + alerta.acknowledgedBy) : 'Sin reconocer' }}

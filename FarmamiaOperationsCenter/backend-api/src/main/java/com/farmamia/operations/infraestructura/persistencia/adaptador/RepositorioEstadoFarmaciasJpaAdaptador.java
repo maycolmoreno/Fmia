@@ -85,8 +85,11 @@ public class RepositorioEstadoFarmaciasJpaAdaptador implements RepositorioEstado
         Map<UUID, List<EquipoEntidad>> equiposPorFarmacia = equipoRepositorioJpa.findAll().stream()
             .collect(Collectors.groupingBy(equipo -> equipo.getSucursal().getId()));
         Map<UUID, List<AlertaEntidad>> alertasPorFarmacia = alertaRepositorioJpa.findByEstadoIn(ESTADOS_ALERTA_ABIERTA).stream()
-            .filter(alerta -> alerta.getEquipo() != null && alerta.getEquipo().getSucursal() != null)
-            .collect(Collectors.groupingBy(alerta -> alerta.getEquipo().getSucursal().getId()));
+            .filter(alerta -> (alerta.getEquipo() != null && alerta.getEquipo().getSucursal() != null)
+                           || (alerta.getEquipo() == null && alerta.getSucursal() != null))
+            .collect(Collectors.groupingBy(alerta -> alerta.getEquipo() != null
+                ? alerta.getEquipo().getSucursal().getId()
+                : alerta.getSucursal().getId()));
         Map<UUID, List<ObjetivoDespliegueEntidad>> objetivosPorFarmacia = objetivoRepositorioJpa.findAll().stream()
             .filter(objetivo -> objetivo.getEquipo() != null && objetivo.getEquipo().getSucursal() != null)
             .filter(objetivo -> objetivo.getDespliegue() != null)
