@@ -45,12 +45,20 @@ builder.Services.AddSingleton<PrepararActualizacionCasoUso>();
 builder.Services.AddSingleton<IClienteOperacionesFarmamia, ClienteOperacionesFarmamiaConCola>();
 builder.Services.AddHostedService<ServicioAgente>();
 builder.Services.AddHostedService<DespachadorColaEventosServicio>();
+builder.Services.AddHostedService<ReceptorSseInstrucciones>();
 
 builder.Services.AddHttpClient<ClienteOperacionesFarmamia>((servicios, cliente) =>
 {
     var opciones = servicios.GetRequiredService<IOptions<OpcionesAgente>>().Value;
     cliente.BaseAddress = new Uri(opciones.UrlApiCentral);
     cliente.Timeout = TimeSpan.FromSeconds(opciones.TimeoutSegundos);
+});
+
+builder.Services.AddHttpClient("sse", (servicios, cliente) =>
+{
+    var opciones = servicios.GetRequiredService<IOptions<OpcionesAgente>>().Value;
+    cliente.BaseAddress = new Uri(opciones.UrlApiCentral);
+    cliente.Timeout = Timeout.InfiniteTimeSpan;
 });
 
 var host = builder.Build();
