@@ -1,0 +1,9 @@
+package com.farmamia.posupdate.dominio.modelo;
+
+import java.io.InputStream;
+
+public record ArchivoPaqueteDescarga(
+    String nombreArchivo,
+    InputStream contenido
+) {
+}

@@ -1,0 +1,1783 @@
+<router-outlet></router-outlet>
+
+<main class="login-shell" *ngIf="!sesion.autenticado(); else appAutenticada">
+  <section class="login-panel">
+    <div class="marca login-marca">
+      <span class="marca-senal"></span>
+      <div>
+        <strong>Farmamia</strong>
+        <small>Operations Center</small>
+      </div>
+    </div>
+    <h1>Acceso administrativo</h1>
+    <p class="texto-ayuda">Ingresa con el usuario local de desarrollo para operar el MVP.</p>
+    <div class="alerta error" *ngIf="error">{{ error }}</div>
+    <form class="campos-login" (ngSubmit)="iniciarSesion()">
+      <label>
+        Usuario
+        <input type="text" name="usuario" [(ngModel)]="loginFormulario.usuario" autocomplete="username">
+      </label>
+      <label>
+        Contrasena
+        <input type="password" name="contrasena" [(ngModel)]="loginFormulario.contrasena" autocomplete="current-password">
+      </label>
+      <button type="submit" class="boton primario" [disabled]="autenticando">
+        Iniciar sesion
+      </button>
+    </form>
+  </section>
+</main>
+
+<ng-template #appAutenticada>
+<main class="app-shell">
+  <aside class="barra-lateral">
+    <div class="marca">
+      <span class="marca-senal"></span>
+      <div>
+        <strong>Farmamia</strong>
+        <small>Operations Center</small>
+      </div>
+    </div>
+
+    <nav class="navegacion" aria-label="Navegacion principal">
+      <span class="grupo-nav">Operacion</span>
+      <button type="button" [class.activo]="vistaActiva === 'dashboard'" (click)="cambiarVista('dashboard')">
+        Dashboard NOC
+      </button>
+      <button type="button" [class.activo]="vistaActiva === 'equipos'" (click)="cambiarVista('equipos')">
+        Farmacias
+      </button>
+      <button type="button" [class.activo]="vistaActiva === 'turno'" (click)="cambiarVista('turno')">
+        Farmacias de Turno
+      </button>
+      <button type="button" *ngIf="sesion.puedeVerEventosYAlertas()" [class.activo]="vistaActiva === 'alertas'" (click)="cambiarVista('alertas')">
+        Alertas Operativas
+      </button>
+      <button type="button" [class.activo]="vistaActiva === 'incidentes'" (click)="cambiarVista('incidentes')">
+        Incidentes
+      </button>
+
+      <span class="grupo-nav">Despliegues</span>
+      <button type="button" [class.activo]="vistaActiva === 'despliegues'" (click)="cambiarVista('despliegues')">
+        Campanas POS
+      </button>
+      <button type="button" [class.activo]="vistaActiva === 'gruposTrx'" (click)="cambiarVista('gruposTrx')">
+        Grupos TRX
+      </button>
+      <button type="button" [class.activo]="vistaActiva === 'paquetes'" (click)="cambiarVista('paquetes')">
+        Versiones POS
+      </button>
+
+      <span class="grupo-nav">Monitoreo</span>
+      <button type="button" [class.activo]="vistaActiva === 'operaciones'" (click)="cambiarVista('operaciones')">
+        Orquestacion
+      </button>
+      <button type="button" [class.activo]="vistaActiva === 'agentes'" (click)="cambiarVista('agentes')">
+        Agentes
+      </button>
+      <button type="button" *ngIf="sesion.puedeVerEventosYAlertas()" [class.activo]="vistaActiva === 'eventos'" (click)="cambiarVista('eventos')">
+        Eventos del Agente
+      </button>
+      <button type="button" [class.activo]="vistaActiva === 'red'" (click)="cambiarVista('red')">
+        Red
+      </button>
+
+      <span class="grupo-nav">Administracion</span>
+      <button type="button" *ngIf="sesion.puedeVerAuditoria()" [class.activo]="vistaActiva === 'auditoria'" (click)="cambiarVista('auditoria')">
+        Auditoria
+      </button>
+      <button type="button" *ngIf="sesion.esAdmin()" [class.activo]="vistaActiva === 'usuarios'" (click)="cambiarVista('usuarios')">
+        Usuarios
+      </button>
+      <button type="button" [class.activo]="vistaActiva === 'seguridad'" (click)="cambiarVista('seguridad')">
+        Configuracion
+      </button>
+    </nav>
+  </aside>
+
+  <section class="contenido">
+    <header class="encabezado">
+      <div>
+        <p class="etiqueta">Operacion POS Farmamia</p>
+        <h1>Dashboard NOC</h1>
+      </div>
+      <button type="button" class="boton secundario" (click)="recargarTodo()" [disabled]="cargando">
+        Actualizar
+      </button>
+      <button type="button" class="boton secundario" (click)="cerrarSesion()">
+        Salir
+      </button>
+    </header>
+
+    <div class="alerta exito" *ngIf="mensaje">{{ mensaje }}</div>
+    <div class="alerta error" *ngIf="error">{{ error }}</div>
+
+    <section class="vista dashboard-noc noc-farmacia-first" *ngIf="vistaActiva === 'dashboard'">
+
+      <!-- NOC auto-refresh (30 s): zona critica, red, POS, campana, alertas recientes -->
+      <app-dashboard-noc [estadoFarmacias]="estadoFarmacias"></app-dashboard-noc>
+
+      <article class="tarjeta bloque-noc bloque-prioritario prioridad-turno">
+        <div class="titulo-tarjeta">
+          <div>
+            <h2>Farmacias de Turno en Riesgo</h2>
+            <small>Prioridad maxima de continuidad operacional</small>
+          </div>
+          <button type="button" class="boton pequeno secundario" (click)="cambiarVista('turno')">Abrir turno</button>
+        </div>
+        <div class="tabla tabla-turno-noc">
+          <div class="tabla-fila cabecera">
+            <span>Farmacia</span>
+            <span>Ciudad</span>
+            <span>Estado</span>
+            <span>POS offline</span>
+            <span>Alertas criticas</span>
+            <span>Campana</span>
+            <span>Grupo TRX</span>
+            <span>Ultimo heartbeat</span>
+            <span>Riesgo</span>
+          </div>
+          <button type="button" class="tabla-fila fila-boton" *ngFor="let farmacia of farmaciasTurnoRiesgoNoc" (click)="cambiarVista('equipos')">
+            <span><strong>{{ farmacia.codigoFarmacia }}</strong><small>{{ farmacia.nombreFarmacia }}</small></span>
+            <span>{{ farmacia.ciudad || 'N/D' }}</span>
+            <span><app-status-badge [status]="farmacia.estadoOperacional"></app-status-badge></span>
+            <span>{{ farmacia.equiposOffline }}</span>
+            <span>{{ farmacia.alertasCriticas }}</span>
+            <span>{{ farmacia.campanaActivaPrincipal || 'Sin campana' }}</span>
+            <span>{{ farmacia.grupoTrxPrincipal || 'N/D' }}</span>
+            <span>{{ farmacia.ultimoLatidoEn ? (farmacia.ultimoLatidoEn | date:'short') : 'Sin heartbeat' }}</span>
+            <span class="texto-corto">{{ farmacia.resumenRiesgo }}</span>
+          </button>
+          <p class="vacio" *ngIf="farmaciasTurnoRiesgoNoc.length === 0">Sin farmacias de turno en riesgo.</p>
+        </div>
+      </article>
+
+      <div class="rejilla-noc-prioridad">
+        <article class="tarjeta bloque-noc">
+          <div class="titulo-tarjeta">
+            <div>
+              <h2>Farmacias Criticas</h2>
+              <small>Impacto directo por farmacia antes que por equipo</small>
+            </div>
+            <button type="button" class="boton pequeno secundario" (click)="cambiarVista('equipos')">Ver farmacias</button>
+          </div>
+          <div class="lista-compacta">
+            <button type="button" class="fila-compacta fila-boton" *ngFor="let farmacia of farmaciasCriticasNoc" (click)="cambiarVista('equipos')">
+              <div>
+                <strong>{{ farmacia.codigoFarmacia }} | {{ farmacia.nombreFarmacia }}</strong>
+                <small>{{ farmacia.resumenRiesgo }}</small>
+                <small>{{ farmacia.campanaActivaPrincipal || 'Sin campana asociada' }} | {{ farmacia.grupoTrxPrincipal || 'Sin Grupo TRX' }}</small>
+              </div>
+              <app-status-badge [status]="farmacia.equiposOffline + ' POS'" tone="danger"></app-status-badge>
+            </button>
+            <p class="vacio" *ngIf="farmaciasCriticasNoc.length === 0">Sin farmacias criticas.</p>
+          </div>
+        </article>
+
+        <article class="tarjeta bloque-noc" *ngIf="sesion.puedeVerEventosYAlertas()">
+          <div class="titulo-tarjeta">
+            <div>
+              <h2>Alertas Criticas</h2>
+              <small>Accion requerida por operador</small>
+            </div>
+            <button type="button" class="boton pequeno secundario" (click)="cambiarVista('alertas')">Abrir alertas</button>
+          </div>
+          <div class="lista-compacta">
+            <div class="fila-compacta" *ngFor="let alerta of alertasCriticasNoc">
+              <div>
+                <strong>{{ alerta.branchCode }} | {{ alerta.title }}</strong>
+                <small>{{ alerta.hostname || (alerta.networkEvent ? 'Evento de red' : 'Farmacia') }} | {{ alerta.openedAt | date:'short' }}</small>
+              </div>
+              <app-status-badge [status]="alerta.severity"></app-status-badge>
+            </div>
+            <p class="vacio" *ngIf="alertasCriticasNoc.length === 0">Sin alertas criticas abiertas.</p>
+          </div>
+        </article>
+      </div>
+
+      <div class="metricas metricas-noc">
+        <app-kpi-card label="Farmacias OK" [value]="farmaciasOk" [percent]="porcentajeFarmaciasOk" helper="sin riesgo visible" icon="OK" tone="success" [sparkline]="sparklineEstable"></app-kpi-card>
+        <app-kpi-card label="Farmacias en riesgo" [value]="farmaciasEnRiesgo" [percent]="porcentajeFarmaciasEnRiesgo" helper="requieren vigilancia" icon="RS" tone="warning" [sparkline]="sparklineRiesgo"></app-kpi-card>
+        <app-kpi-card label="Farmacias criticas" [value]="farmaciasCriticas.length" [percent]="porcentajeFarmaciasCriticas" helper="accion inmediata" icon="CR" tone="danger" [sparkline]="sparklineCritico"></app-kpi-card>
+        <app-kpi-card label="POS online" [value]="equiposOnline" [percent]="porcentajePosOnline" [helper]="totalEquiposDashboard + ' inventariados'" icon="ON" tone="success" [sparkline]="sparklineEstable"></app-kpi-card>
+        <app-kpi-card label="POS offline" [value]="equiposFueraLinea" [percent]="porcentajePosOffline" helper="offline, stale o error" icon="OF" tone="danger" [sparkline]="sparklineCritico"></app-kpi-card>
+        <app-kpi-card label="Alertas criticas" [value]="totalAlertasCriticas" [percent]="porcentajeAlertasCriticas" helper="requieren accion" icon="AL" tone="purple" [sparkline]="sparklineRiesgo"></app-kpi-card>
+      </div>
+
+      <article class="tarjeta bloque-noc estado-red-noc">
+        <div class="titulo-tarjeta">
+          <div>
+            <h2>Estado de Red</h2>
+            <small>Espacio preparado para integracion Grafana/LibreNMS/Zabbix</small>
+          </div>
+          <div class="acciones">
+            <button type="button" class="boton pequeno secundario" (click)="abrirGrafana()">Abrir Grafana</button>
+            <button type="button" class="boton pequeno secundario" (click)="cambiarVista('red')">Ver red</button>
+          </div>
+        </div>
+        <div class="metricas metricas-red">
+          <div><span>Enlaces WAN UP</span><strong>645</strong><small>pendiente integracion</small></div>
+          <div><span>Enlaces WAN DOWN</span><strong>{{ alertasRedCriticas }}</strong><small>alertas de red</small></div>
+          <div><span>VPN UP</span><strong>--</strong><small>pendiente integracion</small></div>
+          <div><span>VPN DOWN</span><strong>--</strong><small>pendiente integracion</small></div>
+          <div><span>Latencia alta</span><strong>{{ alertasLatenciaAlta }}</strong><small>alertas recientes</small></div>
+        </div>
+      </article>
+
+      <article class="tarjeta bloque-noc">
+        <div class="titulo-tarjeta">
+          <div>
+            <h2>Campanas POS Activas</h2>
+            <small>Lectura por farmacia antes que por equipo POS</small>
+          </div>
+          <button type="button" class="boton pequeno secundario" (click)="cambiarVista('despliegues')">Gestionar</button>
+        </div>
+        <div class="tabla tabla-campanas-noc">
+          <div class="tabla-fila cabecera">
+            <span>Campana</span>
+            <span>Version POS</span>
+            <span>Farmacias afectadas</span>
+            <span>Farmacias criticas</span>
+            <span>Turno afectado</span>
+            <span>Grupo TRX</span>
+            <span>Estado</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let campana of campanasActivasNoc">
+            <span><strong>{{ campana.name }}</strong><small>{{ campana.targetCount }} equipos POS objetivo</small></span>
+            <span>{{ campana.packageVersion || 'N/D' }}</span>
+            <span>{{ farmaciasAfectadasCampana(campana) }}</span>
+            <span>{{ farmaciasCriticasCampana(campana) }}</span>
+            <span>{{ farmaciasTurnoCampana(campana) }}</span>
+            <span>{{ grupoTrxCampana(campana) }}</span>
+            <span><app-status-badge [status]="campana.status"></app-status-badge></span>
+          </div>
+          <p class="vacio" *ngIf="campanasActivasNoc.length === 0">Sin campanas POS activas.</p>
+        </div>
+      </article>
+
+      <article class="tarjeta bloque-noc">
+        <div class="titulo-tarjeta">
+          <div>
+            <h2>Grupos TRX en Riesgo</h2>
+            <small>Recomendacion operacional para continuidad de farmacia</small>
+          </div>
+          <button type="button" class="boton pequeno secundario" (click)="cambiarVista('gruposTrx')">Ver grupos</button>
+        </div>
+        <div class="tabla tabla-grupos-trx-noc">
+          <div class="tabla-fila cabecera">
+            <span>Grupo</span>
+            <span>Farmacias afectadas</span>
+            <span>Farmacias criticas</span>
+            <span>Turno afectado</span>
+            <span>Fallos</span>
+            <span>Rollbacks</span>
+            <span>Recomendacion</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let grupo of gruposTrxRiesgoNoc">
+            <span><strong>{{ grupo.codigo }}</strong><small>{{ grupo.nombre }}</small></span>
+            <span>{{ grupo.farmaciasAfectadas }}</span>
+            <span>{{ grupo.farmaciasCriticas }}</span>
+            <span>{{ grupo.farmaciasTurno }}</span>
+            <span>{{ grupo.fallos }}</span>
+            <span>{{ grupo.rollbacks }}</span>
+            <span><app-status-badge [status]="grupo.recomendacion"></app-status-badge></span>
+          </div>
+          <p class="vacio" *ngIf="gruposTrxRiesgoNoc.length === 0">Sin Grupos TRX en riesgo.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'turno'">
+      <article class="tarjeta bloque-noc prioridad-turno">
+        <div class="titulo-tarjeta">
+          <div>
+            <h2>Farmacias de Turno</h2>
+            <small>Seguimiento operacional prioritario por farmacia</small>
+          </div>
+          <button type="button" class="boton pequeno secundario" (click)="recargarTodo()">Actualizar</button>
+        </div>
+        <div class="tabla tabla-turno-noc">
+          <div class="tabla-fila cabecera">
+            <span>Farmacia</span>
+            <span>Ciudad</span>
+            <span>Estado</span>
+            <span>POS offline</span>
+            <span>Alertas criticas</span>
+            <span>Campana</span>
+            <span>Grupo TRX</span>
+            <span>Ultimo heartbeat</span>
+            <span>Riesgo</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let farmacia of farmaciasDeTurno">
+            <span><strong>{{ farmacia.codigoFarmacia }}</strong><small>{{ farmacia.nombreFarmacia }}</small></span>
+            <span>{{ farmacia.ciudad || 'N/D' }}</span>
+            <span><app-status-badge [status]="farmacia.estadoOperacional"></app-status-badge></span>
+            <span>{{ farmacia.equiposOffline }}</span>
+            <span>{{ farmacia.alertasCriticas }}</span>
+            <span>{{ farmacia.campanaActivaPrincipal || 'Sin campana' }}</span>
+            <span>{{ farmacia.grupoTrxPrincipal || 'N/D' }}</span>
+            <span>{{ farmacia.ultimoLatidoEn ? (farmacia.ultimoLatidoEn | date:'short') : 'Sin heartbeat' }}</span>
+            <span class="texto-corto">{{ farmacia.resumenRiesgo }}</span>
+          </div>
+          <p class="vacio" *ngIf="farmaciasDeTurno.length === 0">Sin farmacias marcadas de turno.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'incidentes'">
+      <article class="tarjeta bloque-noc">
+        <div class="titulo-tarjeta">
+          <div>
+            <h2>Incidentes</h2>
+            <small>Preparado para ciclo de vida de incidentes; por ahora opera desde alertas</small>
+          </div>
+          <button type="button" class="boton pequeno secundario" (click)="cambiarVista('alertas')">Abrir alertas</button>
+        </div>
+        <div class="lista-compacta">
+          <div class="fila-compacta" *ngFor="let alerta of alertasCriticasNoc">
+            <div>
+              <strong>{{ alerta.branchCode }} | {{ alerta.title }}</strong>
+              <small>{{ alerta.message || alerta.alertType }}</small>
+            </div>
+            <span class="estado critica">{{ alerta.status }}</span>
+          </div>
+          <p class="vacio" *ngIf="alertasCriticasNoc.length === 0">Sin incidentes derivados de alertas criticas.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'agentes'">
+      <article class="tarjeta bloque-noc">
+        <div class="titulo-tarjeta">
+          <div>
+            <h2>Agentes POS</h2>
+            <small>Salud de agentes por farmacia y ultimo heartbeat</small>
+          </div>
+          <button type="button" class="boton pequeno secundario" (click)="cambiarVista('equipos')">Ver equipos POS</button>
+        </div>
+        <div class="tabla tabla-equipos">
+          <div class="tabla-fila cabecera">
+            <span>Equipo POS</span>
+            <span>Farmacia</span>
+            <span>IP</span>
+            <span>Agente</span>
+            <span>POS</span>
+            <span>Estado</span>
+            <span>Ultimo latido</span>
+            <span>Accion</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let equipo of equiposSinLatido.length ? equiposSinLatido : equipos">
+            <span>{{ equipo.hostname }}</span>
+            <span>{{ equipo.branchCode }}</span>
+            <span>{{ equipo.ipAddress || 'N/D' }}</span>
+            <span>{{ equipo.agentVersion || 'N/D' }}</span>
+            <span>{{ equipo.posVersion || 'N/D' }}</span>
+            <span><app-status-badge [status]="equipo.status"></app-status-badge></span>
+            <span>{{ equipo.lastHeartbeatAt ? (equipo.lastHeartbeatAt | date:'short') : 'Sin latido' }}</span>
+            <span><button type="button" class="boton pequeno" (click)="verDetalleEquipo(equipo)">Ver</button></span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'red'">
+      <article class="tarjeta bloque-noc estado-red-noc">
+        <div class="titulo-tarjeta">
+          <div>
+            <h2>Red</h2>
+            <small>Placeholder visual para integracion futura con Grafana, Zabbix, LibreNMS o PRTG</small>
+          </div>
+        </div>
+        <div class="metricas metricas-red">
+          <div><span>Enlaces WAN UP</span><strong>645</strong><small>pendiente integracion</small></div>
+          <div><span>Enlaces WAN DOWN</span><strong>{{ alertasRedCriticas }}</strong><small>alertas de red</small></div>
+          <div><span>VPN UP</span><strong>--</strong><small>pendiente integracion</small></div>
+          <div><span>VPN DOWN</span><strong>--</strong><small>pendiente integracion</small></div>
+          <div><span>Latencia alta</span><strong>{{ alertasLatenciaAlta }}</strong><small>alertas recientes</small></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'operaciones'">
+      <div class="metricas metricas-operaciones">
+        <app-stat-card label="Campanas activas" [value]="desplieguesOperativos.length" [helper]="desplieguesActivos + ' en ejecucion'"></app-stat-card>
+        <app-stat-card label="Control" [value]="planOrquestacion?.controlStatus || 'SIN PLAN'" [helper]="planOrquestacion?.lastEvaluatedAt ? ((planOrquestacion?.lastEvaluatedAt | date:'short') || 'Sin evaluacion') : 'Sin evaluacion'"></app-stat-card>
+        <app-stat-card label="Oleadas activas" [value]="oleadasActivas" [helper]="(planOrquestacion?.waves?.length || 0) + ' planificadas'"></app-stat-card>
+        <app-stat-card label="Agentes en riesgo" [value]="equiposFueraLinea" [helper]="equiposOnline + ' online'"></app-stat-card>
+        <app-stat-card label="Alertas operativas abiertas" [value]="alertasAbiertas" [helper]="alertasCriticasDashboard.length + ' criticas'"></app-stat-card>
+      </div>
+
+      <div class="panel-operaciones">
+        <article class="tarjeta">
+          <div class="titulo-tarjeta">
+            <h2>Campanas POS</h2>
+            <button type="button" class="boton pequeno secundario" (click)="recargarTodo()">Actualizar</button>
+          </div>
+          <div class="lista-compacta">
+            <button
+              type="button"
+              class="fila-operacion"
+              *ngFor="let despliegue of desplieguesOperativos"
+              [class.activo]="despliegueOrquestacion?.id === despliegue.id"
+              (click)="seleccionarOrquestacion(despliegue)">
+              <span>
+                <strong>{{ despliegue.name }}</strong>
+                <small>{{ despliegue.packageVersion || 'Version pendiente' }} | {{ despliegue.targetCount }} equipos POS</small>
+              </span>
+              <app-status-badge [status]="despliegue.status"></app-status-badge>
+            </button>
+            <p class="vacio" *ngIf="desplieguesOperativos.length === 0">Sin campanas operativas.</p>
+          </div>
+        </article>
+
+        <article class="tarjeta tarjeta-principal">
+          <div class="titulo-tarjeta">
+            <div>
+              <h2>Runtime de campana POS</h2>
+              <small *ngIf="despliegueOrquestacion">{{ despliegueOrquestacion.name }} | {{ despliegueOrquestacion.packageVersion }}</small>
+            </div>
+            <div class="acciones">
+              <button type="button" class="boton pequeno" (click)="evaluarOrquestacion()" [disabled]="!planOrquestacion">Evaluar</button>
+              <button type="button" class="boton pequeno primario" *ngIf="sesion.puedeOperar()" (click)="planificarOrquestacion()" [disabled]="!despliegueOrquestacion">Planificar</button>
+            </div>
+          </div>
+
+          <div class="campos operaciones-campos" *ngIf="despliegueOrquestacion">
+            <label>
+              Fallo max %
+              <input type="number" min="0" max="100" [(ngModel)]="orquestacionFormulario.maxFailurePercent">
+            </label>
+            <label>
+              Paralelos
+              <input type="number" min="1" max="500" [(ngModel)]="orquestacionFormulario.maxParallelDevices">
+            </label>
+            <label>
+              Ventana inicio
+              <input type="time" step="1" [(ngModel)]="orquestacionFormulario.maintenanceWindowStart">
+            </label>
+            <label>
+              Ventana fin
+              <input type="time" step="1" [(ngModel)]="orquestacionFormulario.maintenanceWindowEnd">
+            </label>
+            <label class="check">
+              <input type="checkbox" [(ngModel)]="orquestacionFormulario.autoPauseEnabled">
+              Pausa automatica
+            </label>
+          </div>
+
+          <div *ngIf="planOrquestacion; else sinPlanOperativo">
+            <div class="resumen-estado resumen-operaciones">
+              <div>
+                <span>Progreso</span>
+                <strong>{{ progresoOrquestacion }}%</strong>
+              </div>
+              <div>
+                <span>Fallo max</span>
+                <strong>{{ planOrquestacion.maxFailurePercent }}%</strong>
+              </div>
+              <div>
+                <span>Siguiente</span>
+                <strong>{{ planOrquestacion.nextWaveNumber }}</strong>
+              </div>
+              <div>
+                <span>Reintentos</span>
+                <strong>{{ planOrquestacion.retryLimit }}</strong>
+              </div>
+            </div>
+            <div class="progreso-linea">
+              <span>Avance total</span>
+              <div class="barra-progreso">
+                <span [style.width.%]="progresoOrquestacion"></span>
+              </div>
+            </div>
+            <p class="vacio alerta-operativa" *ngIf="planOrquestacion.pausedReason">{{ planOrquestacion.pausedReason }}</p>
+
+            <div class="tabla tabla-oleadas">
+              <div class="tabla-fila cabecera">
+                <span>Oleada</span>
+                <span>Estado</span>
+                <span>Objetivos</span>
+                <span>Fallo</span>
+                <span>Ventana</span>
+                <span>Acciones</span>
+              </div>
+              <div class="tabla-fila" *ngFor="let oleada of planOrquestacion.waves">
+                <span>{{ oleada.number }}. {{ oleada.name }}</span>
+                <span><app-status-badge [status]="oleada.status"></app-status-badge></span>
+                <span>{{ oleada.completedTargets }}/{{ oleada.plannedTargets }} | {{ oleada.pendingTargets }} pend.</span>
+                <span>{{ oleada.failurePercent }}%</span>
+                <span>{{ oleada.maintenanceWindowStart || 'N/D' }} - {{ oleada.maintenanceWindowEnd || 'N/D' }}</span>
+                <span class="acciones">
+                  <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="iniciarOleada(oleada)" [disabled]="oleada.status === 'RUNNING' || oleada.status === 'COMPLETED'">Iniciar</button>
+                  <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="pausarOleada(oleada)" [disabled]="oleada.status !== 'RUNNING'">Pausar</button>
+                  <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="reanudarOleada(oleada)" [disabled]="oleada.status !== 'PAUSED'">Reanudar</button>
+                </span>
+              </div>
+            </div>
+          </div>
+          <ng-template #sinPlanOperativo>
+            <p class="vacio">Selecciona una campana y genera el plan de oleadas.</p>
+          </ng-template>
+        </article>
+
+        <article class="tarjeta">
+          <div class="titulo-tarjeta">
+            <h2>Salud de agentes</h2>
+          </div>
+          <div class="lista-compacta">
+            <div class="fila-compacta" *ngFor="let equipo of equiposSinLatido">
+              <div>
+                <strong>{{ equipo.hostname }}</strong>
+                <small>{{ equipo.branchCode }} | {{ equipo.lastHeartbeatAt ? (equipo.lastHeartbeatAt | date:'short') : 'Sin latido' }}</small>
+              </div>
+              <app-status-badge [status]="equipo.status"></app-status-badge>
+            </div>
+            <p class="vacio" *ngIf="equiposSinLatido.length === 0">Sin agentes fuera de linea.</p>
+          </div>
+        </article>
+
+        <article class="tarjeta" *ngIf="sesion.puedeVerEventosYAlertas()">
+          <div class="titulo-tarjeta">
+            <h2>Alertas operativas NOC</h2>
+            <button type="button" class="boton pequeno secundario" (click)="cambiarVista('alertas')">Abrir</button>
+          </div>
+          <div class="lista-compacta">
+            <div class="fila-compacta" *ngFor="let alerta of alertasCriticasDashboard">
+              <div>
+                <strong>{{ alerta.title }}</strong>
+                <small>{{ alerta.hostname || alerta.branchCode }} | {{ alerta.openedAt | date:'short' }}</small>
+              </div>
+              <app-status-badge [status]="alerta.severity"></app-status-badge>
+            </div>
+            <p class="vacio" *ngIf="alertasCriticasDashboard.length === 0">Sin alertas criticas abiertas.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'equipos'">
+      <div class="metricas metricas-operaciones">
+        <app-stat-card label="Farmacias" [value]="totalFarmaciasDashboard" [helper]="farmaciasCriticas.length + ' criticas'"></app-stat-card>
+        <app-stat-card label="Turno en riesgo" [value]="farmaciasTurnoEnRiesgo.length" helper="prioridad NOC"></app-stat-card>
+        <app-stat-card label="Equipos POS" [value]="totalEquiposPosFarmacias || totalEquiposDashboard" [helper]="(equiposPosOfflineFarmacias || equiposFueraLinea) + ' offline'"></app-stat-card>
+        <app-stat-card label="Alertas abiertas" [value]="alertasAbiertas" [helper]="alertasCriticasDashboard.length + ' criticas recientes'"></app-stat-card>
+      </div>
+
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Estado operacional por farmacia</h2>
+          <button type="button" class="boton pequeno secundario" (click)="recargarTodo()">Actualizar</button>
+        </div>
+        <div class="tabla tabla-sucursales">
+          <div class="tabla-fila cabecera">
+            <span>Farmacia</span>
+            <span>Turno</span>
+            <span>Estado</span>
+            <span>Equipos POS</span>
+            <span>Alertas</span>
+            <span>Campanas</span>
+            <span>Version POS</span>
+            <span>Ultimo latido</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let farmacia of estadoFarmacias">
+            <span>
+              <strong>{{ farmacia.codigoFarmacia }}</strong>
+              <small>{{ farmacia.nombreFarmacia }}</small>
+            </span>
+            <span><app-status-badge [status]="farmacia.deTurno ? 'TURNO' : 'NORMAL'" [tone]="farmacia.turnoEnRiesgo ? 'danger' : 'success'"></app-status-badge></span>
+            <span><app-status-badge [status]="farmacia.estadoOperacional"></app-status-badge></span>
+            <span>{{ farmacia.equiposOnline }}/{{ farmacia.totalEquiposPos }} online | {{ farmacia.equiposOffline }} offline</span>
+            <span>{{ farmacia.alertasAbiertas }} abiertas | {{ farmacia.alertasCriticas }} criticas</span>
+            <span>{{ farmacia.campanasActivas }} activas | {{ farmacia.objetivosCampanaPendientes }} pend.</span>
+            <span>{{ farmacia.versionPosDominante || 'N/D' }}</span>
+            <span>{{ farmacia.ultimoLatidoEn ? (farmacia.ultimoLatidoEn | date:'short') : 'Sin latido' }}</span>
+          </div>
+          <p class="vacio" *ngIf="estadoFarmacias.length === 0">Sin estado operacional de farmacias.</p>
+        </div>
+      </article>
+
+      <article class="tarjeta formulario">
+        <div class="titulo-tarjeta">
+          <h2>Filtros de equipos</h2>
+          <button type="button" class="boton pequeno secundario" (click)="limpiarFiltrosEquipos()">Limpiar</button>
+        </div>
+        <div class="campos equipos-campos">
+          <label>
+            Busqueda
+            <input type="text" [(ngModel)]="equiposFiltros.q" placeholder="POS-001">
+          </label>
+          <label>
+            Estado
+            <select [(ngModel)]="equiposFiltros.status">
+              <option *ngFor="let estado of estadosEquipo" [value]="estado">{{ estado || 'Todos' }}</option>
+            </select>
+          </label>
+          <label>
+            Farmacia
+            <input type="text" [(ngModel)]="equiposFiltros.branchCode" placeholder="FMA001">
+          </label>
+          <label>
+            POS
+            <input type="text" [(ngModel)]="equiposFiltros.posVersion" placeholder="2026.06">
+          </label>
+          <label>
+            Tamano
+            <select [(ngModel)]="equiposFiltros.size">
+              <option [ngValue]="10">10</option>
+              <option [ngValue]="20">20</option>
+              <option [ngValue]="50">50</option>
+              <option [ngValue]="100">100</option>
+            </select>
+          </label>
+          <button type="button" class="boton primario" (click)="filtrarEquipos()">Filtrar</button>
+        </div>
+      </article>
+
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Equipos POS inventariados</h2>
+          <div class="acciones">
+            <button type="button" class="boton pequeno secundario" (click)="paginaEquipos(-1)" [disabled]="equiposFiltros.page === 0">Anterior</button>
+            <span class="estado">Pagina {{ equiposFiltros.page + 1 }} / {{ equiposPagina?.totalPages || 1 }}</span>
+            <button type="button" class="boton pequeno secundario" (click)="paginaEquipos(1)" [disabled]="!equiposTieneSiguiente">Siguiente</button>
+          </div>
+        </div>
+        <div class="tabla tabla-equipos">
+          <div class="tabla-fila cabecera">
+            <span>Equipo POS</span>
+            <span>Farmacia</span>
+            <span>IP</span>
+            <span>Agente</span>
+            <span>POS</span>
+            <span>Estado</span>
+            <span>Ultimo latido</span>
+            <span>Accion</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let equipo of equipos">
+            <span>{{ equipo.hostname }}</span>
+            <span>{{ equipo.branchCode }}</span>
+            <span>{{ equipo.ipAddress || 'N/D' }}</span>
+            <span>{{ equipo.agentVersion || 'N/D' }}</span>
+            <span>{{ equipo.posVersion || 'N/D' }}</span>
+            <span><app-status-badge [status]="equipo.status"></app-status-badge></span>
+            <span>{{ equipo.lastHeartbeatAt ? (equipo.lastHeartbeatAt | date:'short') : 'Sin latido' }}</span>
+            <span>
+              <button type="button" class="boton pequeno" (click)="verDetalleEquipo(equipo)">Ver</button>
+            </span>
+          </div>
+          <p class="vacio" *ngIf="equipos.length === 0">Registra un agente para ver equipos aqui.</p>
+        </div>
+      </article>
+
+      <article class="tarjeta" *ngIf="detalleEquipo">
+        <div class="titulo-tarjeta">
+          <h2>{{ detalleEquipo.device.hostname }}</h2>
+          <button type="button" class="boton pequeno secundario" (click)="cerrarDetalleEquipo()">Cerrar</button>
+        </div>
+
+        <div class="detalle-grid">
+          <section>
+            <h3>Inventario</h3>
+            <div class="detalle-lista">
+              <span>Farmacia</span><strong>{{ detalleEquipo.device.branchCode }}</strong>
+              <span>IP</span><strong>{{ detalleEquipo.device.ipAddress || 'N/D' }}</strong>
+              <span>MAC</span><strong>{{ detalleEquipo.device.macAddress || 'N/D' }}</strong>
+              <span>Windows</span><strong>{{ detalleEquipo.device.windowsVersion || 'N/D' }}</strong>
+              <span>Ruta POS</span><strong>{{ detalleEquipo.device.posPath }}</strong>
+            </div>
+          </section>
+
+          <section>
+            <h3>Ultima metrica</h3>
+            <div class="detalle-lista" *ngIf="detalleEquipo.lastMetric; else sinMetrica">
+              <span>Disco usado</span><strong>{{ porcentajeDisco(detalleEquipo.lastMetric) }}%</strong>
+              <span>Libre</span><strong>{{ detalleEquipo.lastMetric.diskFreeMb || 0 }} MB</strong>
+              <span>POS activo</span><strong>{{ detalleEquipo.lastMetric.posProcessRunning ? 'Si' : 'No' }}</strong>
+              <span>Latencia</span><strong>{{ detalleEquipo.lastMetric.latencyMs || 0 }} ms</strong>
+              <span>Recolectado</span><strong>{{ detalleEquipo.lastMetric.collectedAt | date:'short' }}</strong>
+            </div>
+            <ng-template #sinMetrica>
+              <p class="vacio">Sin metricas registradas.</p>
+            </ng-template>
+          </section>
+        </div>
+
+        <div class="rejilla-dos">
+          <section>
+            <h3>Campanas POS asociadas</h3>
+            <div class="lista-compacta">
+              <div class="fila-compacta" *ngFor="let objetivo of detalleEquipo.deployments">
+                <div>
+                  <strong>{{ objetivo.deploymentName }}</strong>
+                  <small>{{ objetivo.packageVersion }} | {{ objetivo.updatedAt | date:'short' }}</small>
+                </div>
+                <app-status-badge [status]="objetivo.targetStatus"></app-status-badge>
+              </div>
+              <p class="vacio" *ngIf="detalleEquipo.deployments.length === 0">Sin campanas POS asociadas.</p>
+            </div>
+          </section>
+
+          <section>
+            <h3>Eventos recientes</h3>
+            <div class="lista-compacta">
+              <div class="fila-compacta" *ngFor="let evento of detalleEquipo.recentEvents">
+                <div>
+                  <strong>{{ evento.eventType }}</strong>
+                  <small>{{ evento.eventMessage || 'Sin mensaje' }}</small>
+                </div>
+                <span class="estado">{{ evento.createdAt | date:'short' }}</span>
+              </div>
+              <p class="vacio" *ngIf="detalleEquipo.recentEvents.length === 0">Sin eventos recientes.</p>
+            </div>
+          </section>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'paquetes'">
+      <article class="tarjeta formulario" *ngIf="sesion.puedeOperar()">
+        <div class="titulo-tarjeta">
+          <h2>Cargar artefacto de version POS</h2>
+        </div>
+        <div class="campos">
+          <label>
+            Version
+            <input type="text" [(ngModel)]="paqueteFormulario.version" placeholder="2026.06.01">
+          </label>
+          <label>
+            Archivo ZIP
+            <input type="file" accept=".zip" (change)="seleccionarArchivo($event)">
+          </label>
+          <button type="button" class="boton primario" (click)="cargarPaquete()" [disabled]="guardandoPaquete">
+            Cargar
+          </button>
+        </div>
+      </article>
+
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Versiones POS disponibles</h2>
+        </div>
+        <div class="tabla">
+          <div class="tabla-fila cabecera">
+            <span>Version</span>
+            <span>Archivo</span>
+            <span>Estado</span>
+            <span>Tamano</span>
+            <span>Acciones</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let paquete of paquetes">
+            <span>{{ paquete.version }}</span>
+            <span class="texto-corto">{{ paquete.fileName }}</span>
+            <span><app-status-badge [status]="paquete.status"></app-status-badge></span>
+            <span>{{ formatoBytes(paquete.sizeBytes) }}</span>
+            <span class="acciones">
+              <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="aprobarPaquete(paquete)" [disabled]="paquete.status === 'APPROVED'">
+                Aprobar
+              </button>
+              <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="retirarPaquete(paquete)" [disabled]="paquete.status === 'RETIRED'">
+                Retirar
+              </button>
+              <button type="button" class="boton pequeno secundario" (click)="descargarPaquete(paquete)">
+                Descargar
+              </button>
+            </span>
+          </div>
+          <p class="vacio" *ngIf="paquetes.length === 0">Aun no hay versiones POS registradas.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'despliegues'">
+      <article class="tarjeta formulario" *ngIf="sesion.puedeOperar()">
+        <div class="titulo-tarjeta">
+          <h2>Crear campana POS</h2>
+        </div>
+        <div class="campos despliegue-campos">
+          <label>
+            Paquete
+            <select [(ngModel)]="despliegueFormulario.packageId">
+              <option *ngFor="let paquete of paquetes" [value]="paquete.id">
+                {{ paquete.version }} - {{ paquete.status }}
+              </option>
+            </select>
+          </label>
+          <label>
+            Nombre
+            <input type="text" [(ngModel)]="despliegueFormulario.name" placeholder="Campana POS junio">
+          </label>
+          <label>
+            Programado
+            <input type="datetime-local" [(ngModel)]="despliegueFormulario.scheduledAt">
+          </label>
+          <label>
+            Etiqueta interna
+            <input type="text" [(ngModel)]="despliegueFormulario.targetGroup" placeholder="ej: ZONA_NORTE">
+          </label>
+          <label class="check">
+            <input type="checkbox" [(ngModel)]="despliegueFormulario.pilot">
+            Piloto requerido
+          </label>
+          <label class="ancho-completo">
+            Equipos POS registrados
+            <div class="selector-equipos">
+              <label class="check fila-check" *ngFor="let equipo of equipos">
+                <input
+                  type="checkbox"
+                  [checked]="estaSeleccionado(equipo)"
+                  (change)="alternarEquipo(equipo, $any($event.target).checked)">
+                <span>{{ equipo.hostname }} | {{ equipo.branchCode }} | {{ equipo.status }}</span>
+              </label>
+              <p class="vacio" *ngIf="equipos.length === 0">No hay equipos registrados todavia.</p>
+            </div>
+          </label>
+          <label class="ancho-completo">
+            Equipos POS manuales
+            <textarea rows="2" [(ngModel)]="despliegueFormulario.deviceIds" placeholder="UUID adicionales separados por coma o salto de linea"></textarea>
+          </label>
+          <label class="ancho-completo">
+            Descripcion
+            <textarea rows="2" [(ngModel)]="despliegueFormulario.description"></textarea>
+          </label>
+          <div class="advertencia-turno ancho-completo" *ngIf="advertenciaCampanaTurno">
+            <strong>{{ advertenciaCampanaTurno }}</strong>
+            <small>
+              Farmacias:
+              <span *ngFor="let farmacia of farmaciasTurnoSeleccionadasCampana; let ultima = last">
+                {{ farmacia.code }}{{ ultima ? '' : ', ' }}
+              </span>
+            </small>
+          </div>
+          <label class="check ancho-completo autorizacion-turno" *ngIf="advertenciaCampanaTurno">
+            <input type="checkbox" [(ngModel)]="campanaAutorizadaTurno">
+            Entiendo el impacto operacional en farmacias de turno y autorizo esta campana
+          </label>
+          <button type="button" class="boton primario" (click)="crearDespliegue()" [disabled]="guardandoDespliegue || (!!advertenciaCampanaTurno && !campanaAutorizadaTurno)">
+            Crear
+          </button>
+        </div>
+      </article>
+
+      <div class="rejilla-dos">
+        <article class="tarjeta">
+          <div class="titulo-tarjeta">
+            <h2>Campanas</h2>
+          </div>
+          <div class="lista-compacta">
+            <div class="fila-despliegue" *ngFor="let despliegue of despliegues">
+              <div>
+                <strong>{{ despliegue.name }}</strong>
+                <small>{{ despliegue.packageVersion }} | {{ despliegue.targetCount }} equipos POS</small>
+              </div>
+              <app-status-badge [status]="despliegue.status"></app-status-badge>
+              <div class="acciones">
+                <button type="button" class="boton pequeno" (click)="verEstado(despliegue)">Estado</button>
+                <button type="button" class="boton pequeno primario" (click)="verEstadoPorFarmacia(despliegue)">Farmacias</button>
+                <button type="button" class="boton pequeno primario" (click)="verEstadoPorTrx(despliegue)">TRX por farmacia</button>
+                <button type="button" class="boton pequeno secundario" (click)="verEquiposSinActualizar(despliegue)">Sin actualizar</button>
+                <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="pausar(despliegue)" [disabled]="!puedePausar(despliegue)">Pausar</button>
+                <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="reanudar(despliegue)" [disabled]="!puedeReanudar(despliegue)">Reanudar</button>
+                <button type="button" class="boton pequeno peligro" *ngIf="sesion.puedeOperar()" (click)="cancelar(despliegue)" [disabled]="!puedeCancelar(despliegue)">Cancelar</button>
+              </div>
+            </div>
+            <p class="vacio" *ngIf="despliegues.length === 0">Aun no hay campanas POS.</p>
+          </div>
+        </article>
+
+        <article class="tarjeta">
+          <div class="titulo-tarjeta">
+            <h2>Estado seleccionado</h2>
+          </div>
+          <div *ngIf="estadoSeleccionado; else sinEstado">
+            <p class="estado-grande">{{ estadoSeleccionado.status }}</p>
+            <div class="resumen-estado">
+              <div>
+                <span>Total</span>
+                <strong>{{ estadoSeleccionado.totalTargets }}</strong>
+              </div>
+              <div>
+                <span>Completados</span>
+                <strong>{{ estadoSeleccionado.completedTargets }}</strong>
+              </div>
+              <div>
+                <span>Fallidos</span>
+                <strong>{{ estadoSeleccionado.failedTargets }}</strong>
+              </div>
+              <div>
+                <span>Pendientes</span>
+                <strong>{{ estadoSeleccionado.pendingTargets }}</strong>
+              </div>
+            </div>
+            <div class="progreso-linea">
+              <span>Avance {{ estadoSeleccionado.progressPercent }}%</span>
+              <div class="barra-progreso">
+                <span [style.width.%]="estadoSeleccionado.progressPercent"></span>
+              </div>
+            </div>
+            <div class="progreso-linea fallo" *ngIf="estadoSeleccionado.failurePercent > 0">
+              <span>Fallo {{ estadoSeleccionado.failurePercent }}%</span>
+              <div class="barra-progreso">
+                <span [style.width.%]="estadoSeleccionado.failurePercent"></span>
+              </div>
+            </div>
+            <div class="fila-compacta" *ngFor="let item of objetivoEstados()">
+              <span>{{ item[0] }}</span>
+              <strong>{{ item[1] }}</strong>
+            </div>
+          </div>
+          <ng-template #sinEstado>
+            <p class="vacio">Selecciona una campana para ver sus objetivos.</p>
+          </ng-template>
+        </article>
+      </div>
+
+      <article class="tarjeta" *ngIf="estadoCampanaGruposTrx">
+        <div class="titulo-tarjeta">
+          <div>
+            <h2>Estado por Grupo TRX</h2>
+            <small>{{ estadoCampanaGruposTrx.nombreCampana }} | {{ estadoCampanaGruposTrx.versionPos }} | lectura por farmacias</small>
+          </div>
+          <button type="button" class="boton pequeno secundario" (click)="cargarEstadoCampanaPorTrx()">Actualizar</button>
+        </div>
+
+        <div class="metricas metricas-operaciones">
+          <app-stat-card label="Farmacias afectadas" [value]="estadoCampanaGruposTrx.farmaciasAfectadas" [helper]="estadoCampanaGruposTrx.totalGrupos + ' grupos TRX'"></app-stat-card>
+          <app-stat-card label="Farmacias criticas" [value]="estadoCampanaGruposTrx.farmaciasCriticas" helper="prioridad NOC"></app-stat-card>
+          <app-stat-card label="Turno afectado" [value]="estadoCampanaGruposTrx.farmaciasTurnoAfectadas" helper="riesgo maximo"></app-stat-card>
+          <app-stat-card label="TRX en riesgo" [value]="estadoCampanaGruposTrx.gruposEnRiesgo" [helper]="estadoCampanaGruposTrx.gruposPausados + ' pausados'"></app-stat-card>
+        </div>
+
+        <div class="campos grupos-trx-asignacion" *ngIf="sesion.puedeOperar()">
+          <label>
+            Asociar Grupo TRX
+            <select [(ngModel)]="grupoTrxCampanaFormulario.grupoTrxId">
+              <option value="">Selecciona grupo activo</option>
+              <option *ngFor="let grupo of gruposTrx" [value]="grupo.id" [disabled]="grupo.status !== 'ACTIVO'">
+                {{ grupo.code }} - {{ grupo.name }} ({{ grupo.status }})
+              </option>
+            </select>
+          </label>
+          <label>
+            Motivo operacional
+            <input type="text" [(ngModel)]="grupoTrxCampanaFormulario.motivo" placeholder="pausa por farmacias criticas">
+          </label>
+          <button type="button" class="boton primario" (click)="asociarGrupoTrxCampana()">Asociar</button>
+        </div>
+
+        <div class="rejilla-dos">
+          <article class="tarjeta interna" *ngFor="let grupo of estadoCampanaGruposTrx.grupos">
+            <div class="titulo-tarjeta">
+              <div>
+                <h3>{{ grupo.codigoGrupoTrx }}</h3>
+                <small>{{ grupo.nombreGrupoTrx }} | recomendacion {{ recomendacionGrupoTrxCampana(grupo) }}</small>
+              </div>
+              <app-status-badge [status]="grupo.estado"></app-status-badge>
+            </div>
+            <div class="resumen-estado resumen-operaciones">
+              <div>
+                <span>Farmacias afectadas</span>
+                <strong>{{ grupo.farmaciasAfectadas }}</strong>
+              </div>
+              <div>
+                <span>Farmacias criticas</span>
+                <strong>{{ grupo.farmaciasCriticas }}</strong>
+              </div>
+              <div>
+                <span>Turno afectado</span>
+                <strong>{{ grupo.farmaciasTurnoAfectadas }}</strong>
+              </div>
+              <div>
+                <span>POS fallidos</span>
+                <strong>{{ grupo.equiposPosFallidos }}</strong>
+              </div>
+            </div>
+            <p class="vacio">{{ grupo.resumenRiesgo }}</p>
+            <div class="acciones">
+              <button type="button" class="boton pequeno" (click)="seleccionarGrupoTrxCampana(grupo)">Farmacias</button>
+              <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="pausarGrupoTrxCampana(grupo)" [disabled]="grupo.estado === 'PAUSADO'">Pausar</button>
+              <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="reanudarGrupoTrxCampana(grupo)" [disabled]="grupo.estado !== 'PAUSADO'">Reanudar</button>
+              <button type="button" class="boton pequeno peligro" *ngIf="sesion.puedeOperar()" (click)="quitarGrupoTrxCampana(grupo)">Quitar</button>
+            </div>
+          </article>
+        </div>
+
+        <div class="detalle-grid" *ngIf="grupoTrxCampanaSeleccionado">
+          <article class="tarjeta interna">
+            <h3>Farmacias afectadas por {{ grupoTrxCampanaSeleccionado.codigoGrupoTrx }}</h3>
+            <div class="tabla tabla-estado-campana-farmacia">
+              <div class="tabla-fila cabecera">
+                <span>Farmacia</span>
+                <span>Turno</span>
+                <span>Estado operacional</span>
+                <span>Equipos POS</span>
+                <span>Fallos</span>
+                <span>Rollbacks</span>
+                <span>Alertas</span>
+                <span>Riesgo</span>
+              </div>
+              <button type="button" class="tabla-fila fila-boton" *ngFor="let farmacia of grupoTrxCampanaSeleccionado.farmacias" (click)="seleccionarFarmaciaCampana(farmacia)">
+                <span><strong>{{ farmacia.codigoFarmacia }}</strong> | {{ farmacia.nombreFarmacia }}</span>
+                <span>{{ farmacia.deTurno ? 'Turno' : 'Normal' }}</span>
+                <span><app-status-badge [status]="farmacia.estadoOperacional"></app-status-badge></span>
+                <span>{{ farmacia.completados }}/{{ farmacia.totalEquiposPos }} | {{ farmacia.pendientes }} pend.</span>
+                <span>{{ farmacia.fallidos }}</span>
+                <span>{{ farmacia.rollbacks }}</span>
+                <span>{{ farmacia.alertasCriticas }} crit. | {{ farmacia.alertasAbiertas }} abiertas</span>
+                <span>{{ farmacia.resumenRiesgo }}</span>
+              </button>
+              <p class="vacio" *ngIf="grupoTrxCampanaSeleccionado.farmacias.length === 0">Sin farmacias afectadas por este Grupo TRX.</p>
+            </div>
+          </article>
+
+          <article class="tarjeta interna" *ngIf="farmaciaCampanaSeleccionada">
+            <h3>Equipos POS que explican el riesgo</h3>
+            <div class="tabla tabla-equipos-campana-farmacia">
+              <div class="tabla-fila cabecera">
+                <span>Equipo POS</span>
+                <span>Objetivo</span>
+                <span>Equipo</span>
+                <span>Versiones</span>
+                <span>Error</span>
+              </div>
+              <div class="tabla-fila" *ngFor="let equipo of farmaciaCampanaSeleccionada.devices">
+                <span>{{ equipo.hostname }}</span>
+                <span><app-status-badge [status]="equipo.targetStatus"></app-status-badge></span>
+                <span><app-status-badge [status]="equipo.deviceStatus"></app-status-badge></span>
+                <span>{{ equipo.oldVersion || 'N/D' }} -> {{ equipo.newVersion || 'N/D' }}</span>
+                <span>{{ equipo.lastError || (equipo.rollback ? 'Rollback registrado' : 'Sin error') }}</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </article>
+
+      <article class="tarjeta" *ngIf="estadoCampanaFarmacia">
+        <div class="titulo-tarjeta">
+          <div>
+            <h2>Estado por Farmacia</h2>
+            <small>{{ estadoCampanaFarmacia.nombreCampana }} | {{ estadoCampanaFarmacia.versionPos }} | {{ estadoCampanaFarmacia.estadoCampana }}</small>
+          </div>
+          <strong *ngIf="estadoCampanaFarmacia.grupoTrxPeorEstado">Grupo en riesgo: {{ estadoCampanaFarmacia.grupoTrxPeorEstado }}</strong>
+        </div>
+
+        <div class="metricas metricas-operaciones">
+          <app-stat-card label="Farmacias objetivo" [value]="estadoCampanaFarmacia.totalFarmacias" helper="impactadas por campana"></app-stat-card>
+          <app-stat-card label="Completadas" [value]="estadoCampanaFarmacia.farmaciasCompletadas" [helper]="estadoCampanaFarmacia.avancePorcentaje + '% avance'"></app-stat-card>
+          <app-stat-card label="Pendientes" [value]="estadoCampanaFarmacia.farmaciasPendientes" [helper]="estadoCampanaFarmacia.farmaciasEnProgreso + ' en progreso'"></app-stat-card>
+          <app-stat-card label="Con errores" [value]="estadoCampanaFarmacia.farmaciasConErrores" [helper]="estadoCampanaFarmacia.exitoPorcentaje + '% exito POS'"></app-stat-card>
+          <app-stat-card label="En riesgo" [value]="estadoCampanaFarmacia.farmaciasEnRiesgo" [helper]="estadoCampanaFarmacia.farmaciasCriticas + ' criticas'"></app-stat-card>
+          <app-stat-card label="Turno en riesgo" [value]="estadoCampanaFarmacia.farmaciasTurnoEnRiesgo" helper="prioridad NOC"></app-stat-card>
+        </div>
+
+        <div class="campos estado-campana-farmacia-campos">
+          <label>
+            Buscar farmacia
+            <input type="search" [(ngModel)]="estadoCampanaFarmaciaFiltros.q" placeholder="codigo o nombre">
+          </label>
+          <label>
+            Estado tecnico
+            <select [(ngModel)]="estadoCampanaFarmaciaFiltros.estadoTecnico">
+              <option *ngFor="let estado of estadosTecnicosCampanaFarmacia" [ngValue]="estado">{{ estado || 'Todos' }}</option>
+            </select>
+          </label>
+          <label>
+            Estado operacional
+            <select [(ngModel)]="estadoCampanaFarmaciaFiltros.estadoOperacional">
+              <option *ngFor="let estado of estadosOperacionalesCampanaFarmacia" [ngValue]="estado">{{ estado || 'Todos' }}</option>
+            </select>
+          </label>
+          <label>
+            Grupo TRX
+            <input type="search" [(ngModel)]="estadoCampanaFarmaciaFiltros.grupoTrx" placeholder="trx001">
+          </label>
+          <label>
+            Turno
+            <select [(ngModel)]="estadoCampanaFarmaciaFiltros.deTurno">
+              <option [ngValue]="''">Todas</option>
+              <option [ngValue]="true">De turno</option>
+              <option [ngValue]="false">No turno</option>
+            </select>
+          </label>
+          <div class="acciones filtros-acciones">
+            <button type="button" class="boton pequeno primario" (click)="filtrarEstadoCampanaPorFarmacia()">Filtrar</button>
+            <button type="button" class="boton pequeno secundario" (click)="limpiarFiltrosEstadoCampanaPorFarmacia()">Limpiar</button>
+          </div>
+        </div>
+
+        <div class="tabla tabla-estado-campana-farmacia">
+          <div class="tabla-fila cabecera">
+            <span>Farmacia</span>
+            <span>Grupo TRX</span>
+            <span>Turno</span>
+            <span>Estado tecnico</span>
+            <span>Estado operacional</span>
+            <span>Equipos POS</span>
+            <span>Fallos</span>
+            <span>Rollbacks</span>
+            <span>Alertas</span>
+            <span>Riesgo</span>
+          </div>
+          <button type="button" class="tabla-fila fila-boton" *ngFor="let farmacia of estadoCampanaFarmacia.farmacias" (click)="seleccionarFarmaciaCampana(farmacia)">
+            <span><strong>{{ farmacia.codigoFarmacia }}</strong> | {{ farmacia.nombreFarmacia }}</span>
+            <span>{{ farmacia.codigoGrupoTrx || 'N/D' }}</span>
+            <span>{{ farmacia.deTurno ? 'Turno' : 'Normal' }}</span>
+            <span><app-status-badge [status]="farmacia.estadoTecnico"></app-status-badge></span>
+            <span><app-status-badge [status]="farmacia.estadoOperacional"></app-status-badge></span>
+            <span>{{ farmacia.completados }}/{{ farmacia.totalEquiposPos }} | {{ farmacia.pendientes }} pend.</span>
+            <span>{{ farmacia.fallidos }}</span>
+            <span>{{ farmacia.rollbacks }}</span>
+            <span>{{ farmacia.alertasCriticas }} crit. | {{ farmacia.alertasAbiertas }} abiertas</span>
+            <span>{{ farmacia.resumenRiesgo }}</span>
+          </button>
+          <p class="vacio" *ngIf="estadoCampanaFarmacia.farmacias.length === 0">Sin farmacias para los filtros seleccionados.</p>
+        </div>
+
+        <div class="paginador">
+          <button type="button" class="boton pequeno secundario" (click)="paginaEstadoCampanaPorFarmacia(-1)" [disabled]="estadoCampanaFarmaciaFiltros.page === 0">Anterior</button>
+          <span>Pagina {{ estadoCampanaFarmacia.page + 1 }} de {{ estadoCampanaFarmacia.totalPages || 1 }}</span>
+          <button type="button" class="boton pequeno secundario" (click)="paginaEstadoCampanaPorFarmacia(1)" [disabled]="!estadoCampanaFarmaciaTieneSiguiente">Siguiente</button>
+        </div>
+
+        <div class="detalle-grid" *ngIf="farmaciaCampanaSeleccionada">
+          <article class="tarjeta interna">
+            <h3>{{ farmaciaCampanaSeleccionada.codigoFarmacia }} | {{ farmaciaCampanaSeleccionada.nombreFarmacia }}</h3>
+            <dl class="detalle-lista">
+              <dt>Estado tecnico</dt>
+              <dd><strong>{{ farmaciaCampanaSeleccionada.estadoTecnico }}</strong></dd>
+              <dt>Estado operacional</dt>
+              <dd><strong>{{ farmaciaCampanaSeleccionada.estadoOperacional }}</strong></dd>
+              <dt>Ultimo latido</dt>
+              <dd><strong>{{ farmaciaCampanaSeleccionada.ultimoHeartbeatRelacionado || 'Sin latido' }}</strong></dd>
+              <dt>Resumen</dt>
+              <dd><strong>{{ farmaciaCampanaSeleccionada.resumenRiesgo }}</strong></dd>
+            </dl>
+          </article>
+          <article class="tarjeta interna">
+            <h3>Equipos POS en campana</h3>
+            <div class="tabla tabla-equipos-campana-farmacia">
+              <div class="tabla-fila cabecera">
+                <span>Equipo POS</span>
+                <span>Objetivo</span>
+                <span>Equipo</span>
+                <span>Versiones</span>
+                <span>Error</span>
+              </div>
+              <div class="tabla-fila" *ngFor="let equipo of farmaciaCampanaSeleccionada.devices">
+                <span>{{ equipo.hostname }}</span>
+                <span><app-status-badge [status]="equipo.targetStatus"></app-status-badge></span>
+                <span><app-status-badge [status]="equipo.deviceStatus"></app-status-badge></span>
+                <span>{{ equipo.oldVersion || 'N/D' }} -> {{ equipo.newVersion || 'N/D' }}</span>
+                <span>{{ equipo.lastError || (equipo.rollback ? 'Rollback registrado' : 'Sin error') }}</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </article>
+
+      <article class="tarjeta" *ngIf="despliegueOrquestacion">
+        <div class="titulo-tarjeta">
+          <div>
+            <h2>Orquestacion</h2>
+            <small>{{ despliegueOrquestacion.name }} | {{ despliegueOrquestacion.packageVersion }}</small>
+          </div>
+          <div class="acciones">
+            <button type="button" class="boton pequeno" (click)="evaluarOrquestacion()" [disabled]="!planOrquestacion">Evaluar</button>
+            <button type="button" class="boton pequeno primario" *ngIf="sesion.puedeOperar()" (click)="planificarOrquestacion()">Planificar</button>
+          </div>
+        </div>
+
+        <div class="campos despliegue-campos">
+          <label>
+            Fallo max %
+            <input type="number" min="0" max="100" [(ngModel)]="orquestacionFormulario.maxFailurePercent">
+          </label>
+          <label>
+            Reintentos
+            <input type="number" min="0" max="10" [(ngModel)]="orquestacionFormulario.retryLimit">
+          </label>
+          <label>
+            Paralelos
+            <input type="number" min="1" max="500" [(ngModel)]="orquestacionFormulario.maxParallelDevices">
+          </label>
+          <label>
+            Ventana inicio
+            <input type="time" step="1" [(ngModel)]="orquestacionFormulario.maintenanceWindowStart">
+          </label>
+          <label>
+            Ventana fin
+            <input type="time" step="1" [(ngModel)]="orquestacionFormulario.maintenanceWindowEnd">
+          </label>
+          <label class="check">
+            <input type="checkbox" [(ngModel)]="orquestacionFormulario.autoPauseEnabled">
+            Pausa automatica
+          </label>
+        </div>
+
+        <div *ngIf="planOrquestacion; else sinPlanOrquestacion">
+          <div class="resumen-estado">
+            <div>
+              <span>Control</span>
+              <strong>{{ planOrquestacion.controlStatus }}</strong>
+            </div>
+            <div>
+              <span>Oleadas</span>
+              <strong>{{ planOrquestacion.waves.length }}</strong>
+            </div>
+            <div>
+              <span>Fallo max</span>
+              <strong>{{ planOrquestacion.maxFailurePercent }}%</strong>
+            </div>
+            <div>
+              <span>Siguiente</span>
+              <strong>{{ planOrquestacion.nextWaveNumber }}</strong>
+            </div>
+          </div>
+          <p class="vacio" *ngIf="planOrquestacion.pausedReason">{{ planOrquestacion.pausedReason }}</p>
+
+          <div class="tabla tabla-eventos">
+            <div class="tabla-fila cabecera">
+              <span>Oleada</span>
+              <span>Grupo</span>
+              <span>Estado</span>
+              <span>Objetivos</span>
+              <span>Fallos</span>
+              <span>Turno</span>
+              <span>Acciones</span>
+            </div>
+            <div class="tabla-fila" *ngFor="let oleada of planOrquestacion.waves">
+              <span>{{ oleada.number }}. {{ oleada.name }}</span>
+              <span>{{ oleada.pilot ? 'PILOTO' : (oleada.targetGroup || 'GENERAL') }}</span>
+            <span><app-status-badge [status]="oleada.status"></app-status-badge></span>
+              <span>{{ oleada.completedTargets }}/{{ oleada.plannedTargets }} | {{ oleada.pendingTargets }} pend.</span>
+              <span>{{ oleada.failurePercent }}%</span>
+              <span>{{ oleada.onDutyBranches }}</span>
+              <span class="acciones">
+                <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="iniciarOleada(oleada)" [disabled]="oleada.status === 'RUNNING' || oleada.status === 'COMPLETED'">Iniciar</button>
+                <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="pausarOleada(oleada)" [disabled]="oleada.status !== 'RUNNING'">Pausar</button>
+                <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="reanudarOleada(oleada)" [disabled]="oleada.status !== 'PAUSED'">Reanudar</button>
+              </span>
+            </div>
+          </div>
+        </div>
+        <ng-template #sinPlanOrquestacion>
+          <p class="vacio">Esta campana aun no tiene oleadas planificadas.</p>
+        </ng-template>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'gruposTrx'">
+      <div class="metricas metricas-operaciones">
+        <app-stat-card label="Grupos TRX" [value]="gruposTrx.length" helper="control de oleadas POS"></app-stat-card>
+        <app-stat-card label="Activos" [value]="gruposTrxActivos" helper="disponibles para campanas"></app-stat-card>
+        <app-stat-card label="Pausados" [value]="gruposTrxPausados" helper="requieren revision NOC"></app-stat-card>
+      </div>
+
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <div>
+            <h2>Grupos TRX</h2>
+            <small>Control operacional de oleadas de actualizacion POS</small>
+          </div>
+          <button type="button" class="boton pequeno primario" *ngIf="sesion.puedeOperar()" (click)="nuevoGrupoTrx()">Nuevo</button>
+        </div>
+
+        <div class="campos grupos-trx-campos">
+          <label>
+            Codigo
+            <input type="search" [(ngModel)]="grupoTrxFiltros.codigo" placeholder="trx001">
+          </label>
+          <label>
+            Estado
+            <select [(ngModel)]="grupoTrxFiltros.estado">
+              <option *ngFor="let estado of estadosGrupoTrx" [ngValue]="estado">{{ estado || 'Todos' }}</option>
+            </select>
+          </label>
+          <label>
+            Activo
+            <select [(ngModel)]="grupoTrxFiltros.activo">
+              <option [ngValue]="''">Todos</option>
+              <option [ngValue]="true">Si</option>
+              <option [ngValue]="false">No</option>
+            </select>
+          </label>
+          <div class="acciones filtros-acciones">
+            <button type="button" class="boton pequeno primario" (click)="filtrarGruposTrx()">Filtrar</button>
+            <button type="button" class="boton pequeno secundario" (click)="limpiarFiltrosGruposTrx()">Limpiar</button>
+          </div>
+        </div>
+
+        <div class="tabla tabla-grupos-trx">
+          <div class="tabla-fila cabecera">
+            <span>Codigo</span>
+            <span>Nombre</span>
+            <span>Estado</span>
+            <span>Equipos POS</span>
+            <span>Farmacias</span>
+            <span>Maximo</span>
+            <span>Acciones</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let grupo of gruposTrx">
+            <span><strong>{{ grupo.code }}</strong></span>
+            <span>{{ grupo.name }}</span>
+            <span><app-status-badge [status]="grupo.status"></app-status-badge></span>
+            <span>{{ grupo.assignedDevices }}</span>
+            <span>{{ grupo.involvedBranches }}</span>
+            <span>{{ grupo.maxDevices }}</span>
+            <span class="acciones">
+              <button type="button" class="boton pequeno" (click)="seleccionarGrupoTrx(grupo)">Detalle</button>
+              <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="pausarGrupoTrx(grupo)" [disabled]="grupo.status !== 'ACTIVO'">Pausar</button>
+              <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="reanudarGrupoTrx(grupo)" [disabled]="grupo.status !== 'PAUSADO'">Reanudar</button>
+              <button type="button" class="boton pequeno peligro" *ngIf="sesion.puedeOperar()" (click)="retirarGrupoTrx(grupo)" [disabled]="grupo.status === 'RETIRADO'">Retirar</button>
+            </span>
+          </div>
+          <p class="vacio" *ngIf="gruposTrx.length === 0">Sin Grupos TRX registrados.</p>
+        </div>
+
+        <div class="paginador" *ngIf="gruposTrxPagina">
+          <button type="button" class="boton pequeno secundario" (click)="paginaGruposTrx(-1)" [disabled]="grupoTrxFiltros.page === 0">Anterior</button>
+          <span>Pagina {{ gruposTrxPagina.page + 1 }} de {{ gruposTrxPagina.totalPages || 1 }}</span>
+          <button type="button" class="boton pequeno secundario" (click)="paginaGruposTrx(1)" [disabled]="!gruposTrxTieneSiguiente">Siguiente</button>
+        </div>
+      </article>
+
+      <div class="rejilla-dos">
+        <article class="tarjeta">
+          <div class="titulo-tarjeta">
+            <h2>{{ grupoTrxFormulario.id ? 'Editar Grupo TRX' : 'Crear Grupo TRX' }}</h2>
+          </div>
+          <div class="campos grupos-trx-formulario">
+            <label>
+              Codigo
+              <input type="text" [(ngModel)]="grupoTrxFormulario.codigo" placeholder="trx001">
+            </label>
+            <label>
+              Nombre
+              <input type="text" [(ngModel)]="grupoTrxFormulario.nombre" placeholder="TRX 001">
+            </label>
+            <label>
+              Maximo equipos
+              <input type="number" min="1" max="100" [(ngModel)]="grupoTrxFormulario.maximoEquipos">
+            </label>
+            <label class="check">
+              <input type="checkbox" [(ngModel)]="grupoTrxFormulario.activo">
+              Activo
+            </label>
+            <label class="campo-completo">
+              Descripcion
+              <textarea rows="3" [(ngModel)]="grupoTrxFormulario.descripcion" placeholder="Uso operacional del grupo"></textarea>
+            </label>
+            <button type="button" class="boton primario" *ngIf="sesion.puedeOperar()" (click)="guardarGrupoTrx()" [disabled]="guardandoGrupoTrx">
+              {{ guardandoGrupoTrx ? 'Guardando...' : 'Guardar Grupo TRX' }}
+            </button>
+          </div>
+        </article>
+
+        <article class="tarjeta">
+          <div class="titulo-tarjeta">
+            <div>
+              <h2>Detalle operacional</h2>
+              <small *ngIf="grupoTrxSeleccionado">{{ grupoTrxSeleccionado.code }} | {{ grupoTrxSeleccionado.status }}</small>
+            </div>
+          </div>
+
+          <div *ngIf="grupoTrxSeleccionado; else sinGrupoTrxSeleccionado">
+            <div class="resumen-estado">
+              <div>
+                <span>Equipos POS</span>
+                <strong>{{ grupoTrxSeleccionado.assignedDevices }}/{{ grupoTrxSeleccionado.maxDevices }}</strong>
+              </div>
+              <div>
+                <span>Farmacias</span>
+                <strong>{{ grupoTrxSeleccionado.involvedBranches }}</strong>
+              </div>
+              <div>
+                <span>Activo</span>
+                <strong>{{ grupoTrxSeleccionado.active ? 'Si' : 'No' }}</strong>
+              </div>
+            </div>
+
+            <div class="campos grupos-trx-asignacion" *ngIf="sesion.puedeOperar()">
+              <label>
+                Equipo POS
+                <select [(ngModel)]="grupoTrxAsignacion.equipoId">
+                  <option value="">Seleccionar equipo</option>
+                  <option *ngFor="let equipo of equipos" [value]="equipo.id">
+                    {{ equipo.hostname }} | {{ equipo.branchCode }}
+                  </option>
+                </select>
+              </label>
+              <label>
+                Motivo
+                <input type="text" [(ngModel)]="grupoTrxAsignacion.motivo" placeholder="Asignacion operacional">
+              </label>
+              <button type="button" class="boton primario" (click)="asignarEquipoGrupoTrx()">Asignar</button>
+            </div>
+
+            <div class="tabla tabla-equipos-grupo">
+              <div class="tabla-fila cabecera">
+                <span>Equipo POS</span>
+                <span>Farmacia</span>
+                <span>Version POS</span>
+                <span>Estado</span>
+                <span>Ultimo latido</span>
+                <span>Acciones</span>
+              </div>
+              <div class="tabla-fila" *ngFor="let equipo of grupoTrxSeleccionado.devices">
+                <span>{{ equipo.hostname }}</span>
+                <span>{{ equipo.branchCode }} | {{ equipo.branchName }}</span>
+                <span>{{ equipo.posVersion || 'N/D' }}</span>
+                <span><app-status-badge [status]="equipo.deviceStatus"></app-status-badge></span>
+                <span>{{ equipo.lastHeartbeatAt || 'Sin latido' }}</span>
+                <span class="acciones">
+                  <button type="button" class="boton pequeno" (click)="verDetalleEquipoPorId(equipo.deviceId)">Ver POS</button>
+                  <button type="button" class="boton pequeno peligro" *ngIf="sesion.puedeOperar()" (click)="quitarEquipoGrupoTrx(equipo.deviceId)">Quitar</button>
+                </span>
+              </div>
+              <p class="vacio" *ngIf="grupoTrxSeleccionado.devices.length === 0">Sin equipos POS asignados.</p>
+            </div>
+          </div>
+
+          <ng-template #sinGrupoTrxSeleccionado>
+            <p class="vacio">Selecciona un Grupo TRX para ver equipos POS y farmacias asociadas.</p>
+          </ng-template>
+        </article>
+      </div>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'eventos'">
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Eventos del agente</h2>
+        </div>
+        <div class="tabla tabla-eventos">
+          <div class="tabla-fila cabecera">
+            <span>Fecha</span>
+            <span>Equipo POS</span>
+            <span>Tipo</span>
+            <span>Versiones</span>
+            <span>Mensaje</span>
+            <span>Metadatos</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let evento of eventos">
+            <span>{{ evento.createdAt | date:'short' }}</span>
+            <span>{{ evento.hostname }}</span>
+            <span><app-status-badge [status]="evento.eventType"></app-status-badge></span>
+            <span>{{ evento.oldVersion || 'N/D' }} -> {{ evento.newVersion || 'N/D' }}</span>
+            <span class="texto-corto">{{ evento.eventMessage || 'Sin mensaje' }}</span>
+            <span class="texto-corto">{{ metadatosComoTexto(evento) }}</span>
+          </div>
+          <p class="vacio" *ngIf="eventos.length === 0">Aun no hay eventos enviados por agentes POS.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'alertas'">
+      <article class="tarjeta formulario">
+        <div class="titulo-tarjeta">
+          <h2>Filtros de alertas</h2>
+          <button type="button" class="boton pequeno secundario" (click)="limpiarFiltrosAlertas()">Limpiar</button>
+        </div>
+        <div class="campos alertas-campos">
+          <label>
+            Estado
+            <select [(ngModel)]="alertasFiltros.status">
+              <option *ngFor="let estado of estadosAlerta" [value]="estado">{{ estado || 'Todos' }}</option>
+            </select>
+          </label>
+          <label>
+            Severidad
+            <select [(ngModel)]="alertasFiltros.severity">
+              <option *ngFor="let severidad of severidadesAlerta" [value]="severidad">{{ severidad || 'Todas' }}</option>
+            </select>
+          </label>
+          <label>
+            Tipo
+            <select [(ngModel)]="alertasFiltros.type">
+              <option *ngFor="let tipo of tiposAlerta" [value]="tipo">{{ tipo || 'Todos' }}</option>
+            </select>
+          </label>
+          <label>
+            Origen
+            <select [(ngModel)]="alertasFiltros.networkEvent">
+              <option [ngValue]="undefined">Todos</option>
+              <option [ngValue]="true">Solo eventos de red</option>
+              <option [ngValue]="false">Solo equipos POS</option>
+            </select>
+          </label>
+          <label>
+            Equipo POS
+            <input type="text" [(ngModel)]="alertasFiltros.hostname" placeholder="POS-DEMO">
+          </label>
+          <label>
+            Farmacia
+            <input type="text" [(ngModel)]="alertasFiltros.branchCode" placeholder="FMA001">
+          </label>
+          <label>
+            Desde
+            <input type="datetime-local" [(ngModel)]="alertasFiltros.dateFrom">
+          </label>
+          <label>
+            Hasta
+            <input type="datetime-local" [(ngModel)]="alertasFiltros.dateTo">
+          </label>
+          <label>
+            Tamano
+            <select [(ngModel)]="alertasFiltros.size">
+              <option [ngValue]="10">10</option>
+              <option [ngValue]="20">20</option>
+              <option [ngValue]="50">50</option>
+              <option [ngValue]="100">100</option>
+            </select>
+          </label>
+          <button type="button" class="boton primario" (click)="filtrarAlertas()">Filtrar</button>
+        </div>
+      </article>
+
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Alertas operativas</h2>
+          <div class="acciones">
+            <button type="button" class="boton pequeno secundario" (click)="paginaAlertas(-1)" [disabled]="alertasFiltros.page === 0">Anterior</button>
+            <span class="estado">Pagina {{ alertasFiltros.page + 1 }} / {{ alertasPagina?.totalPages || 1 }}</span>
+            <button type="button" class="boton pequeno secundario" (click)="paginaAlertas(1)" [disabled]="!alertasTieneSiguiente">Siguiente</button>
+          </div>
+        </div>
+        <div class="tabla tabla-alertas">
+          <div class="tabla-fila cabecera">
+            <span>Fecha</span>
+            <span>Equipo POS</span>
+            <span>Farmacia</span>
+            <span>Severidad</span>
+            <span>Tipo</span>
+            <span>Estado</span>
+            <span>Gestion</span>
+            <span>Mensaje</span>
+            <span>Acciones</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let alerta of alertas">
+            <span>{{ alerta.openedAt | date:'short' }}</span>
+            <span>{{ alerta.hostname || '—' }}</span>
+            <span>{{ alerta.branchCode }}</span>
+            <span><app-status-badge [status]="alerta.severity"></app-status-badge></span>
+            <span>{{ alerta.alertType }} <app-status-badge *ngIf="alerta.networkEvent" status="RED" tone="purple"></app-status-badge></span>
+            <span><app-status-badge [status]="alerta.status"></app-status-badge></span>
+            <span class="texto-corto">
+              {{ alerta.acknowledgedBy ? ('Reconocida por ' + alerta.acknowledgedBy) : 'Sin reconocer' }}
+              {{ alerta.closedBy ? (' | Cerrada por ' + alerta.closedBy) : '' }}
+            </span>
+            <span class="texto-corto">{{ alerta.message || alerta.title }}</span>
+            <span class="acciones">
+              <button
+                type="button"
+                class="boton pequeno"
+                *ngIf="sesion.puedeOperar()"
+                (click)="reconocerAlerta(alerta)"
+                [disabled]="alerta.status !== 'OPEN'">
+                Reconocer
+              </button>
+              <button
+                type="button"
+                class="boton pequeno peligro"
+                *ngIf="sesion.puedeOperar()"
+                (click)="cerrarAlerta(alerta)"
+                [disabled]="alerta.status === 'CLOSED'">
+                Cerrar
+              </button>
+            </span>
+          </div>
+          <p class="vacio" *ngIf="alertas.length === 0">Aun no hay alertas registradas.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'auditoria'">
+      <article class="tarjeta formulario">
+        <div class="titulo-tarjeta">
+          <h2>Filtros de auditoria</h2>
+          <button type="button" class="boton pequeno secundario" (click)="limpiarFiltrosAuditoria()">Limpiar</button>
+        </div>
+        <div class="campos auditoria-campos">
+          <label>
+            Accion
+            <input type="text" [(ngModel)]="auditoriaFiltros.action" placeholder="ADMIN_LOGIN">
+          </label>
+          <label>
+            Entidad
+            <input type="text" [(ngModel)]="auditoriaFiltros.entityType" placeholder="AUTH">
+          </label>
+          <label>
+            Usuario
+            <input type="text" [(ngModel)]="auditoriaFiltros.actorUsername" placeholder="admin">
+          </label>
+          <label>
+            Desde
+            <input type="datetime-local" [(ngModel)]="auditoriaFiltros.from">
+          </label>
+          <label>
+            Hasta
+            <input type="datetime-local" [(ngModel)]="auditoriaFiltros.to">
+          </label>
+          <label>
+            Tamano
+            <select [(ngModel)]="auditoriaFiltros.size">
+              <option [ngValue]="10">10</option>
+              <option [ngValue]="20">20</option>
+              <option [ngValue]="50">50</option>
+              <option [ngValue]="100">100</option>
+            </select>
+          </label>
+          <button type="button" class="boton primario" (click)="filtrarAuditoria()">Filtrar</button>
+        </div>
+      </article>
+
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Auditoria administrativa</h2>
+          <div class="acciones">
+            <button type="button" class="boton pequeno secundario" (click)="paginaAuditoria(-1)" [disabled]="auditoriaFiltros.page === 0">Anterior</button>
+            <span class="estado">Pagina {{ auditoriaFiltros.page + 1 }} / {{ auditoriaPagina?.totalPages || 1 }}</span>
+            <button type="button" class="boton pequeno secundario" (click)="paginaAuditoria(1)" [disabled]="!auditoriaTieneSiguiente">Siguiente</button>
+          </div>
+        </div>
+        <div class="tabla tabla-auditoria">
+          <div class="tabla-fila cabecera">
+            <span>Fecha</span>
+            <span>Usuario</span>
+            <span>Accion</span>
+            <span>Entidad</span>
+            <span>IP</span>
+            <span>Valores</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let item of auditoria">
+            <span>{{ item.createdAt | date:'short' }}</span>
+            <span>{{ item.actorUsername || 'Sistema' }}</span>
+            <span><app-status-badge [status]="item.action" tone="purple"></app-status-badge></span>
+            <span>{{ item.entityType }} {{ item.entityId || '' }}</span>
+            <span>{{ item.ipAddress || 'N/D' }}</span>
+            <span class="texto-corto">{{ valoresComoTexto(item.newValues) }}</span>
+          </div>
+          <p class="vacio" *ngIf="auditoria.length === 0">Aun no hay acciones administrativas auditadas.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'seguridad'">
+      <article class="tarjeta formulario">
+        <div class="titulo-tarjeta">
+          <h2>Credenciales administrativas</h2>
+        </div>
+        <div class="campos seguridad-campos">
+          <label>
+            Contrasena actual
+            <input type="password" [(ngModel)]="seguridadFormulario.contrasenaActual" autocomplete="current-password">
+          </label>
+          <label>
+            Nueva contrasena
+            <input type="password" [(ngModel)]="seguridadFormulario.contrasenaNueva" autocomplete="new-password">
+          </label>
+          <label>
+            Confirmar contrasena
+            <input type="password" [(ngModel)]="seguridadFormulario.confirmarContrasena" autocomplete="new-password">
+          </label>
+          <button type="button" class="boton primario" (click)="cambiarContrasena()" [disabled]="guardandoSeguridad">
+            Actualizar
+          </button>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'usuarios' && sesion.esAdmin()">
+      <article class="tarjeta formulario">
+        <div class="titulo-tarjeta">
+          <h2>{{ usuarioEditandoId ? 'Editar usuario' : 'Crear usuario' }}</h2>
+          <button type="button" class="boton pequeno secundario" *ngIf="usuarioEditandoId" (click)="limpiarFormularioUsuario()">
+            Nuevo
+          </button>
+        </div>
+        <div class="campos usuarios-campos">
+          <label>
+            Usuario
+            <input type="text" [(ngModel)]="usuarioFormulario.username" [disabled]="!!usuarioEditandoId" autocomplete="off">
+          </label>
+          <label>
+            Nombre completo
+            <input type="text" [(ngModel)]="usuarioFormulario.fullName" autocomplete="off">
+          </label>
+          <label>
+            Correo
+            <input type="email" [(ngModel)]="usuarioFormulario.email" autocomplete="off">
+          </label>
+          <label>
+            Rol
+            <select [(ngModel)]="usuarioFormulario.role" [disabled]="!!usuarioEditandoId">
+              <option *ngFor="let rol of rolesAdministrativos" [value]="rol">{{ rol }}</option>
+            </select>
+          </label>
+          <label *ngIf="!usuarioEditandoId">
+            Contrasena inicial
+            <input type="password" [(ngModel)]="usuarioFormulario.password" autocomplete="new-password">
+          </label>
+          <button type="button" class="boton primario" (click)="guardarUsuarioAdministrativo()" [disabled]="guardandoUsuario">
+            Guardar
+          </button>
+        </div>
+      </article>
+
+      <article class="tarjeta" *ngIf="usuarioResetId">
+        <div class="titulo-tarjeta">
+          <h2>Resetear contrasena</h2>
+          <button type="button" class="boton pequeno secundario" (click)="cancelarResetContrasena()">Cancelar</button>
+        </div>
+        <div class="campos seguridad-campos">
+          <label>
+            Nueva contrasena
+            <input type="password" [(ngModel)]="usuarioResetFormulario.newPassword" autocomplete="new-password">
+          </label>
+          <button type="button" class="boton primario" (click)="resetearContrasenaUsuarioAdministrativo()">
+            Resetear
+          </button>
+        </div>
+      </article>
+
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Usuarios administrativos</h2>
+          <button type="button" class="boton pequeno secundario" (click)="cargarUsuariosAdministrativos()">Actualizar</button>
+        </div>
+        <div class="tabla tabla-usuarios">
+          <div class="tabla-fila cabecera">
+            <span>Usuario</span>
+            <span>Nombre</span>
+            <span>Correo</span>
+            <span>Rol</span>
+            <span>Estado</span>
+            <span>Ultimo acceso</span>
+            <span>Acciones</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let usuario of usuariosAdministrativos">
+            <span>{{ usuario.username }}</span>
+            <span>{{ usuario.fullName }}</span>
+            <span class="texto-corto">{{ usuario.email || 'N/D' }}</span>
+            <span>
+              <select [ngModel]="usuario.role" (ngModelChange)="cambiarRolUsuarioAdministrativo(usuario, $event)">
+                <option *ngFor="let rol of rolesAdministrativos" [value]="rol">{{ rol }}</option>
+              </select>
+            </span>
+            <span>
+              <app-status-badge [status]="usuario.active ? 'ACTIVO' : 'INACTIVO'" [tone]="usuario.active ? 'success' : 'danger'"></app-status-badge>
+            </span>
+            <span>{{ usuario.lastLoginAt ? (usuario.lastLoginAt | date:'short') : 'Sin acceso' }}</span>
+            <span class="acciones">
+              <button type="button" class="boton pequeno" (click)="editarUsuarioAdministrativo(usuario)">Editar</button>
+              <button type="button" class="boton pequeno" (click)="iniciarResetContrasena(usuario)">Reset</button>
+              <button type="button" class="boton pequeno" *ngIf="!usuario.active" (click)="activarUsuarioAdministrativo(usuario)">Activar</button>
+              <button type="button" class="boton pequeno peligro" *ngIf="usuario.active" (click)="desactivarUsuarioAdministrativo(usuario)">Desactivar</button>
+            </span>
+          </div>
+          <p class="vacio" *ngIf="usuariosAdministrativos.length === 0">Aun no hay usuarios administrativos.</p>
+        </div>
+      </article>
+    </section>
+  </section>
+</main>
+</ng-template>
