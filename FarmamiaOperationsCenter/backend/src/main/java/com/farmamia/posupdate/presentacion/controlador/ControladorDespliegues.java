@@ -157,6 +157,30 @@ public class ControladorDespliegues {
         return respuesta;
     }
 
+    @PostMapping({"/{id}/approve", "/{id}/aprobar"})
+    public RespuestaDespliegue aprobar(@PathVariable UUID id, Authentication autenticacion, HttpServletRequest request) {
+        exigirOperador(autenticacion);
+        RespuestaDespliegue respuesta = aRespuesta(gestionarDesplieguesCasoUso.aprobar(id));
+        auditarCambioEstado(autenticacion, request, "DEPLOYMENT_APPROVED", respuesta);
+        return respuesta;
+    }
+
+    @PostMapping({"/{id}/launch", "/{id}/lanzar"})
+    public RespuestaDespliegue lanzar(@PathVariable UUID id, Authentication autenticacion, HttpServletRequest request) {
+        exigirOperador(autenticacion);
+        RespuestaDespliegue respuesta = aRespuesta(gestionarDesplieguesCasoUso.lanzar(id));
+        auditarCambioEstado(autenticacion, request, "DEPLOYMENT_LAUNCHED", respuesta);
+        return respuesta;
+    }
+
+    @PostMapping({"/{id}/expand", "/{id}/expandir"})
+    public RespuestaDespliegue expandir(@PathVariable UUID id, Authentication autenticacion, HttpServletRequest request) {
+        exigirOperador(autenticacion);
+        RespuestaDespliegue respuesta = aRespuesta(gestionarDesplieguesCasoUso.expandir(id));
+        auditarCambioEstado(autenticacion, request, "DEPLOYMENT_EXPANDED", respuesta);
+        return respuesta;
+    }
+
     @PostMapping({"/{id}/pause", "/{id}/pausar"})
     public RespuestaDespliegue pausar(@PathVariable UUID id, Authentication autenticacion, HttpServletRequest request) {
         exigirOperador(autenticacion);

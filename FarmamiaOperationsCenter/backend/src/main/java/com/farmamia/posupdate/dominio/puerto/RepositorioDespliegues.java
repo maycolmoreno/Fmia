@@ -21,6 +21,12 @@ public interface RepositorioDespliegues {
 
     Despliegue programar(UUID id, OffsetDateTime programadoEn);
 
+    Despliegue aprobar(UUID id);
+
+    Despliegue lanzar(UUID id);
+
+    Despliegue expandir(UUID id);
+
     Despliegue pausar(UUID id);
 
     Despliegue reanudar(UUID id);

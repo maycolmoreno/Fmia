@@ -1446,6 +1446,51 @@ export class AppComponent implements OnInit {
     this.api.cancelarDespliegue(despliegue.id).subscribe({ next: () => this.recargarTodo() });
   }
 
+  aprobar(despliegue: Despliegue): void {
+    if (!this.sesion.puedeOperar()) {
+      this.error = 'No tienes permiso para aprobar campanas POS.';
+      return;
+    }
+    this.api.aprobarDespliegue(despliegue.id).subscribe({
+      next: () => { this.mensaje = 'Campana aprobada.'; this.recargarTodo(); },
+      error: (r) => this.error = r?.error?.message ?? 'No se pudo aprobar la campana.'
+    });
+  }
+
+  lanzar(despliegue: Despliegue): void {
+    if (!this.sesion.puedeOperar()) {
+      this.error = 'No tienes permiso para lanzar campanas POS.';
+      return;
+    }
+    this.api.lanzarDespliegue(despliegue.id).subscribe({
+      next: () => { this.mensaje = 'Campana lanzada.'; this.recargarTodo(); },
+      error: (r) => this.error = r?.error?.message ?? 'No se pudo lanzar la campana.'
+    });
+  }
+
+  expandir(despliegue: Despliegue): void {
+    if (!this.sesion.puedeOperar()) {
+      this.error = 'No tienes permiso para expandir campanas POS.';
+      return;
+    }
+    this.api.expandirDespliegue(despliegue.id).subscribe({
+      next: () => { this.mensaje = 'Campana expandida al total de equipos.'; this.recargarTodo(); },
+      error: (r) => this.error = r?.error?.message ?? 'No se pudo expandir la campana.'
+    });
+  }
+
+  puedeAprobar(despliegue: Despliegue): boolean {
+    return this.sesion.puedeOperar() && ['DRAFT', 'SCHEDULED'].includes(despliegue.status);
+  }
+
+  puedeLanzar(despliegue: Despliegue): boolean {
+    return this.sesion.puedeOperar() && despliegue.status === 'APPROVED';
+  }
+
+  puedeExpandir(despliegue: Despliegue): boolean {
+    return this.sesion.puedeOperar() && despliegue.status === 'PILOT_RUNNING';
+  }
+
   puedePausar(despliegue: Despliegue): boolean {
     return this.sesion.puedeOperar()
       && ['SCHEDULED', 'APPROVED', 'PILOT_RUNNING', 'RUNNING'].includes(despliegue.status);

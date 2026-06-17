@@ -875,6 +875,9 @@
                 <button type="button" class="boton pequeno primario" (click)="verEstadoPorFarmacia(despliegue)">Farmacias</button>
                 <button type="button" class="boton pequeno primario" (click)="verEstadoPorTrx(despliegue)">TRX por farmacia</button>
                 <button type="button" class="boton pequeno secundario" (click)="verEquiposSinActualizar(despliegue)">Sin actualizar</button>
+                <button type="button" class="boton pequeno primario" *ngIf="sesion.puedeOperar()" (click)="aprobar(despliegue)" [disabled]="!puedeAprobar(despliegue)">Aprobar</button>
+                <button type="button" class="boton pequeno primario" *ngIf="sesion.puedeOperar()" (click)="lanzar(despliegue)" [disabled]="!puedeLanzar(despliegue)">Lanzar</button>
+                <button type="button" class="boton pequeno primario" *ngIf="sesion.puedeOperar()" (click)="expandir(despliegue)" [disabled]="!puedeExpandir(despliegue)">Expandir</button>
                 <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="pausar(despliegue)" [disabled]="!puedePausar(despliegue)">Pausar</button>
                 <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="reanudar(despliegue)" [disabled]="!puedeReanudar(despliegue)">Reanudar</button>
                 <button type="button" class="boton pequeno peligro" *ngIf="sesion.puedeOperar()" (click)="cancelar(despliegue)" [disabled]="!puedeCancelar(despliegue)">Cancelar</button>

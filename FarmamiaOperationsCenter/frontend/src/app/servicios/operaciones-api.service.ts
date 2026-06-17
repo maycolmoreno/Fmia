@@ -352,6 +352,30 @@ export class OperacionesApiService {
     return this.crearCampanaPos(solicitud);
   }
 
+  aprobarCampanaPos(id: string): Observable<CampanaPos> {
+    return this.http.post<CampanaPos>(`${this.baseUrl}/api/campanas-pos/${id}/aprobar`, {});
+  }
+
+  lanzarCampanaPos(id: string): Observable<CampanaPos> {
+    return this.http.post<CampanaPos>(`${this.baseUrl}/api/campanas-pos/${id}/lanzar`, {});
+  }
+
+  expandirCampanaPos(id: string): Observable<CampanaPos> {
+    return this.http.post<CampanaPos>(`${this.baseUrl}/api/campanas-pos/${id}/expandir`, {});
+  }
+
+  aprobarDespliegue(id: string): Observable<Despliegue> {
+    return this.aprobarCampanaPos(id);
+  }
+
+  lanzarDespliegue(id: string): Observable<Despliegue> {
+    return this.lanzarCampanaPos(id);
+  }
+
+  expandirDespliegue(id: string): Observable<Despliegue> {
+    return this.expandirCampanaPos(id);
+  }
+
   pausarCampanaPos(id: string): Observable<CampanaPos> {
     return this.http.post<CampanaPos>(`${this.baseUrl}/api/campanas-pos/${id}/pausar`, {});
   }

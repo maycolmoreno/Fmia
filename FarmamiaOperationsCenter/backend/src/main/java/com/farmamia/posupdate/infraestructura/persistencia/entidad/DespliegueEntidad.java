@@ -117,6 +117,28 @@ public class DespliegueEntidad {
             || "RUNNING".equals(estado);
     }
 
+    public void aprobar(OffsetDateTime aprobadoEn) {
+        if (!estadoEn("DRAFT", "SCHEDULED")) {
+            throw new IllegalArgumentException("Solo se puede aprobar un despliegue en estado DRAFT o SCHEDULED.");
+        }
+        this.aprobadoEn = aprobadoEn;
+        this.estado = "APPROVED";
+    }
+
+    public void lanzar() {
+        if (!estadoEn("APPROVED")) {
+            throw new IllegalArgumentException("Solo se puede lanzar un despliegue aprobado.");
+        }
+        this.estado = pilotoRequerido ? "PILOT_RUNNING" : "RUNNING";
+    }
+
+    public void expandir() {
+        if (!estadoEn("PILOT_RUNNING")) {
+            throw new IllegalArgumentException("Solo se puede expandir un despliegue en fase piloto.");
+        }
+        this.estado = "RUNNING";
+    }
+
     public void programar(OffsetDateTime programadoEn) {
         if (!estadoEn("DRAFT", "SCHEDULED", "PAUSED")) {
             throw new IllegalArgumentException("Solo se puede programar un despliegue en estado DRAFT, SCHEDULED o PAUSED.");

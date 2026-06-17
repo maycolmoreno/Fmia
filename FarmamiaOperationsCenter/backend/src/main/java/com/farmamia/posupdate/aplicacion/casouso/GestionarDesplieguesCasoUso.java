@@ -53,6 +53,21 @@ public class GestionarDesplieguesCasoUso {
     }
 
     @Transactional
+    public Despliegue aprobar(UUID id) {
+        return repositorioDespliegues.aprobar(id);
+    }
+
+    @Transactional
+    public Despliegue lanzar(UUID id) {
+        return repositorioDespliegues.lanzar(id);
+    }
+
+    @Transactional
+    public Despliegue expandir(UUID id) {
+        return repositorioDespliegues.expandir(id);
+    }
+
+    @Transactional
     public Despliegue pausar(UUID id) {
         return repositorioDespliegues.pausar(id);
     }

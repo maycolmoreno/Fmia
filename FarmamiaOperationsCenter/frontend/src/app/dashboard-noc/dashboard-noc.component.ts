@@ -52,6 +52,13 @@ export class DashboardNocComponent implements OnInit, OnDestroy {
     this.nocService.error$.pipe(takeUntil(this.destroy$)).subscribe(e => {
       this.error = e;
     });
+    // El servicio refresca el estado operacional de farmacias en el mismo ciclo de 30 s;
+    // mantiene fresco el panel de detalle, los badges de campana y el filtro de turno.
+    this.nocService.estadoFarmacias$.pipe(takeUntil(this.destroy$)).subscribe(farmacias => {
+      if (farmacias.length > 0) {
+        this.estadoFarmacias = farmacias;
+      }
+    });
   }
 
   ngOnDestroy(): void {

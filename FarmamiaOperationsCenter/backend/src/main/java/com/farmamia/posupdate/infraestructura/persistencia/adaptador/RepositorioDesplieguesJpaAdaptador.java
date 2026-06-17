@@ -137,6 +137,27 @@ public class RepositorioDesplieguesJpaAdaptador implements RepositorioDespliegue
     }
 
     @Override
+    public Despliegue aprobar(UUID id) {
+        DespliegueEntidad despliegue = buscarDespliegue(id);
+        despliegue.aprobar(OffsetDateTime.now());
+        return aDominio(despliegue, objetivoDespliegueRepositorioJpa.countByDespliegue_Id(id));
+    }
+
+    @Override
+    public Despliegue lanzar(UUID id) {
+        DespliegueEntidad despliegue = buscarDespliegue(id);
+        despliegue.lanzar();
+        return aDominio(despliegue, objetivoDespliegueRepositorioJpa.countByDespliegue_Id(id));
+    }
+
+    @Override
+    public Despliegue expandir(UUID id) {
+        DespliegueEntidad despliegue = buscarDespliegue(id);
+        despliegue.expandir();
+        return aDominio(despliegue, objetivoDespliegueRepositorioJpa.countByDespliegue_Id(id));
+    }
+
+    @Override
     public Despliegue pausar(UUID id) {
         DespliegueEntidad despliegue = buscarDespliegue(id);
         despliegue.pausar();
