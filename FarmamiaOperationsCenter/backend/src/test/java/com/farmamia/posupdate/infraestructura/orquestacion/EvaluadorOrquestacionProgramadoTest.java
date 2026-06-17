@@ -7,8 +7,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.farmamia.posupdate.aplicacion.casouso.OrquestarDesplieguesCasoUso;
+import com.farmamia.posupdate.dominio.modelo.PlanOrquestacionDespliegue;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.EstadoControlDespliegueEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.EstadoControlDespliegueRepositorioJpa;
+import com.farmamia.posupdate.infraestructura.sse.CanalSseAgentes;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +24,7 @@ class EvaluadorOrquestacionProgramadoTest {
         OrquestarDesplieguesCasoUso casoUso = mock(OrquestarDesplieguesCasoUso.class);
         SimpleMeterRegistry metricas = new SimpleMeterRegistry();
 
+        CanalSseAgentes canal = mock(CanalSseAgentes.class);
         UUID idExitoso = UUID.randomUUID();
         UUID idFallido = UUID.randomUUID();
         EstadoControlDespliegueEntidad controlExitoso = mock(EstadoControlDespliegueEntidad.class);
@@ -29,11 +32,15 @@ class EvaluadorOrquestacionProgramadoTest {
         when(controlExitoso.getIdDespliegue()).thenReturn(idExitoso);
         when(controlFallido.getIdDespliegue()).thenReturn(idFallido);
         when(repositorio.findByEstado("RUNNING")).thenReturn(List.of(controlExitoso, controlFallido));
+        when(casoUso.evaluar(idExitoso)).thenReturn(
+            new PlanOrquestacionDespliegue(idExitoso, "RUNNING", null, false, 0, 0, null, null, List.of())
+        );
         doThrow(new IllegalStateException("fallo simulado")).when(casoUso).evaluar(idFallido);
 
         EvaluadorOrquestacionProgramado evaluador = new EvaluadorOrquestacionProgramado(
             repositorio,
             casoUso,
+            canal,
             metricas
         );
 

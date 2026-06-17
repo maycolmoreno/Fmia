@@ -11,6 +11,7 @@ import com.farmamia.posupdate.dominio.modelo.InstruccionAgente;
 import com.farmamia.posupdate.dominio.modelo.RegistroAgente;
 import com.farmamia.posupdate.dominio.modelo.ResultadoActualizacion;
 import com.farmamia.posupdate.infraestructura.observabilidad.MetricasOperativasFarmamia;
+import com.farmamia.posupdate.infraestructura.sse.CanalSseAgentes;
 import com.farmamia.posupdate.presentacion.dto.RespuestaInstruccionAgente;
 import com.farmamia.posupdate.presentacion.dto.RespuestaRegistroAgente;
 import com.farmamia.posupdate.presentacion.dto.SolicitudEventoAgente;
@@ -21,6 +22,7 @@ import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/api/agent")
@@ -38,19 +41,22 @@ public class ControladorAgente {
     private final ConsultarInstruccionesAgenteCasoUso consultarInstruccionesAgenteCasoUso;
     private final RegistrarEventoAgenteCasoUso registrarEventoAgenteCasoUso;
     private final MetricasOperativasFarmamia metricasOperativas;
+    private final CanalSseAgentes canalSseAgentes;
 
     public ControladorAgente(
         RegistrarAgenteCasoUso registrarAgenteCasoUso,
         RegistrarLatidoCasoUso registrarLatidoCasoUso,
         ConsultarInstruccionesAgenteCasoUso consultarInstruccionesAgenteCasoUso,
         RegistrarEventoAgenteCasoUso registrarEventoAgenteCasoUso,
-        MetricasOperativasFarmamia metricasOperativas
+        MetricasOperativasFarmamia metricasOperativas,
+        CanalSseAgentes canalSseAgentes
     ) {
         this.registrarAgenteCasoUso = registrarAgenteCasoUso;
         this.registrarLatidoCasoUso = registrarLatidoCasoUso;
         this.consultarInstruccionesAgenteCasoUso = consultarInstruccionesAgenteCasoUso;
         this.registrarEventoAgenteCasoUso = registrarEventoAgenteCasoUso;
         this.metricasOperativas = metricasOperativas;
+        this.canalSseAgentes = canalSseAgentes;
     }
 
     @PostMapping("/register")
@@ -87,6 +93,11 @@ public class ControladorAgente {
             aBigDecimal(solicitud.porcentajePerdidaPaquetes())
         ));
         metricasOperativas.registrarHeartbeat();
+    }
+
+    @GetMapping(value = "/{idEquipo}/notifications", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter suscribirNotificaciones(@PathVariable UUID idEquipo) {
+        return canalSseAgentes.conectar(idEquipo);
     }
 
     @GetMapping("/{idEquipo}/instructions")
