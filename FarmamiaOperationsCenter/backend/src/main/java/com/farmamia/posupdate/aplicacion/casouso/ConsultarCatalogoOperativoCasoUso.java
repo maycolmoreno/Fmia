@@ -37,6 +37,11 @@ public class ConsultarCatalogoOperativoCasoUso {
     }
 
     @Transactional(readOnly = true)
+    public List<Equipo> listarEquiposSinSucursal() {
+        return repositorioEquipos.listarHuerfanos();
+    }
+
+    @Transactional(readOnly = true)
     public Pagina<Equipo> listarEquiposPaginado(FiltroEquipos filtro) {
         return repositorioEquipos.listarPaginado(normalizar(filtro));
     }

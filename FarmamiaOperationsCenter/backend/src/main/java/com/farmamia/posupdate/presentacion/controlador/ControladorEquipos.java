@@ -110,6 +110,15 @@ public class ControladorEquipos {
             .toList();
     }
 
+    @GetMapping("/sin-sucursal")
+    public List<RespuestaEquipo> listarSinSucursal(Authentication autenticacion) {
+        exigirLectura(autenticacion);
+        return consultarCatalogoOperativoCasoUso.listarEquiposSinSucursal()
+            .stream()
+            .map(this::aRespuesta)
+            .toList();
+    }
+
     @PostMapping("/asignacion-masiva")
     public RespuestaAsignacionMasivaEquipos asignarMasivamente(
         @Valid @RequestBody SolicitudAsignacionMasivaEquipos solicitud,

@@ -5,6 +5,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -12,17 +13,34 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class CanalSseAgentes {
 
     private static final Logger LOG = LoggerFactory.getLogger(CanalSseAgentes.class);
+    private static final long TIMEOUT_MS = 300000L; // 5 minutos
 
     private final ConcurrentHashMap<UUID, SseEmitter> emisores = new ConcurrentHashMap<>();
 
     public SseEmitter conectar(UUID idEquipo) {
-        SseEmitter emisor = new SseEmitter(Long.MAX_VALUE);
+        SseEmitter emisor = new SseEmitter(TIMEOUT_MS);
         emisores.put(idEquipo, emisor);
-        emisor.onCompletion(() -> emisores.remove(idEquipo, emisor));
-        emisor.onTimeout(() -> emisores.remove(idEquipo, emisor));
-        emisor.onError(e -> emisores.remove(idEquipo, emisor));
+
+        emisor.onCompletion(() -> removerAgente(idEquipo));
+        emisor.onTimeout(() -> removerAgente(idEquipo));
+        emisor.onError((ex) -> removerAgente(idEquipo));
+
         LOG.debug("Agente {} conectado al canal SSE. Conexiones activas: {}", idEquipo, emisores.size());
         return emisor;
+    }
+
+    @Scheduled(fixedRate = 25000)
+    public void enviarLatido() {
+        if (emisores.isEmpty()) return;
+        LOG.trace("Despachando latido ping a {} agentes conectados", emisores.size());
+        emisores.forEach((idEquipo, emisor) -> {
+            try {
+                emisor.send(SseEmitter.event().name("ping").data(""));
+            } catch (IOException e) {
+                removerAgente(idEquipo);
+                LOG.debug("Agente {} detectado zombi durante latido y removido del canal", idEquipo);
+            }
+        });
     }
 
     public void notificarInstruccionDisponible(UUID idEquipo) {
@@ -31,7 +49,7 @@ public class CanalSseAgentes {
         try {
             emisor.send(SseEmitter.event().name("instruccion_disponible").data(""));
         } catch (IOException e) {
-            emisores.remove(idEquipo, emisor);
+            removerAgente(idEquipo);
             LOG.debug("Agente {} desconectado al notificar (canal cerrado)", idEquipo);
         }
     }
@@ -43,12 +61,18 @@ public class CanalSseAgentes {
             try {
                 emisor.send(SseEmitter.event().name("instruccion_disponible").data(""));
             } catch (IOException e) {
-                emisores.remove(idEquipo, emisor);
+                removerAgente(idEquipo);
             }
         });
     }
 
     public int conexionesActivas() {
         return emisores.size();
+    }
+
+    private void removerAgente(UUID idEquipo) {
+        if (emisores.remove(idEquipo) != null) {
+            LOG.debug("Agente {} removido del canal SSE. Conexiones activas: {}", idEquipo, emisores.size());
+        }
     }
 }

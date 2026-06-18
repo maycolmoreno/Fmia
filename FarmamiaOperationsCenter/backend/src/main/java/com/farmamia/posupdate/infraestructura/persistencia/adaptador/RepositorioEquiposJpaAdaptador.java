@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
@@ -126,14 +127,48 @@ public class RepositorioEquiposJpaAdaptador implements RepositorioEquipos {
     }
 
     @Override
+    @Transactional
     public void asignarSucursales(List<AsignacionEquipoSucursal> asignaciones) {
+        if (asignaciones == null || asignaciones.isEmpty()) {
+            return;
+        }
+
+        // 1. Extraer los IDs únicos involucrados en la solicitud
+        List<UUID> equipoIds = asignaciones.stream()
+                .map(AsignacionEquipoSucursal::idEquipo)
+                .toList();
+                
+        List<UUID> sucursalIds = asignaciones.stream()
+                .map(AsignacionEquipoSucursal::idSucursal)
+                .distinct()
+                .toList();
+
+        // 2. Realizar solo dos consultas masivas (SELECT IN) para traer toda la información
+        java.util.Map<UUID, EquipoEntidad> equiposMap = equipoRepositorioJpa.findAllById(equipoIds)
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(EquipoEntidad::getId, e -> e));
+
+        java.util.Map<UUID, SucursalEntidad> sucursalesMap = sucursalRepositorioJpa.findAllById(sucursalIds)
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(SucursalEntidad::getId, s -> s));
+
+        // 3. Vincular las relaciones en memoria reduciendo la latencia de red con la BD
         for (AsignacionEquipoSucursal asignacion : asignaciones) {
-            EquipoEntidad equipo = equipoRepositorioJpa.findById(asignacion.idEquipo())
-                .orElseThrow(() -> new RecursoNoEncontradoException("Equipo no encontrado: " + asignacion.idEquipo()));
-            SucursalEntidad sucursal = sucursalRepositorioJpa.findById(asignacion.idSucursal())
-                .orElseThrow(() -> new RecursoNoEncontradoException("Sucursal no encontrada: " + asignacion.idSucursal()));
+            EquipoEntidad equipo = equiposMap.get(asignacion.idEquipo());
+            if (equipo == null) {
+                throw new RecursoNoEncontradoException("Equipo no encontrado: " + asignacion.idEquipo());
+            }
+
+            SucursalEntidad sucursal = sucursalesMap.get(asignacion.idSucursal());
+            if (sucursal == null) {
+                throw new RecursoNoEncontradoException("Sucursal no encontrada: " + asignacion.idSucursal());
+            }
+
             equipo.asignarSucursal(sucursal);
         }
+
+        // 4. Guardar los cambios actualizados en lote
+        equipoRepositorioJpa.saveAll(equiposMap.values());
     }
 
     @Override
