@@ -10,6 +10,7 @@ import com.farmamia.posupdate.aplicacion.casouso.OrquestarDesplieguesCasoUso;
 import com.farmamia.posupdate.dominio.modelo.PlanOrquestacionDespliegue;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.EstadoControlDespliegueEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.EstadoControlDespliegueRepositorioJpa;
+import com.farmamia.posupdate.infraestructura.persistencia.repositorio.ObjetivoDespliegueRepositorioJpa;
 import com.farmamia.posupdate.infraestructura.sse.CanalSseAgentes;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
@@ -22,6 +23,7 @@ class EvaluadorOrquestacionProgramadoTest {
     void evaluarDesplieguesActivosRegistraMetricasDeCicloExitosYErrores() {
         EstadoControlDespliegueRepositorioJpa repositorio = mock(EstadoControlDespliegueRepositorioJpa.class);
         OrquestarDesplieguesCasoUso casoUso = mock(OrquestarDesplieguesCasoUso.class);
+        ObjetivoDespliegueRepositorioJpa objetivoRepositorio = mock(ObjetivoDespliegueRepositorioJpa.class);
         SimpleMeterRegistry metricas = new SimpleMeterRegistry();
 
         CanalSseAgentes canal = mock(CanalSseAgentes.class);
@@ -40,6 +42,7 @@ class EvaluadorOrquestacionProgramadoTest {
         EvaluadorOrquestacionProgramado evaluador = new EvaluadorOrquestacionProgramado(
             repositorio,
             casoUso,
+            objetivoRepositorio,
             canal,
             metricas
         );

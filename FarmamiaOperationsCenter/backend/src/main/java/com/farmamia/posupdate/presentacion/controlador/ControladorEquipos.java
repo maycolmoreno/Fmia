@@ -13,10 +13,12 @@ import com.farmamia.posupdate.dominio.modelo.MetricaEquipoRegistrada;
 import com.farmamia.posupdate.dominio.modelo.ObjetivoDespliegueEquipo;
 import com.farmamia.posupdate.dominio.modelo.Pagina;
 import com.farmamia.posupdate.dominio.modelo.ResumenAsignacionMasiva;
+import com.farmamia.posupdate.infraestructura.sse.CanalSseAgentes;
 import com.farmamia.posupdate.presentacion.dto.RespuestaAsignacionMasivaEquipos;
 import com.farmamia.posupdate.presentacion.dto.RespuestaDetalleEquipo;
 import com.farmamia.posupdate.presentacion.dto.RespuestaEquipo;
 import com.farmamia.posupdate.presentacion.dto.RespuestaEquipoHuerfano;
+import com.farmamia.posupdate.presentacion.dto.RespuestaEstadoAgente;
 import com.farmamia.posupdate.presentacion.dto.RespuestaEventoActualizacion;
 import com.farmamia.posupdate.presentacion.dto.RespuestaMetricaEquipo;
 import com.farmamia.posupdate.presentacion.dto.RespuestaObjetivoEquipo;
@@ -43,15 +45,18 @@ public class ControladorEquipos {
     private final ConsultarCatalogoOperativoCasoUso consultarCatalogoOperativoCasoUso;
     private final ConsultarDetalleEquipoCasoUso consultarDetalleEquipoCasoUso;
     private final AprovisionarEquiposHuerfanosCasoUso aprovisionarEquiposHuerfanosCasoUso;
+    private final CanalSseAgentes canalSseAgentes;
 
     public ControladorEquipos(
         ConsultarCatalogoOperativoCasoUso consultarCatalogoOperativoCasoUso,
         ConsultarDetalleEquipoCasoUso consultarDetalleEquipoCasoUso,
-        AprovisionarEquiposHuerfanosCasoUso aprovisionarEquiposHuerfanosCasoUso
+        AprovisionarEquiposHuerfanosCasoUso aprovisionarEquiposHuerfanosCasoUso,
+        CanalSseAgentes canalSseAgentes
     ) {
         this.consultarCatalogoOperativoCasoUso = consultarCatalogoOperativoCasoUso;
         this.consultarDetalleEquipoCasoUso = consultarDetalleEquipoCasoUso;
         this.aprovisionarEquiposHuerfanosCasoUso = aprovisionarEquiposHuerfanosCasoUso;
+        this.canalSseAgentes = canalSseAgentes;
     }
 
     @GetMapping
@@ -116,6 +121,18 @@ public class ControladorEquipos {
         return consultarCatalogoOperativoCasoUso.listarEquiposSinSucursal()
             .stream()
             .map(this::aRespuesta)
+            .toList();
+    }
+
+    @GetMapping("/monitoreo/estados")
+    public List<RespuestaEstadoAgente> obtenerEstadosConexion(Authentication autenticacion) {
+        exigirLectura(autenticacion);
+        return consultarCatalogoOperativoCasoUso.listarEquipos()
+            .stream()
+            .map(equipo -> new RespuestaEstadoAgente(
+                equipo.id(),
+                canalSseAgentes.estaAgenteConectado(equipo.id())
+            ))
             .toList();
     }
 

@@ -4,7 +4,9 @@ import com.farmamia.posupdate.aplicacion.casouso.OrquestarDesplieguesCasoUso;
 import com.farmamia.posupdate.dominio.modelo.OleadaOrquestacion;
 import com.farmamia.posupdate.dominio.modelo.PlanOrquestacionDespliegue;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.EstadoControlDespliegueEntidad;
+import com.farmamia.posupdate.infraestructura.persistencia.entidad.ObjetivoDespliegueEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.EstadoControlDespliegueRepositorioJpa;
+import com.farmamia.posupdate.infraestructura.persistencia.repositorio.ObjetivoDespliegueRepositorioJpa;
 import com.farmamia.posupdate.infraestructura.sse.CanalSseAgentes;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -32,20 +34,24 @@ public class EvaluadorOrquestacionProgramado {
 
     private final EstadoControlDespliegueRepositorioJpa controlRepositorioJpa;
     private final OrquestarDesplieguesCasoUso orquestarDesplieguesCasoUso;
+    private final ObjetivoDespliegueRepositorioJpa objetivoRepositorioJpa;
     private final CanalSseAgentes canalSseAgentes;
     private final Counter ciclosEjecutados;
     private final Counter desplieguesEvaluados;
     private final Counter erroresEvaluacion;
+    private final Counter notificacionesEnviadas;
     private final MeterRegistry meterRegistry;
 
     public EvaluadorOrquestacionProgramado(
         EstadoControlDespliegueRepositorioJpa controlRepositorioJpa,
         OrquestarDesplieguesCasoUso orquestarDesplieguesCasoUso,
+        ObjetivoDespliegueRepositorioJpa objetivoRepositorioJpa,
         CanalSseAgentes canalSseAgentes,
         MeterRegistry meterRegistry
     ) {
         this.controlRepositorioJpa = controlRepositorioJpa;
         this.orquestarDesplieguesCasoUso = orquestarDesplieguesCasoUso;
+        this.objetivoRepositorioJpa = objetivoRepositorioJpa;
         this.canalSseAgentes = canalSseAgentes;
         this.meterRegistry = meterRegistry;
         this.ciclosEjecutados = Counter.builder("farmamia.orchestration.scheduler.cycles.total")
@@ -56,6 +62,9 @@ public class EvaluadorOrquestacionProgramado {
             .register(meterRegistry);
         this.erroresEvaluacion = Counter.builder("farmamia.orchestration.scheduler.errors.total")
             .description("Errores capturados al evaluar despliegues desde el scheduler")
+            .register(meterRegistry);
+        this.notificacionesEnviadas = Counter.builder("farmamia.orchestration.scheduler.notifications.sent.total")
+            .description("Notificaciones SSE selectivas enviadas a agentes conectados")
             .register(meterRegistry);
     }
 
@@ -68,20 +77,53 @@ public class EvaluadorOrquestacionProgramado {
             try {
                 PlanOrquestacionDespliegue plan = orquestarDesplieguesCasoUso.evaluar(idDespliegue);
                 desplieguesEvaluados.increment();
-                if (tieneOleadaActiva(plan)) {
-                    canalSseAgentes.notificarTodosConectados();
-                }
+                notificarObjetivosConectados(plan);
             } catch (RuntimeException ex) {
                 erroresEvaluacion.increment();
-                registrarErrorPorDespliegue(idDespliegue);
                 LOG.warn("No se pudo evaluar orquestacion del despliegue {}", idDespliegue, ex);
+                try {
+                    registrarErrorPorDespliegue(idDespliegue);
+                } catch (RuntimeException metricEx) {
+                    LOG.trace("No se pudo registrar metrica de error para despliegue {}", idDespliegue, metricEx);
+                }
             }
         }
     }
 
-    private boolean tieneOleadaActiva(PlanOrquestacionDespliegue plan) {
-        return plan.oleadas() != null && plan.oleadas().stream()
-            .anyMatch(o -> ESTADO_OLEADA_RUNNING.equals(o.estado()) && !o.piloto());
+    /**
+     * Para cada oleada RUNNING (no piloto) del plan, consulta sus objetivos
+     * y notifica únicamente a los agentes que tienen una conexión SSE activa.
+     * Los agentes offline conservan la instrucción encolada en BD y la recibirán
+     * en su próxima reconexión al consumir el endpoint de instrucciones.
+     */
+    private void notificarObjetivosConectados(PlanOrquestacionDespliegue plan) {
+        if (plan.oleadas() == null) return;
+
+        List<UUID> oleadasActivas = plan.oleadas().stream()
+            .filter(o -> ESTADO_OLEADA_RUNNING.equals(o.estado()) && !o.piloto())
+            .map(OleadaOrquestacion::id)
+            .toList();
+
+        if (oleadasActivas.isEmpty()) return;
+
+        for (UUID idOleada : oleadasActivas) {
+            List<ObjetivoDespliegueEntidad> objetivos = objetivoRepositorioJpa.findByOleada_Id(idOleada);
+            for (ObjetivoDespliegueEntidad objetivo : objetivos) {
+                if (objetivo.getEquipo() == null || objetivo.getEquipo().getId() == null) {
+                    LOG.trace("Objetivo de oleada {} sin equipo asociado; se omite notificacion SSE", idOleada);
+                    continue;
+                }
+                UUID idEquipo = objetivo.getEquipo().getId();
+                if (canalSseAgentes.estaAgenteConectado(idEquipo)) {
+                    canalSseAgentes.notificarInstruccionDisponible(idEquipo);
+                    notificacionesEnviadas.increment();
+                    LOG.trace("Notificacion SSE enviada al agente {} (oleada {})", idEquipo, idOleada);
+                } else {
+                    LOG.trace("Agente {} offline — instruccion encolada en BD, se entregara al reconectar (oleada {})",
+                        idEquipo, idOleada);
+                }
+            }
+        }
     }
 
     private void registrarErrorPorDespliegue(UUID idDespliegue) {
