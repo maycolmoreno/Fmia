@@ -21,8 +21,8 @@ public class EquipoEntidad {
     @GeneratedValue
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "branch_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "branch_id")
     private SucursalEntidad sucursal;
 
     @Column(name = "hostname", nullable = false, unique = true, length = 120)
@@ -148,6 +148,10 @@ public class EquipoEntidad {
 
     public void actualizarVersionPos(String versionPos) {
         this.versionPos = blancoANulo(versionPos);
+    }
+
+    public void asignarSucursal(SucursalEntidad sucursal) {
+        this.sucursal = sucursal;
     }
 
     private String blancoANulo(String valor) {

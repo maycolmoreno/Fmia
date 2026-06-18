@@ -2,16 +2,21 @@ package com.farmamia.posupdate.infraestructura.persistencia.repositorio;
 
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.SucursalEntidad;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface SucursalRepositorioJpa extends JpaRepository<SucursalEntidad, UUID> {
 
+    @EntityGraph(attributePaths = "grupoTrx")
     Optional<SucursalEntidad> findByCodigo(String codigo);
+
+    long countByIdIn(Set<UUID> ids);
 
     @Query("""
         select sucursal

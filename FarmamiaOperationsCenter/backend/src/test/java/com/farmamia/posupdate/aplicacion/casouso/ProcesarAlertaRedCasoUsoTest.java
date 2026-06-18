@@ -10,6 +10,7 @@ import com.farmamia.posupdate.dominio.modelo.FiltroAlertas;
 import com.farmamia.posupdate.dominio.modelo.FiltroSucursales;
 import com.farmamia.posupdate.dominio.modelo.Pagina;
 import com.farmamia.posupdate.dominio.modelo.Sucursal;
+import com.farmamia.posupdate.dominio.modelo.SucursalSugerida;
 import com.farmamia.posupdate.dominio.puerto.RepositorioAlertas;
 import com.farmamia.posupdate.dominio.puerto.RepositorioSucursales;
 import com.farmamia.posupdate.presentacion.dto.PayloadWebhookAlertmanager;
@@ -20,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -152,6 +154,19 @@ class ProcesarAlertaRedCasoUsoTest {
         @Override
         public Optional<Sucursal> buscarPorCodigo(String codigo) {
             return Optional.ofNullable(porCodigo.get(codigo));
+        }
+
+        @Override
+        public Optional<SucursalSugerida> buscarSugeridaPorCodigo(String codigo) {
+            Sucursal sucursal = porCodigo.get(codigo);
+            return sucursal == null
+                ? Optional.empty()
+                : Optional.of(new SucursalSugerida(sucursal.id(), sucursal.codigo(), sucursal.nombre(), null));
+        }
+
+        @Override
+        public long contarPorIds(Set<UUID> idsSucursales) {
+            return idsSucursales.size();
         }
 
         @Override

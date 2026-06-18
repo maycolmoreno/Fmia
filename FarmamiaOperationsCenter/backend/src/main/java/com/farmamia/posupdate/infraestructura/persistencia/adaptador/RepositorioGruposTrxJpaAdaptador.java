@@ -191,9 +191,9 @@ public class RepositorioGruposTrxJpaAdaptador implements RepositorioGruposTrx {
         return new EquipoGrupoTrx(
             equipo.getId(),
             equipo.getNombreEquipo(),
-            farmacia.getId(),
-            farmacia.getCodigo(),
-            farmacia.getNombre(),
+            farmacia == null ? null : farmacia.getId(),
+            farmacia == null ? "" : farmacia.getCodigo(),
+            farmacia == null ? "SIN ASIGNAR" : farmacia.getNombre(),
             equipo.getVersionPos(),
             equipo.getEstado(),
             equipo.getUltimoLatidoEn(),

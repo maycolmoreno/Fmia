@@ -1,282 +1,154 @@
 .noc-vista {
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .noc-cabecera {
+  align-items: flex-start;
   display: flex;
+  gap: 16px;
   justify-content: space-between;
-  align-items: flex-end;
-  gap: 18px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #d9e0ea;
+}
+
+.noc-cabecera h2 {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.etiqueta {
+  color: var(--color-muted, #8b949e);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0 0 4px;
+  text-transform: uppercase;
 }
 
 .noc-timestamp {
-  margin: 2px 0 0;
+  color: var(--color-muted, #8b949e);
   font-size: 0.82rem;
-  color: #607089;
+  margin: 6px 0 0;
 }
 
 .noc-acciones {
-  display: flex;
   align-items: center;
-  gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 .boton-grafana {
   text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .indicador-error {
+  color: var(--color-danger, #f85149);
   font-size: 0.82rem;
-  color: #c53030;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .indicador-carga {
+  color: var(--color-muted, #8b949e);
   font-size: 0.82rem;
-  color: #607089;
 }
 
-/* Fila de zonas 2-3-4 */
-.noc-fila-metricas {
+.noc-resumen-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 18px;
+  gap: 14px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.noc-fila-metricas.sin-campana {
-  grid-template-columns: 1fr 1fr;
+.noc-indicador,
+.noc-contexto-card {
+  background: var(--color-card, #161b22);
+  border: 1px solid var(--color-border, #30363d);
+  border-radius: 8px;
+  box-shadow: var(--shadow-card, 0 8px 24px rgb(0 0 0 / 40%));
+  color: var(--color-text, #e6edf3);
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 18px;
+}
+
+.noc-indicador {
+  border-top: 4px solid var(--color-success, #3fb950);
+}
+
+.noc-indicador.alerta {
+  border-top-color: var(--color-danger, #f85149);
+}
+
+.noc-indicador.aviso {
+  border-top-color: var(--color-warning, #e3b341);
+}
+
+.noc-indicador span,
+.noc-contexto-card span {
+  color: var(--color-muted, #8b949e);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.noc-indicador strong {
+  color: var(--color-text, #e6edf3);
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  line-height: 0.95;
+}
+
+.noc-contexto-card strong {
+  color: var(--color-text, #e6edf3);
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.noc-indicador small,
+.noc-contexto-card small {
+  color: var(--color-muted, #8b949e);
+  font-size: 0.84rem;
+}
+
+.noc-contexto {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1.4fr 0.8fr;
 }
 
 .noc-sin-datos {
-  padding: 40px;
+  color: var(--color-muted, #8b949e);
+  padding: 32px;
   text-align: center;
-  color: #607089;
-}
-
-/* Styles for the container's own template (not inherited from app.component.css) */
-.etiqueta {
-  margin: 0 0 4px;
-  color: #607089;
-  font-size: 0.85rem;
-  text-transform: uppercase;
 }
 
 .boton {
+  align-items: center;
+  background: var(--color-card-raised, #1c2128);
+  border: 1px solid var(--color-border, #30363d);
+  border-radius: 8px;
+  color: var(--color-text, #e6edf3);
   display: inline-flex;
-  align-items: center;
+  font-weight: 750;
   justify-content: center;
-  min-height: 38px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 8px 12px;
-  text-decoration: none;
-  font-weight: 700;
-  background: #ffffff;
-  color: #17212f;
+  min-height: 36px;
+  padding: 7px 12px;
 }
 
-.boton.secundario { background: #eef2f7; }
-
-/* Shared card styles used by zone components */
-:host ::ng-deep .tarjeta {
-  background: #ffffff;
-  border: 1px solid #d9e0ea;
-  border-radius: 8px;
-  padding: 18px;
-  box-shadow: 0 8px 18px rgb(23 33 47 / 6%);
+@media (max-width: 980px) {
+  .noc-resumen-grid,
+  .noc-contexto {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-:host ::ng-deep .bloque-noc {
-  padding: 18px 20px;
-}
+@media (max-width: 640px) {
+  .noc-cabecera {
+    flex-direction: column;
+  }
 
-:host ::ng-deep .bloque-prioritario {
-  border-top: 3px solid #e53e3e;
-}
-
-:host ::ng-deep .titulo-tarjeta {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-:host ::ng-deep .titulo-tarjeta h2 {
-  margin: 0 0 2px;
-  font-size: 1rem;
-}
-
-:host ::ng-deep .titulo-tarjeta small {
-  color: #607089;
-  font-size: 0.82rem;
-}
-
-:host ::ng-deep .lista-turno {
-  display: grid;
-  gap: 6px;
-}
-
-:host ::ng-deep .fila-turno {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  background: #f8fafc;
-}
-
-:host ::ng-deep .fila-turno > div:first-child {
-  flex: 1;
-  min-width: 0;
-}
-
-:host ::ng-deep .fila-turno strong {
-  display: block;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-:host ::ng-deep .fila-turno small {
-  display: block;
-  color: #607089;
-  font-size: 0.78rem;
-}
-
-:host ::ng-deep .tabla-noc .tabla-fila {
-  display: grid;
-  grid-template-columns: 100px 80px 140px 1fr 80px 90px;
-  gap: 8px;
-  align-items: center;
-  padding: 8px 6px;
-  font-size: 0.85rem;
-  border-bottom: 1px solid #edf2f7;
-}
-
-:host ::ng-deep .tabla-noc .tabla-fila.cabecera {
-  font-weight: 600;
-  font-size: 0.78rem;
-  color: #607089;
-  text-transform: uppercase;
-}
-
-:host ::ng-deep .estado {
-  display: inline-block;
-  padding: 2px 7px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  background: #edf2f7;
-  color: #4a5568;
-}
-
-:host ::ng-deep .estado.critica,
-:host ::ng-deep .estado.riesgo {
-  color: #c53030;
-  background: #fef2f2;
-}
-
-:host ::ng-deep .estado.riesgo {
-  color: #c05621;
-  background: #fffaf0;
-}
-
-:host ::ng-deep .estado.aviso {
-  color: #975a16;
-  background: #fefcbf;
-}
-
-:host ::ng-deep .vacio {
-  color: #607089;
-  font-size: 0.85rem;
-  padding: 12px 0;
-  margin: 0;
-}
-
-/* Detalle de farmacia desde NOC */
-.detalle-farmacia-noc {
-  border-top: 3px solid #3730a3;
-  animation: slideDown 0.15s ease-out;
-}
-
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.detalle-noc-acciones {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.badge-estado-noc {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  white-space: nowrap;
-  background: #edf2f7;
-  color: #4a5568;
-}
-
-.detalle-noc-critico { background: #fef2f2; color: #c53030; }
-.detalle-noc-riesgo  { background: #fffaf0; color: #c05621; }
-.detalle-noc-normal  { background: #f0fff4; color: #276749; }
-
-.detalle-noc-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-  margin-top: 14px;
-}
-
-.detalle-noc-bloque {
-  display: flex;
-  flex-direction: column;
-  background: #f8fafc;
-  border-radius: 8px;
-  padding: 12px 14px;
-  gap: 2px;
-}
-
-.detalle-noc-label {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #607089;
-  margin: 0;
-}
-
-.detalle-noc-valor {
-  font-size: 1.4rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.detalle-noc-valor.ok     { color: #276749; }
-.detalle-noc-valor.alerta { color: #c53030; }
-.detalle-noc-valor.campana { font-size: 0.95rem; color: #3730a3; }
-
-.detalle-noc-bloque small {
-  font-size: 0.75rem;
-  color: #607089;
-}
-
-.detalle-noc-resumen {
-  margin: 12px 0 0;
-  padding: 10px 14px;
-  background: #fffbeb;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  color: #6b4a05;
-  border-left: 3px solid #f6ad55;
+  .noc-resumen-grid,
+  .noc-contexto {
+    grid-template-columns: 1fr;
+  }
 }

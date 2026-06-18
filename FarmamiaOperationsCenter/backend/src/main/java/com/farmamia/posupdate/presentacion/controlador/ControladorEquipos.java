@@ -1,25 +1,37 @@
 package com.farmamia.posupdate.presentacion.controlador;
 
+import com.farmamia.posupdate.aplicacion.casouso.AprovisionarEquiposHuerfanosCasoUso;
 import com.farmamia.posupdate.aplicacion.casouso.ConsultarDetalleEquipoCasoUso;
 import com.farmamia.posupdate.aplicacion.casouso.ConsultarCatalogoOperativoCasoUso;
+import com.farmamia.posupdate.dominio.modelo.AsignacionEquipoSucursal;
 import com.farmamia.posupdate.dominio.modelo.DetalleEquipo;
 import com.farmamia.posupdate.dominio.modelo.Equipo;
+import com.farmamia.posupdate.dominio.modelo.EquipoHuerfano;
 import com.farmamia.posupdate.dominio.modelo.EventoActualizacionRegistrado;
 import com.farmamia.posupdate.dominio.modelo.FiltroEquipos;
 import com.farmamia.posupdate.dominio.modelo.MetricaEquipoRegistrada;
 import com.farmamia.posupdate.dominio.modelo.ObjetivoDespliegueEquipo;
 import com.farmamia.posupdate.dominio.modelo.Pagina;
+import com.farmamia.posupdate.dominio.modelo.ResumenAsignacionMasiva;
+import com.farmamia.posupdate.presentacion.dto.RespuestaAsignacionMasivaEquipos;
 import com.farmamia.posupdate.presentacion.dto.RespuestaDetalleEquipo;
 import com.farmamia.posupdate.presentacion.dto.RespuestaEquipo;
+import com.farmamia.posupdate.presentacion.dto.RespuestaEquipoHuerfano;
 import com.farmamia.posupdate.presentacion.dto.RespuestaEventoActualizacion;
 import com.farmamia.posupdate.presentacion.dto.RespuestaMetricaEquipo;
 import com.farmamia.posupdate.presentacion.dto.RespuestaObjetivoEquipo;
 import com.farmamia.posupdate.presentacion.dto.RespuestaPagina;
+import com.farmamia.posupdate.presentacion.dto.SolicitudAsignacionMasivaEquipos;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,13 +42,16 @@ public class ControladorEquipos {
 
     private final ConsultarCatalogoOperativoCasoUso consultarCatalogoOperativoCasoUso;
     private final ConsultarDetalleEquipoCasoUso consultarDetalleEquipoCasoUso;
+    private final AprovisionarEquiposHuerfanosCasoUso aprovisionarEquiposHuerfanosCasoUso;
 
     public ControladorEquipos(
         ConsultarCatalogoOperativoCasoUso consultarCatalogoOperativoCasoUso,
-        ConsultarDetalleEquipoCasoUso consultarDetalleEquipoCasoUso
+        ConsultarDetalleEquipoCasoUso consultarDetalleEquipoCasoUso,
+        AprovisionarEquiposHuerfanosCasoUso aprovisionarEquiposHuerfanosCasoUso
     ) {
         this.consultarCatalogoOperativoCasoUso = consultarCatalogoOperativoCasoUso;
         this.consultarDetalleEquipoCasoUso = consultarDetalleEquipoCasoUso;
+        this.aprovisionarEquiposHuerfanosCasoUso = aprovisionarEquiposHuerfanosCasoUso;
     }
 
     @GetMapping
@@ -86,6 +101,34 @@ public class ControladorEquipos {
         );
     }
 
+    @GetMapping("/huerfanos")
+    public List<RespuestaEquipoHuerfano> listarHuerfanos(Authentication autenticacion) {
+        exigirLectura(autenticacion);
+        return aprovisionarEquiposHuerfanosCasoUso.listarHuerfanos()
+            .stream()
+            .map(this::aRespuestaHuerfano)
+            .toList();
+    }
+
+    @PostMapping("/asignacion-masiva")
+    public RespuestaAsignacionMasivaEquipos asignarMasivamente(
+        @Valid @RequestBody SolicitudAsignacionMasivaEquipos solicitud,
+        Authentication autenticacion,
+        HttpServletRequest request
+    ) {
+        exigirOperador(autenticacion);
+        List<AsignacionEquipoSucursal> asignaciones = solicitud.asignaciones()
+            .stream()
+            .map(item -> new AsignacionEquipoSucursal(item.idEquipo(), item.idSucursal()))
+            .toList();
+        ResumenAsignacionMasiva resumen = aprovisionarEquiposHuerfanosCasoUso.asignarMasivamente(
+            asignaciones,
+            autenticacion.getName(),
+            request.getRemoteAddr()
+        );
+        return new RespuestaAsignacionMasivaEquipos(resumen.asignados(), resumen.omitidos());
+    }
+
     private RespuestaEquipo aRespuesta(Equipo equipo) {
         return new RespuestaEquipo(
             equipo.id(),
@@ -114,6 +157,22 @@ public class ControladorEquipos {
             pagina.totalElementos(),
             pagina.totalPaginas(),
             pagina.tieneSiguiente()
+        );
+    }
+
+    private RespuestaEquipoHuerfano aRespuestaHuerfano(EquipoHuerfano equipo) {
+        return new RespuestaEquipoHuerfano(
+            equipo.id(),
+            equipo.nombreEquipo(),
+            equipo.direccionIp(),
+            equipo.versionAgente(),
+            equipo.versionPos(),
+            equipo.registradoEn(),
+            equipo.estadoSugerencia().name(),
+            equipo.idSucursalSugerida(),
+            equipo.codigoSucursalSugerida(),
+            equipo.nombreSucursalSugerida(),
+            equipo.codigoGrupoTrxSugerido()
         );
     }
 
@@ -168,6 +227,25 @@ public class ControladorEquipos {
             objetivo.iniciadoEn(),
             objetivo.completadoEn(),
             objetivo.actualizadoEn()
+        );
+    }
+
+    private void exigirLectura(Authentication autenticacion) {
+        PermisosAdministrativos.exigirRol(
+            autenticacion,
+            "Solo ADMIN, OPERATOR o AUDITOR pueden consultar equipos POS.",
+            "ADMIN",
+            "OPERATOR",
+            "AUDITOR"
+        );
+    }
+
+    private void exigirOperador(Authentication autenticacion) {
+        PermisosAdministrativos.exigirRol(
+            autenticacion,
+            "Solo ADMIN u OPERATOR pueden aprovisionar equipos POS.",
+            "ADMIN",
+            "OPERATOR"
         );
     }
 }

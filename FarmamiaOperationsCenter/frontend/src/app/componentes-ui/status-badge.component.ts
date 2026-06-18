@@ -9,10 +9,10 @@ import { CommonModule } from '@angular/common';
   styles: [`
     .status-badge {
       align-items: center;
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
+      background: var(--color-primary-soft, #172340);
+      border: 1px solid color-mix(in srgb, var(--color-primary, #58a6ff) 30%, transparent);
       border-radius: 999px;
-      color: #1d4ed8;
+      color: var(--color-primary, #58a6ff);
       display: inline-flex;
       font-size: 0.72rem;
       font-weight: 800;
@@ -24,30 +24,31 @@ import { CommonModule } from '@angular/common';
       padding: 5px 9px;
       text-transform: uppercase;
       white-space: nowrap;
+      transition: background 0.2s ease, color 0.2s ease;
     }
 
     .success {
-      background: #ecfdf5;
-      border-color: #bbf7d0;
-      color: #15803d;
+      background: var(--color-success-soft, #0d2818);
+      border-color: color-mix(in srgb, var(--color-success, #3fb950) 30%, transparent);
+      color: var(--color-success, #3fb950);
     }
 
     .warning {
-      background: #fffbeb;
-      border-color: #fde68a;
-      color: #b45309;
+      background: var(--color-warning-soft, #2b1d00);
+      border-color: color-mix(in srgb, var(--color-warning, #e3b341) 30%, transparent);
+      color: var(--color-warning, #e3b341);
     }
 
     .danger {
-      background: #fef2f2;
-      border-color: #fecaca;
-      color: #b91c1c;
+      background: var(--color-danger-soft, #2d0f0f);
+      border-color: color-mix(in srgb, var(--color-danger, #f85149) 30%, transparent);
+      color: var(--color-danger, #f85149);
     }
 
     .purple {
-      background: #f5f3ff;
-      border-color: #ddd6fe;
-      color: #6d28d9;
+      background: var(--color-purple-soft, #1e0a3a);
+      border-color: color-mix(in srgb, var(--color-purple, #a371f7) 30%, transparent);
+      color: var(--color-purple, #a371f7);
     }
   `]
 })

@@ -9,10 +9,12 @@ import com.farmamia.posupdate.dominio.modelo.Pagina;
 import com.farmamia.posupdate.dominio.puerto.RepositorioDespliegues;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.DespliegueEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.EquipoEntidad;
+import com.farmamia.posupdate.infraestructura.persistencia.entidad.GrupoTrxEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.ObjetivoDespliegueEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.PaquetePosEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.DespliegueRepositorioJpa;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.EquipoRepositorioJpa;
+import com.farmamia.posupdate.infraestructura.persistencia.repositorio.GrupoTrxRepositorioJpa;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.ObjetivoDespliegueRepositorioJpa;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.PaquetePosRepositorioJpa;
 import java.time.OffsetDateTime;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +32,7 @@ import org.springframework.data.domain.Sort;
 public class RepositorioDesplieguesJpaAdaptador implements RepositorioDespliegues {
 
     private static final OffsetDateTime FECHA_NEUTRA = OffsetDateTime.parse("1970-01-01T00:00:00Z");
+    private static final Pattern PATRON_GRUPO_TRX = Pattern.compile("^TRX[0-9]{3}$");
 
     private static final List<String> ESTADOS_COMPLETADOS = List.of("COMPLETED");
     private static final List<String> ESTADOS_FALLIDOS = List.of("FAILED", "ROLLBACK_FAILED");
@@ -44,17 +48,20 @@ public class RepositorioDesplieguesJpaAdaptador implements RepositorioDespliegue
     private final ObjetivoDespliegueRepositorioJpa objetivoDespliegueRepositorioJpa;
     private final PaquetePosRepositorioJpa paquetePosRepositorioJpa;
     private final EquipoRepositorioJpa equipoRepositorioJpa;
+    private final GrupoTrxRepositorioJpa grupoTrxRepositorioJpa;
 
     public RepositorioDesplieguesJpaAdaptador(
         DespliegueRepositorioJpa despliegueRepositorioJpa,
         ObjetivoDespliegueRepositorioJpa objetivoDespliegueRepositorioJpa,
         PaquetePosRepositorioJpa paquetePosRepositorioJpa,
-        EquipoRepositorioJpa equipoRepositorioJpa
+        EquipoRepositorioJpa equipoRepositorioJpa,
+        GrupoTrxRepositorioJpa grupoTrxRepositorioJpa
     ) {
         this.despliegueRepositorioJpa = despliegueRepositorioJpa;
         this.objetivoDespliegueRepositorioJpa = objetivoDespliegueRepositorioJpa;
         this.paquetePosRepositorioJpa = paquetePosRepositorioJpa;
         this.equipoRepositorioJpa = equipoRepositorioJpa;
+        this.grupoTrxRepositorioJpa = grupoTrxRepositorioJpa;
     }
 
     @Override
@@ -73,10 +80,16 @@ public class RepositorioDesplieguesJpaAdaptador implements RepositorioDespliegue
             datos.programadoEn()
         ));
 
-        List<ObjetivoDespliegueEntidad> objetivos = datos.idsEquipos()
+        GrupoTrxEntidad grupoTrxObjetivo = resolverGrupoTrxObjetivo(datos.grupoObjetivo());
+        List<UUID> idsObjetivo = resolverIdsObjetivo(datos, grupoTrxObjetivo);
+        if (idsObjetivo.isEmpty()) {
+            throw new IllegalArgumentException("La campana debe tener al menos un equipo POS objetivo.");
+        }
+
+        List<ObjetivoDespliegueEntidad> objetivos = idsObjetivo
             .stream()
             .distinct()
-            .map(idEquipo -> crearObjetivo(datos, despliegue, paquete, idEquipo))
+            .map(idEquipo -> crearObjetivo(datos, despliegue, paquete, idEquipo, grupoTrxObjetivo))
             .toList();
         objetivoDespliegueRepositorioJpa.saveAll(objetivos);
 
@@ -234,18 +247,47 @@ public class RepositorioDesplieguesJpaAdaptador implements RepositorioDespliegue
         DatosCrearDespliegue datos,
         DespliegueEntidad despliegue,
         PaquetePosEntidad paquete,
-        UUID idEquipo
+        UUID idEquipo,
+        GrupoTrxEntidad grupoTrxObjetivo
     ) {
         EquipoEntidad equipo = equipoRepositorioJpa.findById(idEquipo)
             .orElseThrow(() -> new RecursoNoEncontradoException("Equipo no encontrado: " + idEquipo));
 
-        return new ObjetivoDespliegueEntidad(
+        ObjetivoDespliegueEntidad objetivo = new ObjetivoDespliegueEntidad(
             despliegue,
             equipo,
-            datos.grupoObjetivo(),
+            grupoTrxObjetivo == null ? datos.grupoObjetivo() : grupoTrxObjetivo.getCodigo(),
             datos.piloto(),
             paquete.getVersion()
         );
+        if (grupoTrxObjetivo != null) {
+            objetivo.asignarGrupoTrx(grupoTrxObjetivo);
+        }
+        return objetivo;
+    }
+
+    private GrupoTrxEntidad resolverGrupoTrxObjetivo(String grupoObjetivo) {
+        String codigo = codigoGrupoTrx(grupoObjetivo);
+        if (codigo == null) {
+            return null;
+        }
+        return grupoTrxRepositorioJpa.findByCodigo(codigo)
+            .orElseThrow(() -> new RecursoNoEncontradoException("Grupo TRX no encontrado: " + codigo));
+    }
+
+    private List<UUID> resolverIdsObjetivo(DatosCrearDespliegue datos, GrupoTrxEntidad grupoTrxObjetivo) {
+        if (grupoTrxObjetivo != null) {
+            return equipoRepositorioJpa.findIdsByGrupoTrxCodigo(grupoTrxObjetivo.getCodigo());
+        }
+        return datos.idsEquipos() == null ? List.of() : datos.idsEquipos();
+    }
+
+    private String codigoGrupoTrx(String grupoObjetivo) {
+        if (grupoObjetivo == null || grupoObjetivo.isBlank()) {
+            return null;
+        }
+        String codigo = grupoObjetivo.trim().toUpperCase(Locale.ROOT);
+        return PATRON_GRUPO_TRX.matcher(codigo).matches() ? codigo : null;
     }
 
     private DespliegueEntidad buscarDespliegue(UUID id) {

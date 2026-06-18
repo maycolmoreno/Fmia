@@ -9,6 +9,7 @@ import com.farmamia.posupdate.aplicacion.excepcion.ConflictoIdempotenciaExceptio
 import com.farmamia.posupdate.dominio.modelo.AlertaEquipo;
 import com.farmamia.posupdate.dominio.modelo.AlertaRegistrada;
 import com.farmamia.posupdate.dominio.modelo.AlertaRed;
+import com.farmamia.posupdate.dominio.modelo.AsignacionEquipoSucursal;
 import com.farmamia.posupdate.dominio.modelo.DatosRegistroAgente;
 import com.farmamia.posupdate.dominio.modelo.Equipo;
 import com.farmamia.posupdate.dominio.modelo.EventoActualizacion;
@@ -24,6 +25,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -268,6 +270,20 @@ class RegistrarEventoAgenteCasoUsoTest {
             com.farmamia.posupdate.dominio.modelo.FiltroEquipos filtro
         ) {
             return new com.farmamia.posupdate.dominio.modelo.Pagina<>(List.of(equipo), 0, 1, 1, 1, false);
+        }
+
+        @Override
+        public List<Equipo> listarHuerfanos() {
+            return List.of();
+        }
+
+        @Override
+        public long contarHuerfanosPorIds(Set<UUID> idsEquipos) {
+            return idsEquipos.size();
+        }
+
+        @Override
+        public void asignarSucursales(List<AsignacionEquipoSucursal> asignaciones) {
         }
 
         @Override

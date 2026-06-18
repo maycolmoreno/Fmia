@@ -4,6 +4,7 @@ import com.farmamia.posupdate.infraestructura.persistencia.entidad.EquipoEntidad
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,11 +32,24 @@ public interface EquipoRepositorioJpa extends JpaRepository<EquipoEntidad, UUID>
     @EntityGraph(attributePaths = "sucursal")
     java.util.List<EquipoEntidad> findAll();
 
+    List<EquipoEntidad> findBySucursalIsNullOrderByNombreEquipoAsc();
+
+    long countByIdInAndSucursalIsNull(Set<UUID> ids);
+
+    @Query("""
+        select equipo.id
+        from EquipoEntidad equipo
+        join equipo.sucursal sucursal
+        join sucursal.grupoTrx grupoTrx
+        where grupoTrx.codigo = :codigoGrupoTrx
+        """)
+    List<UUID> findIdsByGrupoTrxCodigo(@Param("codigoGrupoTrx") String codigoGrupoTrx);
+
     @EntityGraph(attributePaths = "sucursal")
     @Query("""
         select equipo
         from EquipoEntidad equipo
-        join equipo.sucursal sucursal
+        left join equipo.sucursal sucursal
         where (:filtrarQ = false
             or lower(equipo.nombreEquipo) like concat('%', :q, '%')
             or lower(coalesce(equipo.direccionIp, '')) like concat('%', :q, '%')

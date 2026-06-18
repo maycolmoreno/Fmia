@@ -29,7 +29,7 @@ class GestionarGruposTrxCasoUsoTest {
 
         GrupoTrx grupo = casoUso.crear(new DatosGrupoTrx("trx001", "TRX 001", "Oleada controlada", 100, true));
 
-        assertEquals("trx001", grupo.codigo());
+        assertEquals("TRX001", grupo.codigo());
         assertEquals(EstadoGrupoTrx.ACTIVO, grupo.estado());
         assertEquals(100, grupo.maximoEquipos());
         assertThrows(IllegalArgumentException.class, () -> casoUso.crear(new DatosGrupoTrx("trx001", "Duplicado", null, 100, true)));

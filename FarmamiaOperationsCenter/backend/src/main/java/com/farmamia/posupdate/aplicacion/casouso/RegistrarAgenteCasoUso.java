@@ -37,7 +37,11 @@ public class RegistrarAgenteCasoUso {
 
     @Transactional
     public RegistroAgente registrar(DatosRegistroAgente datosRegistro) {
-        UUID idSucursal = repositorioSucursales.obtenerOCrearPorCodigo(datosRegistro.codigoSucursal());
+        UUID idSucursal = null;
+        if (datosRegistro.codigoSucursal() != null && !datosRegistro.codigoSucursal().isBlank()) {
+            idSucursal = repositorioSucursales.obtenerOCrearPorCodigo(datosRegistro.codigoSucursal());
+        }
+
         Equipo equipo = repositorioEquipos.registrarOActualizar(idSucursal, datosRegistro);
         String tokenPlano = generarToken();
 

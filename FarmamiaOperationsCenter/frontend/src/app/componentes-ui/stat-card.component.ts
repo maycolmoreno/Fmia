@@ -11,24 +11,28 @@ import { Component, Input } from '@angular/core';
     </article>
   `,
   styles: [`
+    :host {
+      display: block;
+    }
     .stat-card {
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
+      background: var(--color-card, #161b22);
+      border: 1px solid var(--color-border, #30363d);
       border-radius: 12px;
-      box-shadow: 0 10px 28px rgb(15 23 42 / 5%);
+      box-shadow: var(--shadow-card, 0 8px 24px rgb(0 0 0 / 40%));
       padding: 18px;
+      transition: background 0.2s ease, border-color 0.2s ease;
     }
 
     span,
     small {
-      color: #64748b;
+      color: var(--color-muted, #8b949e);
       display: block;
       font-size: 0.82rem;
       font-weight: 600;
     }
 
     strong {
-      color: #0f172a;
+      color: var(--color-text, #e6edf3);
       display: block;
       font-size: 1.8rem;
       line-height: 1;

@@ -10,6 +10,7 @@ import {
   CampanaPos,
   CampanaGrupoTrx,
   DetalleEquipoPos,
+  EquipoHuerfano,
   EquipoPos,
   EstadoOperacionalFarmacia,
   GrupoTrx,
@@ -19,6 +20,7 @@ import {
   VersionPos,
   PlanOrquestacion,
   ResumenCampanaGruposTrx,
+  ResumenAsignacionMasiva,
   ResumenEstadoCampanaFarmacia,
   RespuestaPagina,
   ResumenNocDashboard,
@@ -190,6 +192,16 @@ export class OperacionesApiService {
 
   obtenerDetalleEquipo(id: string): Observable<DetalleEquipo> {
     return this.obtenerDetalleEquipoPos(id);
+  }
+
+  listarEquiposHuerfanos(): Observable<EquipoHuerfano[]> {
+    return this.http.get<EquipoHuerfano[]>(`${this.baseUrl}/api/equipos-pos/huerfanos`);
+  }
+
+  asignarEquiposHuerfanos(asignaciones: Array<{ deviceId: string; branchId: string }>): Observable<ResumenAsignacionMasiva> {
+    return this.http.post<ResumenAsignacionMasiva>(`${this.baseUrl}/api/equipos-pos/asignacion-masiva`, {
+      assignments: asignaciones
+    });
   }
 
   cargarVersionPos(version: string, archivo: File): Observable<VersionPos> {

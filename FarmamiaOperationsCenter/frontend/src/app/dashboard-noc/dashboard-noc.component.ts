@@ -75,6 +75,14 @@ export class DashboardNocComponent implements OnInit, OnDestroy {
     this.farmaciaDetalleNoc = undefined;
   }
 
+  get alertasAbiertas(): number {
+    return this.resumen?.recentAlerts.filter(a => a.status !== 'CLOSED').length ?? 0;
+  }
+
+  get alertasRed(): number {
+    return this.resumen?.recentAlerts.filter(a => a.networkEvent && a.status !== 'CLOSED').length ?? 0;
+  }
+
   get codigosFarmaciasTurno(): Set<string> {
     return new Set(this.estadoFarmacias.filter(f => f.deTurno).map(f => f.codigoFarmacia));
   }

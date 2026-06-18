@@ -2,6 +2,7 @@ package com.farmamia.posupdate.presentacion.controlador;
 
 import com.farmamia.posupdate.aplicacion.excepcion.RecursoNoEncontradoException;
 import com.farmamia.posupdate.aplicacion.excepcion.ConflictoIdempotenciaException;
+import com.farmamia.posupdate.aplicacion.excepcion.ConflictoOperacionException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -44,6 +45,12 @@ public class ManejadorExcepcionesApi {
     public ResponseEntity<RespuestaErrorApi> manejarConflictoIdempotencia(ConflictoIdempotenciaException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
             .body(RespuestaErrorApi.de("IDEMPOTENCY_CONFLICT", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ConflictoOperacionException.class)
+    public ResponseEntity<RespuestaErrorApi> manejarConflictoOperacion(ConflictoOperacionException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(RespuestaErrorApi.de("OPERATION_CONFLICT", ex.getMessage()));
     }
 
     @ExceptionHandler(BadCredentialsException.class)

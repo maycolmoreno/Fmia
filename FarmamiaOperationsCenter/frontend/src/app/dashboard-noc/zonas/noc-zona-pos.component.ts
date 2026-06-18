@@ -44,14 +44,15 @@ import { EstadoPosNoc } from '../../modelos/modelos-operaciones';
       gap: 12px;
       padding: 8px 10px;
       border-radius: 6px;
-      background: #f8fafc;
+      background: var(--color-card-raised, #1c2128);
+      transition: background 0.2s ease;
     }
-    .metrica-ok     { background: #f0fff4; }
-    .metrica-alerta { background: #fef2f2; }
-    .metrica-aviso  { background: #fffaf0; }
-    .metrica-valor { font-size: 1.5rem; font-weight: 700; min-width: 32px; text-align: right; }
-    .metrica-label { font-size: 0.85rem; color: #607089; }
-    .version-actual { padding: 6px 10px; font-size: 0.85rem; }
+    .metrica-ok     { background: var(--color-success-soft, #0d2818); }
+    .metrica-alerta { background: var(--color-danger-soft, #2d0f0f); }
+    .metrica-aviso  { background: var(--color-warning-soft, #2b1d00); }
+    .metrica-valor { font-size: 1.5rem; font-weight: 700; min-width: 32px; text-align: right; color: var(--color-text, #e6edf3); }
+    .metrica-label { font-size: 0.85rem; color: var(--color-muted, #8b949e); }
+    .version-actual { padding: 6px 10px; font-size: 0.85rem; color: var(--color-text, #e6edf3); }
   `]
 })
 export class NocZonaPosComponent {

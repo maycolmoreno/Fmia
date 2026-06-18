@@ -1,6 +1,7 @@
 package com.farmamia.posupdate.infraestructura.persistencia.adaptador;
 
 import com.farmamia.posupdate.aplicacion.excepcion.RecursoNoEncontradoException;
+import com.farmamia.posupdate.dominio.modelo.AsignacionEquipoSucursal;
 import com.farmamia.posupdate.dominio.modelo.DatosRegistroAgente;
 import com.farmamia.posupdate.dominio.modelo.Equipo;
 import com.farmamia.posupdate.dominio.modelo.FiltroEquipos;
@@ -15,6 +16,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.PageRequest;
@@ -38,11 +40,15 @@ public class RepositorioEquiposJpaAdaptador implements RepositorioEquipos {
 
     @Override
     public Equipo registrarOActualizar(UUID idSucursal, DatosRegistroAgente datosRegistro) {
-        SucursalEntidad sucursal = sucursalRepositorioJpa.findById(idSucursal)
-            .orElseThrow(() -> new RecursoNoEncontradoException("Sucursal no encontrada: " + idSucursal));
+        SucursalEntidad sucursal = null;
+        if (idSucursal != null) {
+            sucursal = sucursalRepositorioJpa.findById(idSucursal)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Sucursal no encontrada: " + idSucursal));
+        }
+        final SucursalEntidad sucursalRegistro = sucursal;
 
         EquipoEntidad equipo = equipoRepositorioJpa.findByNombreEquipo(datosRegistro.nombreEquipo())
-            .orElseGet(() -> new EquipoEntidad(sucursal, datosRegistro.nombreEquipo(), datosRegistro.rutaPos()));
+            .orElseGet(() -> new EquipoEntidad(sucursalRegistro, datosRegistro.nombreEquipo(), datosRegistro.rutaPos()));
 
         equipo.actualizarRegistro(
             sucursal,
@@ -107,6 +113,30 @@ public class RepositorioEquiposJpaAdaptador implements RepositorioEquipos {
     }
 
     @Override
+    public List<Equipo> listarHuerfanos() {
+        return equipoRepositorioJpa.findBySucursalIsNullOrderByNombreEquipoAsc()
+            .stream()
+            .map(this::aDominio)
+            .toList();
+    }
+
+    @Override
+    public long contarHuerfanosPorIds(Set<UUID> idsEquipos) {
+        return idsEquipos.isEmpty() ? 0 : equipoRepositorioJpa.countByIdInAndSucursalIsNull(idsEquipos);
+    }
+
+    @Override
+    public void asignarSucursales(List<AsignacionEquipoSucursal> asignaciones) {
+        for (AsignacionEquipoSucursal asignacion : asignaciones) {
+            EquipoEntidad equipo = equipoRepositorioJpa.findById(asignacion.idEquipo())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Equipo no encontrado: " + asignacion.idEquipo()));
+            SucursalEntidad sucursal = sucursalRepositorioJpa.findById(asignacion.idSucursal())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Sucursal no encontrada: " + asignacion.idSucursal()));
+            equipo.asignarSucursal(sucursal);
+        }
+    }
+
+    @Override
     public void registrarLatido(UUID idEquipo, String versionPos) {
         EquipoEntidad equipo = equipoRepositorioJpa.findById(idEquipo)
             .orElseThrow(() -> new RecursoNoEncontradoException("Equipo no encontrado: " + idEquipo));
@@ -124,9 +154,9 @@ public class RepositorioEquiposJpaAdaptador implements RepositorioEquipos {
         SucursalEntidad sucursal = entidad.getSucursal();
         return new Equipo(
             entidad.getId(),
-            sucursal.getId(),
-            sucursal.getCodigo(),
-            sucursal.getNombre(),
+            sucursal == null ? null : sucursal.getId(),
+            sucursal == null ? "" : sucursal.getCodigo(),
+            sucursal == null ? "SIN ASIGNAR" : sucursal.getNombre(),
             entidad.getNombreEquipo(),
             entidad.getDireccionIp(),
             entidad.getDireccionMac(),

@@ -1,8 +1,8 @@
 <section class="vista noc-vista">
-
   <header class="noc-cabecera">
     <div>
-      <p class="etiqueta">Dashboard NOC — actualiza cada 30 s</p>
+      <p class="etiqueta">Vista general NOC</p>
+      <h2>Estado operacional ahora</h2>
       <p class="noc-timestamp" *ngIf="resumen">
         Ultima lectura: {{ resumen.generatedAt | date:'HH:mm:ss' }}
       </p>
@@ -11,106 +11,59 @@
       <span class="indicador-error" *ngIf="error">Sin conexion con el backend</span>
       <span class="indicador-carga" *ngIf="cargando && !resumen">Cargando...</span>
       <a *ngIf="grafanaUrl" [href]="grafanaUrl" target="_blank" rel="noopener" class="boton secundario boton-grafana">
-        Abrir Grafana
+        Grafana
       </a>
     </div>
   </header>
 
   <ng-container *ngIf="resumen">
+    <div class="noc-resumen-grid">
+      <article class="noc-indicador" [class.alerta]="resumen.pos.offline > 0">
+        <span>Maquinas apagadas</span>
+        <strong>{{ resumen.pos.offline }}</strong>
+        <small>{{ resumen.pos.online }} encendidas de {{ resumen.pos.total }}</small>
+      </article>
 
-    <!-- Zona 1: Farmacias criticas / turno en riesgo -->
-    <app-noc-zona-critico
-      [farmaciasCriticas]="resumen.criticFarms"
-      [farmaciasDeTurnoEnRiesgo]="resumen.atRiskFarms"
-      [grafanaUrl]="grafanaUrl"
-      [estadoFarmacias]="estadoFarmacias"
-      (seleccionarFarmacia)="seleccionarFarmaciaDetalleNoc($event)">
-    </app-noc-zona-critico>
+      <article class="noc-indicador" [class.alerta]="resumen.network.linkDown > 0">
+        <span>Enlaces caidos</span>
+        <strong>{{ resumen.network.linkDown }}</strong>
+        <small>{{ resumen.network.highLatency }} con latencia alta</small>
+      </article>
 
-    <!-- Panel de detalle de farmacia seleccionada -->
-    <article class="tarjeta detalle-farmacia-noc" *ngIf="farmaciaDetalleNoc">
-      <div class="titulo-tarjeta">
-        <div>
-          <h2>{{ farmaciaDetalleNoc.codigoFarmacia }} — {{ farmaciaDetalleNoc.nombreFarmacia }}</h2>
-          <small>
-            {{ farmaciaDetalleNoc.ciudad || '' }}{{ farmaciaDetalleNoc.zona ? ' | ' + farmaciaDetalleNoc.zona : '' }}
-            {{ farmaciaDetalleNoc.deTurno ? '· DE TURNO' : '' }}
-          </small>
-        </div>
-        <div class="detalle-noc-acciones">
-          <span class="badge-estado-noc" [ngClass]="claseEstadoNoc(farmaciaDetalleNoc.estadoOperacional)">
-            {{ farmaciaDetalleNoc.estadoOperacional }}
-          </span>
-          <a *ngIf="grafanaUrl"
-            [href]="urlGrafanaFarmacia(farmaciaDetalleNoc.codigoFarmacia)"
-            target="_blank" rel="noopener"
-            class="boton pequeno secundario">
-            Ver en Grafana
-          </a>
-          <button type="button" class="boton pequeno" (click)="cerrarDetalleNoc()">Cerrar</button>
-        </div>
-      </div>
+      <article class="noc-indicador" [class.alerta]="resumen.criticFarms.length > 0">
+        <span>Farmacias criticas</span>
+        <strong>{{ resumen.criticFarms.length }}</strong>
+        <small>{{ resumen.atRiskFarms.length }} de turno en riesgo</small>
+      </article>
 
-      <div class="detalle-noc-grid">
-        <div class="detalle-noc-bloque">
-          <p class="detalle-noc-label">POS en linea</p>
-          <strong class="detalle-noc-valor ok">{{ farmaciaDetalleNoc.equiposOnline }}</strong>
-          <small>de {{ farmaciaDetalleNoc.totalEquiposPos }} totales</small>
-        </div>
-        <div class="detalle-noc-bloque">
-          <p class="detalle-noc-label">POS fuera de linea</p>
-          <strong class="detalle-noc-valor" [class.alerta]="farmaciaDetalleNoc.equiposOffline > 0">
-            {{ farmaciaDetalleNoc.equiposOffline }}
-          </strong>
-          <small>{{ farmaciaDetalleNoc.equiposSinLatido }} sin latido</small>
-        </div>
-        <div class="detalle-noc-bloque">
-          <p class="detalle-noc-label">Version POS</p>
-          <strong class="detalle-noc-valor">{{ farmaciaDetalleNoc.versionPosDominante || 'N/D' }}</strong>
-          <small>version dominante</small>
-        </div>
-        <div class="detalle-noc-bloque">
-          <p class="detalle-noc-label">Alertas criticas</p>
-          <strong class="detalle-noc-valor" [class.alerta]="farmaciaDetalleNoc.alertasCriticas > 0">
-            {{ farmaciaDetalleNoc.alertasCriticas }}
-          </strong>
-          <small>{{ farmaciaDetalleNoc.alertasAbiertas }} abiertas</small>
-        </div>
-        <div class="detalle-noc-bloque" *ngIf="farmaciaDetalleNoc.campanaActivaPrincipal">
-          <p class="detalle-noc-label">Campana activa</p>
-          <strong class="detalle-noc-valor campana">{{ farmaciaDetalleNoc.campanaActivaPrincipal }}</strong>
-          <small>{{ farmaciaDetalleNoc.objetivosCampanaPendientes }} POS pendientes
-            · {{ farmaciaDetalleNoc.objetivosCampanaFallidos }} fallidos</small>
-        </div>
-        <div class="detalle-noc-bloque" *ngIf="farmaciaDetalleNoc.grupoTrxPrincipal">
-          <p class="detalle-noc-label">Grupo TRX</p>
-          <strong class="detalle-noc-valor">{{ farmaciaDetalleNoc.grupoTrxPrincipal }}</strong>
-          <small>grupo asignado</small>
-        </div>
-      </div>
-
-      <p class="detalle-noc-resumen" *ngIf="farmaciaDetalleNoc.resumenRiesgo">
-        {{ farmaciaDetalleNoc.resumenRiesgo }}
-      </p>
-    </article>
-
-    <!-- Zona 2 + 3 + 4 en fila -->
-    <div class="noc-fila-metricas" [class.sin-campana]="!resumen.activeCampaign">
-      <app-noc-zona-red [red]="resumen.network" [grafanaUrl]="grafanaUrl"></app-noc-zona-red>
-      <app-noc-zona-pos [pos]="resumen.pos"></app-noc-zona-pos>
-      <app-noc-zona-campana [campana]="resumen.activeCampaign"></app-noc-zona-campana>
+      <article class="noc-indicador" [class.aviso]="alertasAbiertas > 0">
+        <span>Alertas abiertas</span>
+        <strong>{{ alertasAbiertas }}</strong>
+        <small>{{ alertasRed }} eventos de red</small>
+      </article>
     </div>
 
-    <!-- Zona 5: Alertas recientes -->
-    <app-noc-zona-alertas
-      [alertas]="resumen.recentAlerts"
-      [codigosFarmaciasTurno]="codigosFarmaciasTurno">
-    </app-noc-zona-alertas>
+    <div class="noc-contexto">
+      <article class="noc-contexto-card">
+        <span>Campana activa</span>
+        <strong>{{ resumen.activeCampaign?.name || 'Sin campana activa' }}</strong>
+        <small *ngIf="resumen.activeCampaign; else sinCampana">
+          {{ resumen.activeCampaign!.progressPercent }}% completado · {{ resumen.activeCampaign!.failed }} fallidos
+        </small>
+        <ng-template #sinCampana>
+          <small>No hay despliegues POS corriendo en este momento.</small>
+        </ng-template>
+      </article>
 
+      <article class="noc-contexto-card">
+        <span>Version POS dominante</span>
+        <strong>{{ resumen.pos.currentVersion || 'N/D' }}</strong>
+        <small>{{ resumen.pos.atRisk }} maquinas sin estado conocido</small>
+      </article>
+    </div>
   </ng-container>
 
   <div class="noc-sin-datos" *ngIf="!resumen && !cargando">
     <p>Sin datos disponibles. Verifica la conexion con el backend.</p>
   </div>
-
 </section>

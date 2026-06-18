@@ -117,6 +117,9 @@ public class RepositorioEstadoCampanaFarmaciaJpaAdaptador implements Repositorio
     private Map<UUID, List<ObjetivoDespliegueEntidad>> agruparPorFarmacia(List<ObjetivoDespliegueEntidad> objetivos) {
         Map<UUID, List<ObjetivoDespliegueEntidad>> grupos = new LinkedHashMap<>();
         for (ObjetivoDespliegueEntidad objetivo : objetivos) {
+            if (objetivo.getEquipo() == null || objetivo.getEquipo().getSucursal() == null) {
+                continue;
+            }
             UUID farmaciaId = objetivo.getEquipo().getSucursal().getId();
             grupos.computeIfAbsent(farmaciaId, id -> new ArrayList<>()).add(objetivo);
         }

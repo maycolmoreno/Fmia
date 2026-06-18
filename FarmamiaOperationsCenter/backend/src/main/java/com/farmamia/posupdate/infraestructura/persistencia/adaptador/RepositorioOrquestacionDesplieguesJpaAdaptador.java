@@ -189,7 +189,7 @@ public class RepositorioOrquestacionDesplieguesJpaAdaptador implements Repositor
             .sorted(Comparator
                 .comparing(ObjetivoDespliegueEntidad::isPiloto).reversed()
                 .thenComparing(objetivo -> grupoNormalizado(objetivo.getGrupoObjetivo()))
-                .thenComparing(objetivo -> objetivo.getEquipo().getSucursal().getCodigo())
+                .thenComparing(objetivo -> codigoSucursal(objetivo.getEquipo()))
                 .thenComparing(objetivo -> objetivo.getEquipo().getNombreEquipo()))
             .collect(Collectors.groupingBy(
                 objetivo -> new ClaveOleada(
@@ -272,7 +272,10 @@ public class RepositorioOrquestacionDesplieguesJpaAdaptador implements Repositor
             .filter(ObjetivoDespliegueEntidad::esFalloReintentable)
             .filter(objetivo -> !objetivo.reintentosAgotados(limiteReintentos))
             .count();
-        long farmaciasTurno = objetivos.stream().filter(objetivo -> objetivo.getEquipo().getSucursal().isDeTurno()).count();
+        long farmaciasTurno = objetivos.stream()
+            .filter(objetivo -> objetivo.getEquipo().getSucursal() != null)
+            .filter(objetivo -> objetivo.getEquipo().getSucursal().isDeTurno())
+            .count();
         long pendientes = Math.max(0, objetivos.size() - finales + fallidosConReintentoPendiente);
         BigDecimal porcentajeFallo = objetivos.isEmpty()
             ? BigDecimal.ZERO
@@ -299,6 +302,10 @@ public class RepositorioOrquestacionDesplieguesJpaAdaptador implements Repositor
 
     private String grupoNormalizado(String grupo) {
         return grupo == null || grupo.isBlank() ? "GENERAL" : grupo.trim().toUpperCase();
+    }
+
+    private String codigoSucursal(com.farmamia.posupdate.infraestructura.persistencia.entidad.EquipoEntidad equipo) {
+        return equipo.getSucursal() == null ? "" : equipo.getSucursal().getCodigo();
     }
 
     private record ClaveOleada(boolean piloto, String grupoObjetivo, String nombre) {

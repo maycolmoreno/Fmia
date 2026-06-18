@@ -131,7 +131,7 @@ public class GestionarGruposTrxCasoUso {
             throw new IllegalArgumentException("El maximo de equipos por Grupo TRX debe estar entre 1 y 100.");
         }
         return new DatosGrupoTrx(
-            codigo == null ? null : codigo.toLowerCase(Locale.ROOT),
+            codigo == null ? null : codigo.toUpperCase(Locale.ROOT),
             nombre,
             limpiar(datos.descripcion()),
             maximo,

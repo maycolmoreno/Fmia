@@ -267,6 +267,9 @@ public class RepositorioCampanaGruposTrxJpaAdaptador implements RepositorioCampa
     private Map<UUID, List<ObjetivoDespliegueEntidad>> agruparPorFarmacia(List<ObjetivoDespliegueEntidad> objetivos) {
         Map<UUID, List<ObjetivoDespliegueEntidad>> grupos = new LinkedHashMap<>();
         for (ObjetivoDespliegueEntidad objetivo : objetivos) {
+            if (objetivo.getEquipo() == null || objetivo.getEquipo().getSucursal() == null) {
+                continue;
+            }
             grupos.computeIfAbsent(objetivo.getEquipo().getSucursal().getId(), id -> new ArrayList<>()).add(objetivo);
         }
         return grupos;

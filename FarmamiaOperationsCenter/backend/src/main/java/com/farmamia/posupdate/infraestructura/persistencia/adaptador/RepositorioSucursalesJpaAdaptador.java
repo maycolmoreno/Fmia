@@ -3,13 +3,16 @@ package com.farmamia.posupdate.infraestructura.persistencia.adaptador;
 import com.farmamia.posupdate.dominio.modelo.FiltroSucursales;
 import com.farmamia.posupdate.dominio.modelo.Pagina;
 import com.farmamia.posupdate.dominio.modelo.Sucursal;
+import com.farmamia.posupdate.dominio.modelo.SucursalSugerida;
 import com.farmamia.posupdate.dominio.puerto.RepositorioSucursales;
+import com.farmamia.posupdate.infraestructura.persistencia.entidad.GrupoTrxEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.SucursalEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.SucursalRepositorioJpa;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -34,6 +37,16 @@ public class RepositorioSucursalesJpaAdaptador implements RepositorioSucursales 
     @Override
     public Optional<Sucursal> buscarPorCodigo(String codigo) {
         return sucursalRepositorioJpa.findByCodigo(codigo).map(this::aDominio);
+    }
+
+    @Override
+    public Optional<SucursalSugerida> buscarSugeridaPorCodigo(String codigo) {
+        return sucursalRepositorioJpa.findByCodigo(codigo).map(this::aSugerida);
+    }
+
+    @Override
+    public long contarPorIds(Set<UUID> idsSucursales) {
+        return idsSucursales.isEmpty() ? 0 : sucursalRepositorioJpa.countByIdIn(idsSucursales);
     }
 
     @Override
@@ -89,6 +102,16 @@ public class RepositorioSucursalesJpaAdaptador implements RepositorioSucursales 
             entidad.isActiva(),
             entidad.getCreadoEn(),
             entidad.getActualizadoEn()
+        );
+    }
+
+    private SucursalSugerida aSugerida(SucursalEntidad entidad) {
+        GrupoTrxEntidad grupoTrx = entidad.getGrupoTrx();
+        return new SucursalSugerida(
+            entidad.getId(),
+            entidad.getCodigo(),
+            entidad.getNombre(),
+            grupoTrx == null ? null : grupoTrx.getCodigo()
         );
     }
 

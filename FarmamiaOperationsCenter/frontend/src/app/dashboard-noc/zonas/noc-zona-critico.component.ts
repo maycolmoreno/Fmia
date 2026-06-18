@@ -63,7 +63,7 @@ import { EstadoOperacionalFarmacia, FarmaciaCriticaNoc } from '../../modelos/mod
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #607089;
+      color: var(--color-muted, #8b949e);
       margin: 12px 0 4px;
     }
     .fila-boton-noc {
@@ -74,21 +74,22 @@ import { EstadoOperacionalFarmacia, FarmaciaCriticaNoc } from '../../modelos/mod
       cursor: pointer;
       padding: 0;
       font-family: inherit;
+      color: var(--color-text, #e6edf3);
     }
-    .fila-boton-noc:hover { background: rgba(0,0,0,0.03); border-radius: 4px; }
-    .fila-critica { border-left: 3px solid #e53e3e; }
-    .fila-riesgo  { border-left: 3px solid #ed8936; }
+    .fila-boton-noc:hover { background: var(--color-card-raised, rgba(255,255,255,0.04)); border-radius: 4px; }
+    .fila-critica { border-left: 3px solid var(--color-danger, #f85149); }
+    .fila-riesgo  { border-left: 3px solid var(--color-warning, #e3b341); }
     .fila-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
     .enlace-grafana {
       font-size: 0.72rem;
-      color: #e8700a;
+      color: var(--color-warning, #e3b341);
       text-decoration: none;
-      border: 1px solid #e8700a;
+      border: 1px solid var(--color-warning, #e3b341);
       border-radius: 4px;
       padding: 2px 6px;
       white-space: nowrap;
     }
-    .enlace-grafana:hover { background: #fff7ed; }
+    .enlace-grafana:hover { background: var(--color-warning-soft, #2b1d00); }
     .badge {
       display: inline-block;
       padding: 2px 8px;
@@ -97,10 +98,10 @@ import { EstadoOperacionalFarmacia, FarmaciaCriticaNoc } from '../../modelos/mod
       font-weight: 700;
       white-space: nowrap;
     }
-    .badge-critico { background: #fef2f2; color: #c53030; }
-    .badge-riesgo  { background: #fffaf0; color: #c05621; }
-    .badge-turno   { background: #ebf8ff; color: #2b6cb0; }
-    .badge-campana { background: #f0f4ff; color: #3730a3; font-weight: 600; }
+    .badge-critico { background: var(--color-danger-soft, #2d0f0f); color: var(--color-danger, #f85149); }
+    .badge-riesgo  { background: var(--color-warning-soft, #2b1d00); color: var(--color-warning, #e3b341); }
+    .badge-turno   { background: var(--color-primary-soft, #172340); color: var(--color-primary, #58a6ff); }
+    .badge-campana { background: var(--color-purple-soft, #1e0a3a); color: var(--color-purple, #a371f7); font-weight: 600; }
   `]
 })
 export class NocZonaCriticoComponent {

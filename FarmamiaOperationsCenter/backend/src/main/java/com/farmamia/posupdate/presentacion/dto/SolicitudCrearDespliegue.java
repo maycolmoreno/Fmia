@@ -2,7 +2,6 @@ package com.farmamia.posupdate.presentacion.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -15,6 +14,6 @@ public record SolicitudCrearDespliegue(
     @JsonProperty("scheduledAt") OffsetDateTime programadoEn,
     @JsonProperty("targetGroup") String grupoObjetivo,
     @JsonProperty("pilot") boolean piloto,
-    @JsonProperty("deviceIds") @NotEmpty List<UUID> idsEquipos
+    @JsonProperty("deviceIds") List<UUID> idsEquipos
 ) {
 }

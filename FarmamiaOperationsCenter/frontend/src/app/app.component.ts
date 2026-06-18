@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterOutlet } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -9,6 +9,7 @@ import {
   CampanaGrupoTrx,
   CampanaPos,
   DetalleEquipoPos,
+  EquipoHuerfano,
   EquipoPos,
   EstadoDespliegue,
   EstadoCampanaFarmacia,
@@ -39,6 +40,7 @@ import { KpiCardComponent } from './componentes-ui/kpi-card.component';
 import { NocTableComponent } from './componentes-ui/noc-table.component';
 import { StatCardComponent } from './componentes-ui/stat-card.component';
 import { StatusBadgeComponent } from './componentes-ui/status-badge.component';
+import { MapaEcuadorComponent } from './componentes-ui/mapa-ecuador.component';
 import { OperacionesApiService } from './servicios/operaciones-api.service';
 import { SesionAdminService } from './servicios/sesion-admin.service';
 
@@ -57,18 +59,30 @@ type Vista = 'dashboard' | 'turno' | 'incidentes' | 'operaciones' | 'equipos' | 
     KpiCardComponent,
     NocTableComponent,
     StatCardComponent,
-    StatusBadgeComponent
+    StatusBadgeComponent,
+    MapaEcuadorComponent
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   vistaActiva: Vista = 'dashboard';
+  tema: 'oscuro' | 'claro' = 'oscuro';
+  horaActual = '';
+  panelDerecho = false;
+  private intervalReloj?: ReturnType<typeof setInterval>;
+  subTabFarmacias: 'todas' | 'turno' | 'huerfanos' = 'todas';
+  subTabAlertas: 'activas' | 'incidentes' | 'red' = 'activas';
+  subTabAgentes: 'equipos' | 'eventos' = 'equipos';
+  subTabDespliegues: 'estado' | 'orquestacion' = 'estado';
+  campanaExpandidaId: string | null = null;
+  filtroCampana = { nombre: '', estado: '' };
   salud?: EstadoSaludApi;
   farmacias: Farmacia[] = [];
   estadoFarmacias: EstadoOperacionalFarmacia[] = [];
   equiposPos: EquipoPos[] = [];
   equiposPosPagina?: RespuestaPagina<EquipoPos>;
+  equiposHuerfanos: EquipoHuerfano[] = [];
   versionesPos: VersionPos[] = [];
   campanasPos: CampanaPos[] = [];
   gruposTrx: GrupoTrx[] = [];
@@ -97,6 +111,7 @@ export class AppComponent implements OnInit {
   guardandoGrupoTrx = false;
   guardandoSeguridad = false;
   guardandoUsuario = false;
+  procesandoHuerfanos = false;
   usuarioEditandoId?: string;
   usuarioResetId?: string;
   mensaje = '';
@@ -118,9 +133,13 @@ export class AppComponent implements OnInit {
     name: '',
     description: '',
     scheduledAt: '',
-    targetGroup: 'GENERAL',
+    targetGroup: '',
     pilot: true,
-    deviceIds: ''
+    deviceIds: '',
+    grupoTrxId: '',
+    ruta: 'C:/Program Files (x86)/Farmamia Cia Ltda - Elipse/Zabyca POS',
+    programa: 'Zabyca.Pos.Desktop.exe',
+    orden: 'DESCARGAR_INSTALAR'
   };
 
   estadoCampanaFarmaciaFiltros = {
@@ -237,6 +256,8 @@ export class AppComponent implements OnInit {
   rolesAdministrativos = ['ADMIN', 'OPERATOR', 'AUDITOR', 'VIEWER'];
 
   equiposSeleccionados = new Set<string>();
+  huerfanosSeleccionados = new Set<string>();
+  asignacionManualHuerfanos: Record<string, string> = {};
   campanaAutorizadaTurno = false;
 
   get sucursales(): Sucursal[] {
@@ -277,6 +298,23 @@ export class AppComponent implements OnInit {
 
   set despliegues(valor: Despliegue[]) {
     this.campanasPos = valor;
+  }
+
+  get desplieguesFiltrados(): Despliegue[] {
+    const nombre = this.filtroCampana.nombre.toLowerCase().trim();
+    const estado = this.filtroCampana.estado;
+    return this.campanasPos.filter(c =>
+      (!nombre || c.name.toLowerCase().includes(nombre) || c.packageVersion.toLowerCase().includes(nombre)) &&
+      (!estado || c.status === estado)
+    );
+  }
+
+  toggleCampanaExpandida(id: string): void {
+    this.campanaExpandidaId = this.campanaExpandidaId === id ? null : id;
+  }
+
+  estadosUnicos(): string[] {
+    return [...new Set(this.campanasPos.map(c => c.status))].sort();
   }
 
   get eventos(): EventoActualizacion[] {
@@ -336,6 +374,28 @@ export class AppComponent implements OnInit {
     return this.equiposPos
       .filter((equipo) => equipo.status !== 'ONLINE')
       .slice(0, 8);
+  }
+
+  get huerfanosConSugerenciaValida(): number {
+    return this.equiposHuerfanos.filter((equipo) => equipo.suggestionStatus === 'SUGERENCIA_VALIDA').length;
+  }
+
+  get huerfanosPendientesManual(): number {
+    return this.equiposHuerfanos.filter((equipo) => equipo.suggestionStatus !== 'SUGERENCIA_VALIDA').length;
+  }
+
+  get asignacionesHuerfanosResueltas(): Array<{ deviceId: string; branchId: string }> {
+    return this.equiposHuerfanos
+      .filter((equipo) => this.huerfanosSeleccionados.has(equipo.deviceId))
+      .map((equipo) => ({
+        deviceId: equipo.deviceId,
+        branchId: this.branchIdResueltoHuerfano(equipo)
+      }))
+      .filter((item): item is { deviceId: string; branchId: string } => !!item.branchId);
+  }
+
+  get puedeProcesarHuerfanos(): boolean {
+    return this.asignacionesHuerfanosResueltas.length > 0 && !this.procesandoHuerfanos;
   }
 
   get eventosCriticos(): number {
@@ -404,6 +464,13 @@ export class AppComponent implements OnInit {
   }
 
   get farmaciasTurnoSeleccionadasCampana(): Farmacia[] {
+    if (this.establecimientosGrupoDespliegue.length > 0) {
+      const codigosSeleccionados = new Set(this.establecimientosGrupoDespliegue.map((establecimiento) => establecimiento.codigo));
+      return this.farmacias
+        .filter((farmacia) => farmacia.onDuty && codigosSeleccionados.has(farmacia.code))
+        .sort((a, b) => a.code.localeCompare(b.code));
+    }
+
     const idsEquipos = this.idsEquiposFormularioCampana();
     if (idsEquipos.size === 0) {
       return [];
@@ -460,6 +527,43 @@ export class AppComponent implements OnInit {
       .map((id) => id.trim())
       .filter(Boolean);
     return new Set([...Array.from(this.equiposSeleccionados), ...idsManuales]);
+  }
+
+  get grupoTrxDespliegueSeleccionado(): GrupoTrx | undefined {
+    return this.gruposTrx.find((grupo) => grupo.id === this.despliegueFormulario.grupoTrxId);
+  }
+
+  get establecimientosGrupoDespliegue(): Array<{ codigo: string; nombre: string; equipos: number }> {
+    const grupo = this.grupoTrxDespliegueSeleccionado;
+    if (!grupo) {
+      return [];
+    }
+
+    const establecimientos = new Map<string, { codigo: string; nombre: string; equipos: number }>();
+    grupo.devices.forEach((equipo) => {
+      const existente = establecimientos.get(equipo.branchCode);
+      if (existente) {
+        existente.equipos += 1;
+        return;
+      }
+      establecimientos.set(equipo.branchCode, {
+        codigo: equipo.branchCode,
+        nombre: equipo.branchName,
+        equipos: 1
+      });
+    });
+
+    return Array.from(establecimientos.values()).sort((a, b) => a.codigo.localeCompare(b.codigo));
+  }
+
+  get ordenDespliegueTexto(): string {
+    if (this.despliegueFormulario.orden === 'DESCARGAR') {
+      return 'Descargar';
+    }
+    if (this.despliegueFormulario.orden === 'INSTALAR') {
+      return 'Instalar';
+    }
+    return 'Descargar - Instalar';
   }
 
   get totalFarmaciasDashboard(): number {
@@ -672,7 +776,20 @@ export class AppComponent implements OnInit {
     return this.equiposPosPagina?.hasNext ?? false;
   }
 
+  private actualizarReloj(): void {
+    const ahora = new Date();
+    this.horaActual = ahora.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  }
+
   ngOnInit(): void {
+    this.actualizarReloj();
+    this.intervalReloj = setInterval(() => this.actualizarReloj(), 1000);
+
+    const temaGuardado = localStorage.getItem('noc-tema');
+    if (temaGuardado === 'claro' || temaGuardado === 'oscuro') {
+      this.tema = temaGuardado;
+    }
+
     if (this.sesion.autenticado()) {
       this.router.navigate(['/operaciones']);
       this.vistaActiva = 'dashboard';
@@ -680,6 +797,19 @@ export class AppComponent implements OnInit {
       return;
     }
     this.router.navigate(['/login']);
+  }
+
+  ngOnDestroy(): void {
+    if (this.intervalReloj) clearInterval(this.intervalReloj);
+  }
+
+  togglePanel(): void {
+    this.panelDerecho = !this.panelDerecho;
+  }
+
+  toggleTema(): void {
+    this.tema = this.tema === 'oscuro' ? 'claro' : 'oscuro';
+    localStorage.setItem('noc-tema', this.tema);
   }
 
   iniciarSesion(): void {
@@ -730,12 +860,42 @@ export class AppComponent implements OnInit {
   }
 
   cambiarVista(vista: Vista): void {
+    // Sub-vistas redirigidas a sub-tabs del padre
+    if (vista === 'turno') {
+      this.cambiarVista('equipos');
+      this.subTabFarmacias = 'turno';
+      return;
+    }
+    if (vista === 'incidentes') {
+      this.cambiarVista('alertas');
+      this.subTabAlertas = 'incidentes';
+      return;
+    }
+    if (vista === 'red') {
+      this.cambiarVista('alertas');
+      this.subTabAlertas = 'red';
+      return;
+    }
+    if (vista === 'eventos') {
+      this.cambiarVista('agentes');
+      this.subTabAgentes = 'eventos';
+      return;
+    }
+    if (vista === 'operaciones') {
+      this.subTabDespliegues = 'orquestacion';
+      if (!this.despliegueOrquestacion && this.desplieguesOperativos.length > 0) {
+        this.seleccionarOrquestacion(this.desplieguesOperativos[0]);
+      }
+      this.cambiarVista('despliegues');
+      return;
+    }
+
     if (vista === 'usuarios' && !this.sesion.esAdmin()) {
       this.error = 'No tienes permiso para administrar usuarios.';
       return;
     }
-    if ((vista === 'eventos' || vista === 'alertas') && !this.sesion.puedeVerEventosYAlertas()) {
-      this.error = 'No tienes permiso para consultar eventos o alertas.';
+    if (vista === 'alertas' && !this.sesion.puedeVerEventosYAlertas()) {
+      this.error = 'No tienes permiso para consultar alertas.';
       return;
     }
     if (vista === 'auditoria' && !this.sesion.puedeVerAuditoria()) {
@@ -745,9 +905,6 @@ export class AppComponent implements OnInit {
     this.vistaActiva = vista;
     this.error = '';
     this.mensaje = '';
-    if (vista === 'operaciones' && !this.despliegueOrquestacion && this.desplieguesOperativos.length > 0) {
-      this.seleccionarOrquestacion(this.desplieguesOperativos[0]);
-    }
   }
 
   verDetalleEquipo(equipo: Equipo): void {
@@ -766,6 +923,15 @@ export class AppComponent implements OnInit {
 
   cerrarDetalleEquipo(): void {
     this.detalleEquipo = undefined;
+  }
+
+  abrirRed(): void {
+    if (!this.sesion.puedeVerEventosYAlertas()) {
+      this.error = 'No tienes permiso para consultar alertas de red.';
+      return;
+    }
+    this.subTabAlertas = 'red';
+    this.cambiarVista('alertas');
   }
 
   verDetalleEquipoPorId(idEquipo: string): void {
@@ -803,6 +969,7 @@ export class AppComponent implements OnInit {
     this.cargarGruposTrx();
 
     this.cargarEquipos();
+    this.cargarEquiposHuerfanos();
 
     this.api.listarDespliegues()
       .pipe(finalize(() => this.cargando = false))
@@ -865,6 +1032,88 @@ export class AppComponent implements OnInit {
     });
   }
 
+  cargarEquiposHuerfanos(): void {
+    if (!this.sesion.puedeVerEventosYAlertas()) {
+      this.equiposHuerfanos = [];
+      this.huerfanosSeleccionados.clear();
+      this.asignacionManualHuerfanos = {};
+      return;
+    }
+
+    this.api.listarEquiposHuerfanos().subscribe({
+      next: (equipos) => {
+        this.equiposHuerfanos = equipos;
+        this.huerfanosSeleccionados = new Set(
+          equipos
+            .filter((equipo) => equipo.suggestionStatus === 'SUGERENCIA_VALIDA' && !!equipo.suggestedBranchId)
+            .map((equipo) => equipo.deviceId)
+        );
+        this.asignacionManualHuerfanos = {};
+      },
+      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo cargar agentes sin asignar.'
+    });
+  }
+
+  branchIdResueltoHuerfano(equipo: EquipoHuerfano): string {
+    return equipo.suggestedBranchId || this.asignacionManualHuerfanos[equipo.deviceId] || '';
+  }
+
+  huerfanoSeleccionable(equipo: EquipoHuerfano): boolean {
+    return !!this.branchIdResueltoHuerfano(equipo);
+  }
+
+  huerfanoSeleccionado(equipo: EquipoHuerfano): boolean {
+    return this.huerfanosSeleccionados.has(equipo.deviceId);
+  }
+
+  alternarHuerfano(equipo: EquipoHuerfano, seleccionado: boolean): void {
+    if (!this.huerfanoSeleccionable(equipo)) {
+      this.huerfanosSeleccionados.delete(equipo.deviceId);
+      return;
+    }
+    seleccionado
+      ? this.huerfanosSeleccionados.add(equipo.deviceId)
+      : this.huerfanosSeleccionados.delete(equipo.deviceId);
+  }
+
+  seleccionarSucursalManualHuerfano(equipo: EquipoHuerfano, branchId: string): void {
+    this.asignacionManualHuerfanos[equipo.deviceId] = branchId;
+    if (branchId) {
+      this.huerfanosSeleccionados.add(equipo.deviceId);
+    } else {
+      this.huerfanosSeleccionados.delete(equipo.deviceId);
+    }
+  }
+
+  procesarAsignacionHuerfanos(): void {
+    const asignaciones = this.asignacionesHuerfanosResueltas;
+    if (asignaciones.length === 0) {
+      return;
+    }
+
+    this.procesandoHuerfanos = true;
+    this.error = '';
+    this.mensaje = '';
+    this.api.asignarEquiposHuerfanos(asignaciones)
+      .pipe(finalize(() => this.procesandoHuerfanos = false))
+      .subscribe({
+        next: (resumen) => {
+          const procesados = new Set(asignaciones.map((item) => item.deviceId));
+          this.equiposHuerfanos = this.equiposHuerfanos.filter((equipo) => !procesados.has(equipo.deviceId));
+          procesados.forEach((id) => {
+            this.huerfanosSeleccionados.delete(id);
+            delete this.asignacionManualHuerfanos[id];
+          });
+          this.mensaje = `${resumen.assigned} equipos aprovisionados correctamente.`;
+          this.cargarEquipos();
+          this.api.listarEstadoFarmacias().subscribe({
+            next: (estadoFarmacias) => this.estadoFarmacias = estadoFarmacias
+          });
+        },
+        error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo procesar la asignacion masiva.'
+      });
+  }
+
   cargarGruposTrx(): void {
     this.api.listarGruposTrx({
       codigo: this.grupoTrxFiltros.codigo.trim(),
@@ -911,6 +1160,28 @@ export class AppComponent implements OnInit {
     this.cargarGruposTrx();
   }
 
+  seleccionarBaseDespliegue(grupoId: string): void {
+    this.despliegueFormulario.grupoTrxId = grupoId;
+    this.equiposSeleccionados.clear();
+
+    if (!grupoId) {
+      this.despliegueFormulario.targetGroup = '';
+      return;
+    }
+
+    const grupoResumen = this.gruposTrx.find((grupo) => grupo.id === grupoId);
+    this.despliegueFormulario.targetGroup = grupoResumen?.code ?? '';
+
+    this.api.obtenerGrupoTrx(grupoId).subscribe({
+      next: (detalle) => {
+        this.gruposTrx = this.gruposTrx.map((grupo) => grupo.id === detalle.id ? detalle : grupo);
+        this.despliegueFormulario.targetGroup = detalle.code;
+        detalle.devices.forEach((equipo) => this.equiposSeleccionados.add(equipo.deviceId));
+      },
+      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo cargar el Grupo TRX seleccionado.'
+    });
+  }
+
   seleccionarGrupoTrx(grupo: GrupoTrx): void {
     this.api.obtenerGrupoTrx(grupo.id).subscribe({
       next: (detalle) => {
@@ -953,7 +1224,7 @@ export class AppComponent implements OnInit {
     }
 
     const datos = {
-      codigo: this.grupoTrxFormulario.codigo.trim().toLowerCase(),
+      codigo: this.grupoTrxFormulario.codigo.trim().toUpperCase(),
       nombre: this.grupoTrxFormulario.nombre.trim(),
       descripcion: this.grupoTrxFormulario.descripcion || null,
       maximoEquipos: this.grupoTrxFormulario.maximoEquipos,
@@ -1289,9 +1560,14 @@ export class AppComponent implements OnInit {
       return;
     }
     const deviceIds = Array.from(this.idsEquiposFormularioCampana());
+    const grupo = this.grupoTrxDespliegueSeleccionado;
 
-    if (!this.despliegueFormulario.packageId || !this.despliegueFormulario.name || deviceIds.length === 0) {
-      this.error = 'Completa version POS, nombre y al menos un equipo POS.';
+    if (!this.despliegueFormulario.packageId || !grupo) {
+      this.error = 'Completa version POS y Base/TRX.';
+      return;
+    }
+    if (!this.despliegueFormulario.ruta || !this.despliegueFormulario.programa) {
+      this.error = 'Completa ruta y programa de ejecucion.';
       return;
     }
     if (this.farmaciasTurnoSeleccionadasCampana.length > 0 && !this.campanaAutorizadaTurno) {
@@ -1299,14 +1575,25 @@ export class AppComponent implements OnInit {
       return;
     }
 
+    const nombreCampana = this.despliegueFormulario.name ||
+      `Actualizacion POS ${grupo.code} ${new Date().toLocaleDateString('es-EC')}`;
+    const descripcionOperativa = [
+      `Base: ${grupo.code} - ${grupo.name}`,
+      `Establecimientos: ${this.establecimientosGrupoDespliegue.map((item) => item.codigo).join(', ') || 'N/D'}`,
+      `Ruta: ${this.despliegueFormulario.ruta}`,
+      `Programa: ${this.despliegueFormulario.programa}`,
+      `Orden: ${this.ordenDespliegueTexto}`,
+      this.despliegueFormulario.description?.trim()
+    ].filter(Boolean).join('\n');
+
     const solicitud: SolicitudCrearDespliegue = {
       packageId: this.despliegueFormulario.packageId,
-      name: this.despliegueFormulario.name,
-      description: this.despliegueFormulario.description || null,
+      name: nombreCampana,
+      description: descripcionOperativa || null,
       scheduledAt: this.normalizarFecha(this.despliegueFormulario.scheduledAt),
-      targetGroup: this.despliegueFormulario.targetGroup || null,
+      targetGroup: grupo.code,
       pilot: this.despliegueFormulario.pilot,
-      deviceIds
+      deviceIds: deviceIds.length > 0 ? deviceIds : []
     };
 
     this.guardandoDespliegue = true;
@@ -1319,6 +1606,8 @@ export class AppComponent implements OnInit {
           this.despliegueFormulario.name = '';
           this.despliegueFormulario.description = '';
           this.despliegueFormulario.deviceIds = '';
+          this.despliegueFormulario.grupoTrxId = '';
+          this.despliegueFormulario.targetGroup = '';
           this.equiposSeleccionados.clear();
           this.campanaAutorizadaTurno = false;
           this.recargarTodo();

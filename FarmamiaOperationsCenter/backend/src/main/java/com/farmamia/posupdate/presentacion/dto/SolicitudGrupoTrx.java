@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Pattern;
 
 public record SolicitudGrupoTrx(
     @NotBlank(message = "El codigo es obligatorio")
-    @Pattern(regexp = "^trx[0-9]{3}$", message = "El codigo debe tener formato trx001")
+    @Pattern(regexp = "^(?i)trx[0-9]{3}$", message = "El codigo debe tener formato TRX001")
     String codigo,
     @NotBlank(message = "El nombre es obligatorio")
     String nombre,

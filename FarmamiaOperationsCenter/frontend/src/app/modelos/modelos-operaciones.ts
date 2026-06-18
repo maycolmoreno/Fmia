@@ -137,6 +137,27 @@ export interface EquipoPos {
   updatedAt: string;
 }
 
+export type EstadoSugerenciaHuerfano = 'SUGERENCIA_VALIDA' | 'FARMACIA_NO_EXISTE' | 'FORMATO_INVALIDO';
+
+export interface EquipoHuerfano {
+  deviceId: string;
+  hostname: string;
+  ipAddress?: string | null;
+  agentVersion?: string | null;
+  posVersion?: string | null;
+  registeredAt: string;
+  suggestionStatus: EstadoSugerenciaHuerfano;
+  suggestedBranchId?: string | null;
+  suggestedBranchCode?: string | null;
+  suggestedBranchName?: string | null;
+  suggestedGrupoTrxCode?: string | null;
+}
+
+export interface ResumenAsignacionMasiva {
+  assigned: number;
+  skipped: number;
+}
+
 export interface MetricaEquipoPos {
   id: string;
   posVersion?: string | null;
@@ -395,7 +416,7 @@ export interface SolicitudCrearDespliegue {
   scheduledAt?: string | null;
   targetGroup?: string | null;
   pilot: boolean;
-  deviceIds: string[];
+  deviceIds?: string[];
 }
 
 // --- NOC Dashboard ---
