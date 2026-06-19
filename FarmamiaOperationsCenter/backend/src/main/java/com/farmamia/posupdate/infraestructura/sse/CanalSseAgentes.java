@@ -1,6 +1,8 @@
 package com.farmamia.posupdate.infraestructura.sse;
 
+import com.farmamia.posupdate.infraestructura.orquestacion.eventos.AgenteDesconectadoEvent;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import io.micrometer.core.instrument.Counter;
@@ -9,6 +11,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -21,8 +24,10 @@ public class CanalSseAgentes {
 
     private final ConcurrentHashMap<UUID, SseEmitter> emisores = new ConcurrentHashMap<>();
     private final Counter pingsFallidos;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public CanalSseAgentes(MeterRegistry meterRegistry) {
+    public CanalSseAgentes(MeterRegistry meterRegistry, ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
         this.pingsFallidos = Counter.builder("farmamia.sse.pings.failed.total")
             .description("Total acumulado de pings fallidos debido a conexiones zombis removidas")
             .register(meterRegistry);
@@ -54,6 +59,7 @@ public class CanalSseAgentes {
                 emisor.send(SseEmitter.event().name("ping").data(""));
             } catch (IOException e) {
                 this.pingsFallidos.increment();
+                eventPublisher.publishEvent(new AgenteDesconectadoEvent(idEquipo, Instant.now()));
                 removerAgente(idEquipo);
                 LOG.debug("Agente {} detectado zombi durante latido y removido del canal", idEquipo);
             }

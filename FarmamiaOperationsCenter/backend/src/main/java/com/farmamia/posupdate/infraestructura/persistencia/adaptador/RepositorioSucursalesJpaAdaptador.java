@@ -1,5 +1,6 @@
 package com.farmamia.posupdate.infraestructura.persistencia.adaptador;
 
+import com.farmamia.posupdate.dominio.modelo.CatalogoRegion;
 import com.farmamia.posupdate.dominio.modelo.FiltroSucursales;
 import com.farmamia.posupdate.dominio.modelo.Pagina;
 import com.farmamia.posupdate.dominio.modelo.Sucursal;
@@ -9,8 +10,11 @@ import com.farmamia.posupdate.infraestructura.persistencia.entidad.GrupoTrxEntid
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.SucursalEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.SucursalRepositorioJpa;
 import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -55,6 +59,21 @@ public class RepositorioSucursalesJpaAdaptador implements RepositorioSucursales 
             .stream()
             .sorted(Comparator.comparing(SucursalEntidad::getCodigo))
             .map(this::aDominio)
+            .toList();
+    }
+
+    @Override
+    public List<CatalogoRegion> listarCatalogoRegiones() {
+        Map<String, List<String>> provinciasPorRegion = new LinkedHashMap<>();
+        sucursalRepositorioJpa.listarRegionesYProvincias().forEach(fila ->
+            provinciasPorRegion
+                .computeIfAbsent(fila.getRegion(), region -> new ArrayList<>())
+                .add(fila.getProvincia())
+        );
+
+        return provinciasPorRegion.entrySet()
+            .stream()
+            .map(entrada -> new CatalogoRegion(entrada.getKey(), List.copyOf(entrada.getValue())))
             .toList();
     }
 

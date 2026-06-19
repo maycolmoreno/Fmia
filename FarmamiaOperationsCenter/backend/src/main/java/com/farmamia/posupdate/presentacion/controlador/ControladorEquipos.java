@@ -4,6 +4,7 @@ import com.farmamia.posupdate.aplicacion.casouso.AprovisionarEquiposHuerfanosCas
 import com.farmamia.posupdate.aplicacion.casouso.ConsultarDetalleEquipoCasoUso;
 import com.farmamia.posupdate.aplicacion.casouso.ConsultarCatalogoOperativoCasoUso;
 import com.farmamia.posupdate.dominio.modelo.AsignacionEquipoSucursal;
+import com.farmamia.posupdate.dominio.modelo.CatalogoRegion;
 import com.farmamia.posupdate.dominio.modelo.DetalleEquipo;
 import com.farmamia.posupdate.dominio.modelo.Equipo;
 import com.farmamia.posupdate.dominio.modelo.EquipoHuerfano;
@@ -15,6 +16,7 @@ import com.farmamia.posupdate.dominio.modelo.Pagina;
 import com.farmamia.posupdate.dominio.modelo.ResumenAsignacionMasiva;
 import com.farmamia.posupdate.infraestructura.sse.CanalSseAgentes;
 import com.farmamia.posupdate.presentacion.dto.RespuestaAsignacionMasivaEquipos;
+import com.farmamia.posupdate.presentacion.dto.RespuestaCatalogoRegion;
 import com.farmamia.posupdate.presentacion.dto.RespuestaDetalleEquipo;
 import com.farmamia.posupdate.presentacion.dto.RespuestaEquipo;
 import com.farmamia.posupdate.presentacion.dto.RespuestaEquipoHuerfano;
@@ -136,6 +138,15 @@ public class ControladorEquipos {
             .toList();
     }
 
+    @GetMapping("/regiones-catalogo")
+    public List<RespuestaCatalogoRegion> listarCatalogoRegiones(Authentication autenticacion) {
+        exigirLectura(autenticacion);
+        return consultarCatalogoOperativoCasoUso.listarCatalogoRegiones()
+            .stream()
+            .map(this::aRespuestaCatalogoRegion)
+            .toList();
+    }
+
     @PostMapping("/asignacion-masiva")
     public RespuestaAsignacionMasivaEquipos asignarMasivamente(
         @Valid @RequestBody SolicitudAsignacionMasivaEquipos solicitud,
@@ -200,6 +211,10 @@ public class ControladorEquipos {
             equipo.nombreSucursalSugerida(),
             equipo.codigoGrupoTrxSugerido()
         );
+    }
+
+    private RespuestaCatalogoRegion aRespuestaCatalogoRegion(CatalogoRegion region) {
+        return new RespuestaCatalogoRegion(region.region(), region.provincias());
     }
 
     private RespuestaMetricaEquipo aRespuestaMetrica(MetricaEquipoRegistrada metrica) {

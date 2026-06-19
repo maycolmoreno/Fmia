@@ -34,6 +34,9 @@ import {
   UsuarioAdministrativo
 } from './modelos/modelos-operaciones';
 import { DashboardNocComponent } from './dashboard-noc/dashboard-noc.component';
+import { FarmaciasTarjetasComponent } from './farmacias-tarjetas/farmacias-tarjetas.component';
+import { AlertasOperacionesComponent } from './alertas-operaciones/alertas-operaciones.component';
+import { ActualizacionesOperacionesComponent } from './actualizaciones-operaciones/actualizaciones-operaciones.component';
 import { AlertListComponent } from './componentes-ui/alert-list.component';
 import { AppCardComponent } from './componentes-ui/app-card.component';
 import { KpiCardComponent } from './componentes-ui/kpi-card.component';
@@ -44,7 +47,7 @@ import { MapaEcuadorComponent } from './componentes-ui/mapa-ecuador.component';
 import { OperacionesApiService } from './servicios/operaciones-api.service';
 import { SesionAdminService } from './servicios/sesion-admin.service';
 
-type Vista = 'dashboard' | 'turno' | 'incidentes' | 'operaciones' | 'equipos' | 'paquetes' | 'despliegues' | 'gruposTrx' | 'agentes' | 'red' | 'eventos' | 'alertas' | 'auditoria' | 'seguridad' | 'usuarios';
+type Vista = 'dashboard' | 'turno' | 'incidentes' | 'operaciones' | 'equipos' | 'paquetes' | 'despliegues' | 'actualizaciones' | 'gruposTrx' | 'agentes' | 'red' | 'eventos' | 'alertas' | 'auditoria' | 'seguridad' | 'usuarios';
 
 @Component({
   selector: 'app-root',
@@ -53,7 +56,10 @@ type Vista = 'dashboard' | 'turno' | 'incidentes' | 'operaciones' | 'equipos' | 
     CommonModule,
     FormsModule,
     RouterOutlet,
+    AlertasOperacionesComponent,
+    ActualizacionesOperacionesComponent,
     DashboardNocComponent,
+    FarmaciasTarjetasComponent,
     AlertListComponent,
     AppCardComponent,
     KpiCardComponent,
@@ -71,7 +77,7 @@ export class AppComponent implements OnInit, OnDestroy {
   horaActual = '';
   panelDerecho = false;
   private intervalReloj?: ReturnType<typeof setInterval>;
-  subTabFarmacias: 'todas' | 'turno' | 'huerfanos' = 'todas';
+  subTabFarmacias: 'tarjetas' | 'todas' | 'turno' | 'huerfanos' = 'tarjetas';
   subTabAlertas: 'activas' | 'incidentes' | 'red' = 'activas';
   subTabAgentes: 'equipos' | 'eventos' = 'equipos';
   subTabDespliegues: 'estado' | 'orquestacion' = 'estado';
@@ -882,11 +888,7 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     if (vista === 'operaciones') {
-      this.subTabDespliegues = 'orquestacion';
-      if (!this.despliegueOrquestacion && this.desplieguesOperativos.length > 0) {
-        this.seleccionarOrquestacion(this.desplieguesOperativos[0]);
-      }
-      this.cambiarVista('despliegues');
+      this.cambiarVista('actualizaciones');
       return;
     }
 

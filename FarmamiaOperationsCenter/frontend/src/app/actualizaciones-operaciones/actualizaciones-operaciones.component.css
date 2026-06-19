@@ -1,0 +1,167 @@
+.actualizaciones,
+.panel,
+.campanas,
+.oleadas {
+  display: grid;
+  gap: 16px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.tabs button {
+  background: #f8fafc;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  color: #334155;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 10px 14px;
+}
+
+.tabs button.activo {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #fff;
+}
+
+.campos {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.ancho-completo {
+  grid-column: 1 / -1;
+}
+
+label {
+  color: #475569;
+  display: grid;
+  gap: 6px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.tabla {
+  display: grid;
+}
+
+.tabla-fila {
+  align-items: center;
+  border-bottom: 1px solid #e5e7eb;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr 2fr 120px 100px 240px;
+  padding: 12px 0;
+}
+
+.cabecera {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.monitor-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+}
+
+.campana {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px;
+  text-align: left;
+}
+
+.campana.activa {
+  border-color: #2563eb;
+}
+
+.resumen {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.resumen div {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.resumen span,
+.oleada-meta,
+small {
+  color: #64748b;
+}
+
+.orquestacion-form {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  margin: 16px 0;
+}
+
+.oleada {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.oleada-top,
+.acciones {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.barra {
+  background: #e5e7eb;
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.barra span {
+  background: #2563eb;
+  display: block;
+  height: 100%;
+}
+
+.oleada-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.84rem;
+}
+
+@media (max-width: 900px) {
+  .monitor-grid,
+  .tabla-fila {
+    grid-template-columns: 1fr;
+  }
+}

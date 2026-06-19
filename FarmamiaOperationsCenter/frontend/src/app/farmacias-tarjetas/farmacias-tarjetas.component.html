@@ -1,0 +1,73 @@
+<section class="farmacias-tarjetas">
+  <div class="filtros-cascada">
+    <label class="campo-filtro">
+      <span>Region</span>
+      <select
+        [disabled]="cargandoCatalogo"
+        [ngModel]="regionSeleccionada"
+        (ngModelChange)="seleccionarRegion($event)"
+      >
+        <option value="">Seleccione region</option>
+        <option *ngFor="let item of regionesCatalogo; trackBy: trackRegion" [value]="item.region">
+          {{ item.region }}
+        </option>
+      </select>
+    </label>
+
+    <label class="campo-filtro">
+      <span>Provincia</span>
+      <select
+        [disabled]="!regionSeleccionada || cargandoTarjetas"
+        [ngModel]="provinciaSeleccionada"
+        (ngModelChange)="seleccionarProvincia($event)"
+      >
+        <option value="">Seleccione provincia</option>
+        <option *ngFor="let provincia of provinciasDisponibles; trackBy: trackProvincia" [value]="provincia">
+          {{ provincia }}
+        </option>
+      </select>
+    </label>
+  </div>
+
+  <div class="estado-panel" *ngIf="cargandoCatalogo">Cargando catalogo geografico...</div>
+  <div class="estado-panel estado-error" *ngIf="error">{{ error }}</div>
+  <div class="estado-panel" *ngIf="cargandoTarjetas">Cargando equipos de {{ provinciaSeleccionada }}...</div>
+
+  <div class="tarjetas-grid" *ngIf="!cargandoTarjetas && tarjetas.length > 0">
+    <article
+      class="tarjeta-equipo"
+      *ngFor="let tarjeta of tarjetas; trackBy: trackTarjeta"
+      [class.tarjeta-online]="tarjeta.isOnline"
+      [class.tarjeta-offline]="!tarjeta.isOnline"
+    >
+      <header class="tarjeta-header">
+        <div class="equipo-titulo">
+          <span class="led" [class.online]="tarjeta.isOnline" [class.offline]="!tarjeta.isOnline" aria-hidden="true">
+            {{ tarjeta.isOnline ? '🟢' : '🔴' }}
+          </span>
+          <strong>{{ tarjeta.nombreEquipo }}</strong>
+          <span>{{ tarjeta.codigoSucursal }}</span>
+        </div>
+        <span class="estado-conexion">{{ tarjeta.isOnline ? 'Online' : 'Offline' }}</span>
+      </header>
+
+      <dl class="tarjeta-detalle">
+        <div>
+          <dt>IP</dt>
+          <dd>{{ tarjeta.direccionIp || 'SIN IP' }}</dd>
+        </div>
+        <div>
+          <dt>Version POS</dt>
+          <dd>{{ tarjeta.versionPos || 'SIN VERSION' }}</dd>
+        </div>
+      </dl>
+    </article>
+  </div>
+
+  <div
+    class="estado-panel"
+    *ngIf="!cargandoCatalogo && !cargandoTarjetas && provinciaSeleccionada && tarjetas.length === 0 && !error"
+  >
+    No hay equipos registrados para esta provincia.
+  </div>
+</section>

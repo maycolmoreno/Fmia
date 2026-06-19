@@ -55,14 +55,11 @@
       </button>
 
       <span class="grupo-nav">Despliegues</span>
-      <button type="button" [class.activo]="vistaActiva === 'despliegues'" (click)="cambiarVista('despliegues')">
-        Campanas POS
+      <button type="button" [class.activo]="vistaActiva === 'actualizaciones'" (click)="cambiarVista('actualizaciones')">
+        Actualizaciones
       </button>
       <button type="button" [class.activo]="vistaActiva === 'gruposTrx'" (click)="cambiarVista('gruposTrx')">
         Grupos TRX
-      </button>
-      <button type="button" [class.activo]="vistaActiva === 'paquetes'" (click)="cambiarVista('paquetes')">
-        Versiones POS
       </button>
 
       <span class="grupo-nav">Administracion</span>
@@ -176,7 +173,7 @@
           <strong>{{ alertasRedCriticas }}</strong>
           <small>enlaces caidos</small>
         </button>
-        <button type="button" class="accion-operativa info" (click)="cambiarVista('despliegues')">
+        <button type="button" class="accion-operativa info" (click)="cambiarVista('actualizaciones')">
           <span>Campanas</span>
           <strong>{{ campanasOperativas.length }}</strong>
           <small>activas</small>
@@ -499,10 +496,22 @@
     </section>
 
     <nav class="sub-tabs-barra" *ngIf="vistaActiva === 'equipos'">
+      <button type="button" class="sub-tab" [class.activo]="subTabFarmacias === 'tarjetas'" (click)="subTabFarmacias = 'tarjetas'">Tarjetas</button>
       <button type="button" class="sub-tab" [class.activo]="subTabFarmacias === 'todas'" (click)="subTabFarmacias = 'todas'">Todas</button>
       <button type="button" class="sub-tab" [class.activo]="subTabFarmacias === 'turno'" (click)="subTabFarmacias = 'turno'">De Turno</button>
       <button type="button" class="sub-tab" *ngIf="sesion.puedeVerEventosYAlertas()" [class.activo]="subTabFarmacias === 'huerfanos'" (click)="subTabFarmacias = 'huerfanos'">Sin asignar</button>
     </nav>
+
+    <section class="vista" *ngIf="vistaActiva === 'equipos' && subTabFarmacias === 'tarjetas'">
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Farmacias por region y provincia</h2>
+          <small>Vista dinamica de POS por ubicacion</small>
+        </div>
+        <app-farmacias-tarjetas></app-farmacias-tarjetas>
+      </article>
+    </section>
+
     <section class="vista" *ngIf="vistaActiva === 'equipos' && subTabFarmacias === 'todas'">
       <div class="metricas metricas-operaciones">
         <app-stat-card label="Farmacias" [value]="totalFarmaciasDashboard" [helper]="farmaciasCriticas.length + ' criticas'"></app-stat-card>
@@ -746,6 +755,8 @@
         </div>
       </article>
     </section>
+
+    <app-actualizaciones-operaciones *ngIf="vistaActiva === 'actualizaciones'"></app-actualizaciones-operaciones>
 
     <section class="vista" *ngIf="vistaActiva === 'paquetes'">
       <article class="tarjeta formulario" *ngIf="sesion.puedeOperar()">
@@ -1597,122 +1608,7 @@
       <button type="button" class="sub-tab" [class.activo]="subTabAlertas === 'red'" (click)="subTabAlertas = 'red'">Red</button>
     </nav>
     <section class="vista" *ngIf="vistaActiva === 'alertas' && subTabAlertas === 'activas'">
-      <article class="tarjeta formulario">
-        <div class="titulo-tarjeta">
-          <h2>Filtros de alertas</h2>
-          <button type="button" class="boton pequeno secundario" (click)="limpiarFiltrosAlertas()">Limpiar</button>
-        </div>
-        <div class="campos alertas-campos">
-          <label>
-            Estado
-            <select [(ngModel)]="alertasFiltros.status">
-              <option *ngFor="let estado of estadosAlerta" [value]="estado">{{ estado || 'Todos' }}</option>
-            </select>
-          </label>
-          <label>
-            Severidad
-            <select [(ngModel)]="alertasFiltros.severity">
-              <option *ngFor="let severidad of severidadesAlerta" [value]="severidad">{{ severidad || 'Todas' }}</option>
-            </select>
-          </label>
-          <label>
-            Tipo
-            <select [(ngModel)]="alertasFiltros.type">
-              <option *ngFor="let tipo of tiposAlerta" [value]="tipo">{{ tipo || 'Todos' }}</option>
-            </select>
-          </label>
-          <label>
-            Origen
-            <select [(ngModel)]="alertasFiltros.networkEvent">
-              <option [ngValue]="undefined">Todos</option>
-              <option [ngValue]="true">Solo eventos de red</option>
-              <option [ngValue]="false">Solo equipos POS</option>
-            </select>
-          </label>
-          <label>
-            Equipo POS
-            <input type="text" [(ngModel)]="alertasFiltros.hostname" placeholder="POS-DEMO">
-          </label>
-          <label>
-            Farmacia
-            <input type="text" [(ngModel)]="alertasFiltros.branchCode" placeholder="FMA001">
-          </label>
-          <label>
-            Desde
-            <input type="datetime-local" [(ngModel)]="alertasFiltros.dateFrom">
-          </label>
-          <label>
-            Hasta
-            <input type="datetime-local" [(ngModel)]="alertasFiltros.dateTo">
-          </label>
-          <label>
-            Tamano
-            <select [(ngModel)]="alertasFiltros.size">
-              <option [ngValue]="10">10</option>
-              <option [ngValue]="20">20</option>
-              <option [ngValue]="50">50</option>
-              <option [ngValue]="100">100</option>
-            </select>
-          </label>
-          <button type="button" class="boton primario" (click)="filtrarAlertas()">Filtrar</button>
-        </div>
-      </article>
-
-      <article class="tarjeta">
-        <div class="titulo-tarjeta">
-          <h2>Alertas operativas</h2>
-          <div class="acciones">
-            <button type="button" class="boton pequeno secundario" (click)="paginaAlertas(-1)" [disabled]="alertasFiltros.page === 0">Anterior</button>
-            <span class="estado">Pagina {{ alertasFiltros.page + 1 }} / {{ alertasPagina?.totalPages || 1 }}</span>
-            <button type="button" class="boton pequeno secundario" (click)="paginaAlertas(1)" [disabled]="!alertasTieneSiguiente">Siguiente</button>
-          </div>
-        </div>
-        <div class="tabla tabla-alertas">
-          <div class="tabla-fila cabecera">
-            <span>Fecha</span>
-            <span>Equipo POS</span>
-            <span>Farmacia</span>
-            <span>Severidad</span>
-            <span>Tipo</span>
-            <span>Estado</span>
-            <span>Gestion</span>
-            <span>Mensaje</span>
-            <span>Acciones</span>
-          </div>
-          <div class="tabla-fila" *ngFor="let alerta of alertas">
-            <span>{{ alerta.openedAt | date:'short' }}</span>
-            <span>{{ alerta.hostname || '—' }}</span>
-            <span>{{ alerta.branchCode }}</span>
-            <span><app-status-badge [status]="alerta.severity"></app-status-badge></span>
-            <span>{{ alerta.alertType }} <app-status-badge *ngIf="alerta.networkEvent" status="RED" tone="purple"></app-status-badge></span>
-            <span><app-status-badge [status]="alerta.status"></app-status-badge></span>
-            <span class="texto-corto">
-              {{ alerta.acknowledgedBy ? ('Reconocida por ' + alerta.acknowledgedBy) : 'Sin reconocer' }}
-              {{ alerta.closedBy ? (' | Cerrada por ' + alerta.closedBy) : '' }}
-            </span>
-            <span class="texto-corto">{{ alerta.message || alerta.title }}</span>
-            <span class="acciones">
-              <button
-                type="button"
-                class="boton pequeno"
-                *ngIf="sesion.puedeOperar()"
-                (click)="reconocerAlerta(alerta)"
-                [disabled]="alerta.status !== 'OPEN'">
-                Reconocer
-              </button>
-              <button
-                type="button"
-                class="boton pequeno peligro"
-                *ngIf="sesion.puedeOperar()"
-                (click)="cerrarAlerta(alerta)"
-                [disabled]="alerta.status === 'CLOSED'">
-                Cerrar
-              </button>
-            </span>
-          </div>
-          <p class="vacio" *ngIf="alertas.length === 0">Aun no hay alertas registradas.</p>
-        </div>
-      </article>
+      <app-alertas-operaciones></app-alertas-operaciones>
     </section>
 
     <section class="vista" *ngIf="vistaActiva === 'auditoria'">

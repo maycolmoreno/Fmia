@@ -19,6 +19,23 @@ public interface SucursalRepositorioJpa extends JpaRepository<SucursalEntidad, U
     long countByIdIn(Set<UUID> ids);
 
     @Query("""
+        select distinct sucursal.zona as region, sucursal.ciudad as provincia
+        from SucursalEntidad sucursal
+        where sucursal.zona is not null
+          and trim(sucursal.zona) <> ''
+          and sucursal.ciudad is not null
+          and trim(sucursal.ciudad) <> ''
+        order by sucursal.zona asc, sucursal.ciudad asc
+        """)
+    java.util.List<RegionProvinciaProjection> listarRegionesYProvincias();
+
+    interface RegionProvinciaProjection {
+        String getRegion();
+
+        String getProvincia();
+    }
+
+    @Query("""
         select sucursal
         from SucursalEntidad sucursal
         where (:filtrarQ = false or (

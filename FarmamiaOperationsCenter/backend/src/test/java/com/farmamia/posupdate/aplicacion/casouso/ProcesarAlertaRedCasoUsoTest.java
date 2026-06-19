@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.farmamia.posupdate.dominio.modelo.AlertaEquipo;
 import com.farmamia.posupdate.dominio.modelo.AlertaRed;
 import com.farmamia.posupdate.dominio.modelo.AlertaRegistrada;
+import com.farmamia.posupdate.dominio.modelo.CatalogoRegion;
 import com.farmamia.posupdate.dominio.modelo.FiltroAlertas;
 import com.farmamia.posupdate.dominio.modelo.FiltroSucursales;
 import com.farmamia.posupdate.dominio.modelo.Pagina;
@@ -177,6 +178,11 @@ class ProcesarAlertaRedCasoUsoTest {
         @Override
         public List<Sucursal> listar() {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<CatalogoRegion> listarCatalogoRegiones() {
+            return List.of();
         }
 
         @Override

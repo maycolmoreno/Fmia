@@ -9,9 +9,11 @@ import {
   AuditoriaAdministrativa,
   CampanaPos,
   CampanaGrupoTrx,
+  CatalogoRegion,
   DetalleEquipoPos,
   EquipoHuerfano,
   EquipoPos,
+  EstadoConexionAgente,
   EstadoOperacionalFarmacia,
   GrupoTrx,
   EstadoDespliegue,
@@ -26,6 +28,7 @@ import {
   ResumenNocDashboard,
   SolicitudCrearDespliegue,
   SolicitudPlanOrquestacion,
+  TarjetaEquipo,
   Farmacia,
   Despliegue,
   DetalleEquipo,
@@ -186,12 +189,30 @@ export class OperacionesApiService {
     return this.listarEquiposPosPaginados(filtros);
   }
 
+  getRegionesCatalogo(): Observable<CatalogoRegion[]> {
+    return this.http.get<CatalogoRegion[]>(`${this.baseUrl}/api/equipos-pos/regiones-catalogo`);
+  }
+
+  getTarjetasEquipos(provincia: string): Observable<TarjetaEquipo[]> {
+    return this.http.get<TarjetaEquipo[]>(`${this.baseUrl}/api/equipos-pos/tarjetas`, {
+      params: new HttpParams().set('provincia', provincia)
+    });
+  }
+
+  getEstadosMonitoreoEquipos(): Observable<EstadoConexionAgente[]> {
+    return this.http.get<EstadoConexionAgente[]>(`${this.baseUrl}/api/equipos-pos/monitoreo/estados`);
+  }
+
   obtenerDetalleEquipoPos(id: string): Observable<DetalleEquipoPos> {
     return this.http.get<DetalleEquipoPos>(`${this.baseUrl}/api/equipos-pos/${id}`);
   }
 
   obtenerDetalleEquipo(id: string): Observable<DetalleEquipo> {
     return this.obtenerDetalleEquipoPos(id);
+  }
+
+  getDetalleEquipo(idEquipo: string): Observable<DetalleEquipo> {
+    return this.obtenerDetalleEquipo(idEquipo);
   }
 
   listarEquiposHuerfanos(): Observable<EquipoHuerfano[]> {

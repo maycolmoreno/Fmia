@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.farmamia.posupdate.aplicacion.excepcion.ConflictoOperacionException;
 import com.farmamia.posupdate.dominio.modelo.AsignacionEquipoSucursal;
 import com.farmamia.posupdate.dominio.modelo.AuditoriaRegistrada;
+import com.farmamia.posupdate.dominio.modelo.CatalogoRegion;
 import com.farmamia.posupdate.dominio.modelo.DatosAuditoria;
 import com.farmamia.posupdate.dominio.modelo.DatosRegistroAgente;
 import com.farmamia.posupdate.dominio.modelo.Equipo;
@@ -215,6 +216,11 @@ class AprovisionarEquiposHuerfanosCasoUsoTest {
 
         @Override
         public List<Sucursal> listar() {
+            return List.of();
+        }
+
+        @Override
+        public List<CatalogoRegion> listarCatalogoRegiones() {
             return List.of();
         }
 

@@ -91,6 +91,25 @@ export interface EstadoOperacionalFarmacia {
   resumenRiesgo: string;
 }
 
+export interface CatalogoRegion {
+  region: string;
+  provincias: string[];
+}
+
+export interface TarjetaEquipo {
+  idEquipo: string;
+  nombreEquipo: string;
+  direccionIp: string;
+  versionPos: string;
+  codigoSucursal: string;
+  isOnline?: boolean;
+}
+
+export interface EstadoConexionAgente {
+  idEquipo: string;
+  online: boolean;
+}
+
 export interface EquipoGrupoTrx {
   deviceId: string;
   hostname: string;

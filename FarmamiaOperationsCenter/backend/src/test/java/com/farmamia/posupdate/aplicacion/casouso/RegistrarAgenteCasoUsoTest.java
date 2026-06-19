@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.farmamia.posupdate.dominio.modelo.CatalogoRegion;
 import com.farmamia.posupdate.dominio.modelo.DatosRegistroAgente;
 import com.farmamia.posupdate.dominio.modelo.AsignacionEquipoSucursal;
 import com.farmamia.posupdate.dominio.modelo.Equipo;
@@ -102,6 +103,11 @@ class RegistrarAgenteCasoUsoTest {
 
         @Override
         public List<Sucursal> listar() {
+            return List.of();
+        }
+
+        @Override
+        public List<CatalogoRegion> listarCatalogoRegiones() {
             return List.of();
         }
 

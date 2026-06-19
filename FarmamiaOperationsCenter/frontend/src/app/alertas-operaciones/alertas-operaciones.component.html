@@ -1,0 +1,113 @@
+<section class="alertas-shell">
+  <div class="panel-lista">
+    <div class="panel-header">
+      <div>
+        <h2>Farmacias afectadas</h2>
+        <small>{{ farmacias.length }} con novedades abiertas</small>
+      </div>
+      <button type="button" class="boton secundario pequeno" (click)="cargarAlertas()" [disabled]="cargando">Actualizar</button>
+    </div>
+
+    <p class="alerta error" *ngIf="error">{{ error }}</p>
+    <p class="alerta exito" *ngIf="mensaje">{{ mensaje }}</p>
+    <p class="vacio" *ngIf="!cargando && farmacias.length === 0">Aun no hay alertas abiertas.</p>
+
+    <div class="farmacia-lista">
+      <article class="farmacia-card" *ngFor="let farmacia of farmacias">
+        <button type="button" class="farmacia-resumen" (click)="toggleFarmacia(farmacia.branchCode)">
+          <span>
+            <strong>{{ farmacia.branchCode }}</strong>
+            <small>{{ farmacia.cajas.length }} cajas · {{ farmacia.alertas.length }} alertas</small>
+          </span>
+          <app-status-badge [status]="severidadPrincipal(farmacia.alertas)"></app-status-badge>
+        </button>
+
+        <div class="cajas-lista" *ngIf="abiertas.has(farmacia.branchCode)">
+          <div class="caja-row" *ngFor="let caja of farmacia.cajas">
+            <div>
+              <strong>{{ caja.nombre }}</strong>
+              <small>{{ caja.alertas[0].alertType }} · {{ caja.alertas[0].openedAt | date:'short' }}</small>
+            </div>
+            <div class="caja-acciones">
+              <app-status-badge [status]="severidadPrincipal(caja.alertas)"></app-status-badge>
+              <button type="button" class="boton pequeno" (click)="abrirDetalleEquipo(caja.id)">Ver Características</button>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <aside class="drawer" [class.abierto]="equipoSeleccionado">
+    <ng-container *ngIf="equipoSeleccionado as equipo">
+      <div class="drawer-header">
+        <div>
+          <h2>{{ equipo.nombre }}</h2>
+          <small>{{ equipo.id.startsWith('red:') ? 'Evento de red' : 'Caja POS' }}</small>
+        </div>
+        <button type="button" class="drawer-cerrar" (click)="cerrarDetalle()">x</button>
+      </div>
+
+      <div class="detalle-grid">
+        <div>
+          <span>IP</span>
+          <strong>{{ detalleEquipo?.device?.ipAddress || equipo.ip || 'N/D' }}</strong>
+        </div>
+        <div>
+          <span>Alertas</span>
+          <strong>{{ equipo.alertas.length }}</strong>
+        </div>
+      </div>
+
+      <p class="detalle-cargando" *ngIf="cargandoDetalle">Cargando datos técnicos...</p>
+
+      <div class="detalle-tecnico" *ngIf="!cargandoDetalle && detalleEquipo as detalle">
+        <div>
+          <span>IP Address</span>
+          <strong>{{ detalle.device.ipAddress || 'N/D' }}</strong>
+        </div>
+        <div>
+          <span>Dirección MAC</span>
+          <strong>{{ detalle.device.macAddress || 'N/D' }}</strong>
+        </div>
+        <div>
+          <span>Sistema Operativo</span>
+          <strong>{{ detalle.device.windowsVersion || 'N/D' }}</strong>
+        </div>
+        <div>
+          <span>Versión del Agente</span>
+          <strong>{{ detalle.device.agentVersion || 'N/D' }}</strong>
+        </div>
+      </div>
+
+      <div class="detalle-alertas">
+        <article class="detalle-alerta" *ngFor="let alerta of equipo.alertas">
+          <div class="detalle-alerta-top">
+            <app-status-badge [status]="alerta.severity"></app-status-badge>
+            <app-status-badge [status]="alerta.status"></app-status-badge>
+          </div>
+          <h3>{{ alerta.title }}</h3>
+          <p>{{ alerta.message || alerta.alertType }}</p>
+          <dl>
+            <div>
+              <dt>Tipo</dt>
+              <dd>{{ alerta.alertType }}</dd>
+            </div>
+            <div>
+              <dt>Farmacia</dt>
+              <dd>{{ alerta.branchCode }}</dd>
+            </div>
+            <div>
+              <dt>Fecha</dt>
+              <dd>{{ alerta.openedAt | date:'short' }}</dd>
+            </div>
+          </dl>
+          <div class="drawer-acciones" *ngIf="sesion.puedeOperar()">
+            <button type="button" class="boton pequeno" (click)="reconocer(alerta)" [disabled]="alerta.status !== 'OPEN'">Reconocer</button>
+            <button type="button" class="boton pequeno peligro" (click)="cerrar(alerta)" [disabled]="alerta.status === 'CLOSED'">Cerrar</button>
+          </div>
+        </article>
+      </div>
+    </ng-container>
+  </aside>
+</section>

@@ -1,0 +1,183 @@
+<section class="actualizaciones">
+  <nav class="tabs">
+    <button type="button" [class.activo]="tab === 'versiones'" (click)="tab = 'versiones'">Versiones</button>
+    <button type="button" [class.activo]="tab === 'monitor'" (click)="tab = 'monitor'">Monitor de Despliegue</button>
+  </nav>
+
+  <p class="alerta exito" *ngIf="mensaje">{{ mensaje }}</p>
+  <p class="alerta error" *ngIf="error">{{ error }}</p>
+
+  <section class="panel" *ngIf="tab === 'versiones'">
+    <article class="tarjeta formulario" *ngIf="sesion.puedeOperar()">
+      <div class="titulo-tarjeta">
+        <h2>Cargar artefacto de version POS</h2>
+      </div>
+      <div class="campos">
+        <label>
+          Version
+          <input type="text" [(ngModel)]="paqueteFormulario.version" placeholder="2026.06.01">
+        </label>
+        <label>
+          Archivo ZIP
+          <input type="file" accept=".zip" (change)="seleccionarArchivo($event)">
+        </label>
+        <button type="button" class="boton primario" (click)="cargarPaquete()" [disabled]="guardandoPaquete">Cargar</button>
+      </div>
+    </article>
+
+    <article class="tarjeta">
+      <div class="titulo-tarjeta">
+        <h2>Versiones POS disponibles</h2>
+      </div>
+      <div class="tabla">
+        <div class="tabla-fila cabecera">
+          <span>Version</span>
+          <span>Archivo</span>
+          <span>Estado</span>
+          <span>Tamano</span>
+          <span>Acciones</span>
+        </div>
+        <div class="tabla-fila" *ngFor="let paquete of paquetes">
+          <span>{{ paquete.version }}</span>
+          <span class="texto-corto">{{ paquete.fileName }}</span>
+          <span><app-status-badge [status]="paquete.status"></app-status-badge></span>
+          <span>{{ formatoBytes(paquete.sizeBytes) }}</span>
+          <span class="acciones">
+            <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="aprobarPaquete(paquete)" [disabled]="paquete.status === 'APPROVED'">Aprobar</button>
+            <button type="button" class="boton pequeno" *ngIf="sesion.puedeOperar()" (click)="retirarPaquete(paquete)" [disabled]="paquete.status === 'RETIRED'">Retirar</button>
+            <button type="button" class="boton pequeno secundario" (click)="descargarPaquete(paquete)">Descargar</button>
+          </span>
+        </div>
+        <p class="vacio" *ngIf="paquetes.length === 0">Aun no hay versiones POS registradas.</p>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel" *ngIf="tab === 'monitor'">
+    <article class="tarjeta formulario" *ngIf="sesion.puedeOperar()">
+      <div class="titulo-tarjeta">
+        <h2>Nueva campana POS</h2>
+      </div>
+      <div class="campos">
+        <label>
+          Nombre
+          <input type="text" [(ngModel)]="despliegueFormulario.name" placeholder="Campana POS 2026.06">
+        </label>
+        <label>
+          Version POS
+          <select [(ngModel)]="despliegueFormulario.packageId">
+            <option value="">Selecciona version</option>
+            <option *ngFor="let paquete of paquetes" [value]="paquete.id">{{ paquete.version }} - {{ paquete.status }}</option>
+          </select>
+        </label>
+        <label>
+          Grupo objetivo
+          <input type="text" [(ngModel)]="despliegueFormulario.targetGroup" placeholder="GENERAL">
+        </label>
+        <label>
+          Programado
+          <input type="datetime-local" [(ngModel)]="despliegueFormulario.scheduledAt">
+        </label>
+        <label class="ancho-completo">
+          Equipos POS
+          <textarea rows="2" [(ngModel)]="despliegueFormulario.deviceIds" placeholder="UUID separados por coma o salto de linea"></textarea>
+        </label>
+        <label class="ancho-completo">
+          Nota
+          <textarea rows="2" [(ngModel)]="despliegueFormulario.description"></textarea>
+        </label>
+        <label class="check">
+          <input type="checkbox" [(ngModel)]="despliegueFormulario.pilot">
+          Piloto requerido
+        </label>
+        <button type="button" class="boton primario" (click)="crearDespliegue()" [disabled]="guardandoDespliegue">Crear campana</button>
+      </div>
+    </article>
+
+    <div class="monitor-grid">
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Campanas POS</h2>
+          <button type="button" class="boton pequeno secundario" (click)="recargar()">Actualizar</button>
+        </div>
+        <div class="campanas">
+          <button type="button" class="campana" *ngFor="let despliegue of despliegues" [class.activa]="despliegueSeleccionado?.id === despliegue.id" (click)="seleccionarDespliegue(despliegue)">
+            <span>
+              <strong>{{ despliegue.name }}</strong>
+              <small>{{ despliegue.packageVersion }} · {{ despliegue.targetCount }} POS</small>
+            </span>
+            <app-status-badge [status]="despliegue.status"></app-status-badge>
+          </button>
+          <p class="vacio" *ngIf="despliegues.length === 0">Aun no hay campanas POS.</p>
+        </div>
+      </article>
+
+      <article class="tarjeta detalle">
+        <ng-container *ngIf="despliegueSeleccionado; else sinCampana">
+          <div class="titulo-tarjeta">
+            <div>
+              <h2>{{ despliegueSeleccionado.name }}</h2>
+              <small>{{ despliegueSeleccionado.packageVersion }}</small>
+            </div>
+            <div class="acciones" *ngIf="sesion.puedeOperar()">
+              <button type="button" class="boton pequeno" (click)="aprobarDespliegue(despliegueSeleccionado)">Aprobar</button>
+              <button type="button" class="boton pequeno primario" (click)="lanzarCampana(despliegueSeleccionado)">Lanzar</button>
+              <button type="button" class="boton pequeno" (click)="pausarDespliegue(despliegueSeleccionado)">Pausar</button>
+              <button type="button" class="boton pequeno" (click)="reanudarDespliegue(despliegueSeleccionado)">Reanudar</button>
+              <button type="button" class="boton pequeno peligro" (click)="cancelarDespliegue(despliegueSeleccionado)">Cancelar</button>
+            </div>
+          </div>
+
+          <div class="resumen" *ngIf="estadoSeleccionado">
+            <div><span>Total</span><strong>{{ estadoSeleccionado.totalTargets }}</strong></div>
+            <div><span>Completados</span><strong>{{ estadoSeleccionado.completedTargets }}</strong></div>
+            <div><span>Fallidos</span><strong>{{ estadoSeleccionado.failedTargets }}</strong></div>
+            <div><span>Pendientes</span><strong>{{ estadoSeleccionado.pendingTargets }}</strong></div>
+          </div>
+
+          <div class="orquestacion-form" *ngIf="sesion.puedeOperar()">
+            <input type="number" min="0" max="100" [(ngModel)]="orquestacionFormulario.maxFailurePercent" aria-label="Fallo maximo">
+            <input type="number" min="0" max="10" [(ngModel)]="orquestacionFormulario.retryLimit" aria-label="Reintentos">
+            <input type="number" min="1" max="500" [(ngModel)]="orquestacionFormulario.maxParallelDevices" aria-label="Paralelos">
+            <input type="time" step="1" [(ngModel)]="orquestacionFormulario.maintenanceWindowStart" aria-label="Ventana inicio">
+            <input type="time" step="1" [(ngModel)]="orquestacionFormulario.maintenanceWindowEnd" aria-label="Ventana fin">
+            <button type="button" class="boton pequeno primario" (click)="planificarOrquestacion()">Planificar</button>
+            <button type="button" class="boton pequeno" (click)="evaluarOrquestacion()" [disabled]="!planOrquestacion">Evaluar</button>
+          </div>
+
+          <div class="oleadas" *ngIf="planOrquestacion; else sinPlan">
+            <article class="oleada" *ngFor="let oleada of planOrquestacion.waves">
+              <div class="oleada-top">
+                <div>
+                  <strong>{{ oleada.number }}. {{ oleada.name }}</strong>
+                  <small>{{ oleada.pilot ? 'PILOTO' : (oleada.targetGroup || 'GENERAL') }}</small>
+                </div>
+                <app-status-badge [status]="oleada.status"></app-status-badge>
+              </div>
+              <div class="barra">
+                <span [style.width.%]="progresoOleada(oleada)"></span>
+              </div>
+              <div class="oleada-meta">
+                <span>{{ oleada.completedTargets }}/{{ oleada.plannedTargets }} completados</span>
+                <span>{{ oleada.failurePercent }}% fallo</span>
+                <span>{{ oleada.onDutyBranches }} turno</span>
+              </div>
+              <div class="acciones" *ngIf="sesion.puedeOperar()">
+                <button type="button" class="boton pequeno" (click)="iniciarOleada(oleada)" [disabled]="oleada.status === 'RUNNING' || oleada.status === 'COMPLETED'">Iniciar</button>
+                <button type="button" class="boton pequeno" (click)="pausarOleada(oleada)" [disabled]="oleada.status !== 'RUNNING'">Pausar</button>
+                <button type="button" class="boton pequeno" (click)="reanudarOleada(oleada)" [disabled]="oleada.status !== 'PAUSED'">Reanudar</button>
+                <button type="button" class="boton pequeno peligro" (click)="cancelarDespliegue(despliegueSeleccionado)">Forzar Rollback</button>
+              </div>
+            </article>
+          </div>
+          <ng-template #sinPlan>
+            <p class="vacio">Esta campana aun no tiene oleadas planificadas.</p>
+          </ng-template>
+        </ng-container>
+        <ng-template #sinCampana>
+          <p class="vacio">Selecciona una campana POS.</p>
+        </ng-template>
+      </article>
+    </div>
+  </section>
+</section>

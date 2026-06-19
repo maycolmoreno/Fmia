@@ -1,0 +1,182 @@
+.farmacias-tarjetas {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: #172033;
+}
+
+.filtros-cascada {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 280px));
+  gap: 12px;
+  align-items: end;
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+}
+
+.campo-filtro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #364152;
+  text-transform: uppercase;
+}
+
+.campo-filtro select {
+  min-height: 38px;
+  border: 1px solid #c9d2df;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #172033;
+  font-size: 14px;
+  padding: 0 10px;
+  outline: none;
+}
+
+.campo-filtro select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.campo-filtro select:disabled {
+  background: #f4f6f9;
+  color: #7b8798;
+  cursor: not-allowed;
+}
+
+.tarjetas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.tarjeta-equipo {
+  min-height: 138px;
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.tarjeta-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.equipo-titulo {
+  display: grid;
+  gap: 3px;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.led {
+  filter: drop-shadow(0 0 4px rgba(15, 23, 42, 0.16));
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.led.online {
+  animation: led-pulse 1.8s ease-in-out infinite;
+}
+
+.equipo-titulo strong,
+.equipo-titulo span:not(.led) {
+  grid-column: 2;
+}
+
+.tarjeta-header strong {
+  display: block;
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.tarjeta-header span {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.estado-conexion {
+  flex: 0 0 auto;
+  margin-top: 0;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.tarjeta-online .estado-conexion {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.tarjeta-offline .estado-conexion {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.tarjeta-detalle {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0;
+}
+
+.tarjeta-detalle div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid #eef2f7;
+  padding-top: 9px;
+}
+
+.tarjeta-detalle dt {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.tarjeta-detalle dd {
+  margin: 0;
+  color: #172033;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.estado-panel {
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  color: #475569;
+  font-size: 14px;
+}
+
+.estado-error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+@keyframes led-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}

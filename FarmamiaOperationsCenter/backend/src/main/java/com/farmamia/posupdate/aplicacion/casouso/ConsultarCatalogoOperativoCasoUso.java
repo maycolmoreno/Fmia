@@ -5,6 +5,7 @@ import com.farmamia.posupdate.dominio.modelo.EventoActualizacionRegistrado;
 import com.farmamia.posupdate.dominio.modelo.FiltroEquipos;
 import com.farmamia.posupdate.dominio.modelo.FiltroEventosActualizacion;
 import com.farmamia.posupdate.dominio.modelo.FiltroSucursales;
+import com.farmamia.posupdate.dominio.modelo.CatalogoRegion;
 import com.farmamia.posupdate.dominio.modelo.Pagina;
 import com.farmamia.posupdate.dominio.modelo.Sucursal;
 import com.farmamia.posupdate.dominio.puerto.RepositorioEquipos;
@@ -49,6 +50,11 @@ public class ConsultarCatalogoOperativoCasoUso {
     @Transactional(readOnly = true)
     public List<Sucursal> listarSucursales() {
         return repositorioSucursales.listar();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CatalogoRegion> listarCatalogoRegiones() {
+        return repositorioSucursales.listarCatalogoRegiones();
     }
 
     @Transactional(readOnly = true)
