@@ -46,6 +46,27 @@ public class MetricaEquipoEntidad {
     @Column(name = "agent_status", length = 40)
     private String estadoAgente;
 
+    @Column(name = "cpu_usage_percent")
+    private Integer usoCpuPorcentaje;
+
+    @Column(name = "ram_usage_percent")
+    private Integer usoRamPorcentaje;
+
+    @Column(name = "response_time_ms")
+    private Integer tiempoRespuestaMs;
+
+    @Column(name = "inbound_traffic_kbps", precision = 12, scale = 2)
+    private BigDecimal traficoInboundKbps;
+
+    @Column(name = "outbound_traffic_kbps", precision = 12, scale = 2)
+    private BigDecimal traficoOutboundKbps;
+
+    @Column(name = "router_uptime_ticks")
+    private Long uptimeRouterTicks;
+
+    @Column(name = "router_sys_desc")
+    private String descripcionRouter;
+
     @CreationTimestamp
     @Column(name = "collected_at", nullable = false, updatable = false)
     private OffsetDateTime recolectadoEn;
@@ -61,7 +82,14 @@ public class MetricaEquipoEntidad {
         Boolean procesoPosEjecutandose,
         Integer latenciaMs,
         BigDecimal porcentajePerdidaPaquetes,
-        String estadoAgente
+        String estadoAgente,
+        Integer usoCpuPorcentaje,
+        Integer usoRamPorcentaje,
+        Integer tiempoRespuestaMs,
+        BigDecimal traficoInboundKbps,
+        BigDecimal traficoOutboundKbps,
+        Long uptimeRouterTicks,
+        String descripcionRouter
     ) {
         this.equipo = equipo;
         this.versionPos = versionPos;
@@ -71,6 +99,13 @@ public class MetricaEquipoEntidad {
         this.latenciaMs = latenciaMs;
         this.porcentajePerdidaPaquetes = porcentajePerdidaPaquetes;
         this.estadoAgente = estadoAgente;
+        this.usoCpuPorcentaje = usoCpuPorcentaje;
+        this.usoRamPorcentaje = usoRamPorcentaje;
+        this.tiempoRespuestaMs = tiempoRespuestaMs;
+        this.traficoInboundKbps = traficoInboundKbps;
+        this.traficoOutboundKbps = traficoOutboundKbps;
+        this.uptimeRouterTicks = uptimeRouterTicks;
+        this.descripcionRouter = descripcionRouter;
     }
 
     public UUID getId() {
@@ -103,6 +138,34 @@ public class MetricaEquipoEntidad {
 
     public String getEstadoAgente() {
         return estadoAgente;
+    }
+
+    public Integer getUsoCpuPorcentaje() {
+        return usoCpuPorcentaje;
+    }
+
+    public Integer getUsoRamPorcentaje() {
+        return usoRamPorcentaje;
+    }
+
+    public Integer getTiempoRespuestaMs() {
+        return tiempoRespuestaMs;
+    }
+
+    public BigDecimal getTraficoInboundKbps() {
+        return traficoInboundKbps;
+    }
+
+    public BigDecimal getTraficoOutboundKbps() {
+        return traficoOutboundKbps;
+    }
+
+    public Long getUptimeRouterTicks() {
+        return uptimeRouterTicks;
+    }
+
+    public String getDescripcionRouter() {
+        return descripcionRouter;
     }
 
     public OffsetDateTime getRecolectadoEn() {

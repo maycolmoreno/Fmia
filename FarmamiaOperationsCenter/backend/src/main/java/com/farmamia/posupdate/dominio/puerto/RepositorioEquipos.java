@@ -1,6 +1,7 @@
 package com.farmamia.posupdate.dominio.puerto;
 
 import com.farmamia.posupdate.dominio.modelo.DatosRegistroAgente;
+import com.farmamia.posupdate.dominio.modelo.DatosRegistroEquipoTecnico;
 import com.farmamia.posupdate.dominio.modelo.AsignacionEquipoSucursal;
 import com.farmamia.posupdate.dominio.modelo.Equipo;
 import com.farmamia.posupdate.dominio.modelo.FiltroEquipos;
@@ -13,6 +14,10 @@ import java.util.UUID;
 public interface RepositorioEquipos {
 
     Equipo registrarOActualizar(UUID idSucursal, DatosRegistroAgente datosRegistro);
+
+    default Equipo registrarTecnico(DatosRegistroEquipoTecnico datosRegistro) {
+        throw new UnsupportedOperationException("Registro tecnico no implementado");
+    }
 
     Optional<Equipo> buscarPorId(UUID idEquipo);
 

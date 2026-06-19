@@ -3,14 +3,20 @@
     <div class="panel-header">
       <div>
         <h2>Farmacias afectadas</h2>
-        <small>{{ farmacias.length }} con novedades abiertas</small>
+        <small>{{ farmacias.length }} con novedades {{ modo === 'historial' ? 'cerradas' : 'abiertas' }}</small>
       </div>
-      <button type="button" class="boton secundario pequeno" (click)="cargarAlertas()" [disabled]="cargando">Actualizar</button>
+      <div class="panel-acciones">
+        <button type="button" class="boton pequeno" [class.secundario]="modo !== 'activas'" (click)="cargarAlertas()" [disabled]="cargando">Activas</button>
+        <button type="button" class="boton pequeno" [class.secundario]="modo !== 'historial'" (click)="cargarHistorialAlertas()" [disabled]="cargando">Historial</button>
+        <button type="button" class="boton secundario pequeno" (click)="refrescar()" [disabled]="cargando">Actualizar</button>
+      </div>
     </div>
 
     <p class="alerta error" *ngIf="error">{{ error }}</p>
     <p class="alerta exito" *ngIf="mensaje">{{ mensaje }}</p>
-    <p class="vacio" *ngIf="!cargando && farmacias.length === 0">Aun no hay alertas abiertas.</p>
+    <p class="vacio" *ngIf="!cargando && farmacias.length === 0">
+      {{ modo === 'historial' ? 'Aun no hay incidentes cerrados.' : 'Aun no hay alertas abiertas.' }}
+    </p>
 
     <div class="farmacia-lista">
       <article class="farmacia-card" *ngFor="let farmacia of farmacias">
@@ -62,6 +68,63 @@
       <p class="detalle-cargando" *ngIf="cargandoDetalle">Cargando datos técnicos...</p>
 
       <div class="detalle-tecnico" *ngIf="!cargandoDetalle && detalleEquipo as detalle">
+        <section class="inventario-estado">
+          <div class="inventario-tabla">
+            <table>
+              <tbody>
+                <tr>
+                  <th>A01-Nombre del equipo</th>
+                  <td>{{ detalle.device.hostname || equipo.nombre }}</td>
+                </tr>
+                <tr>
+                  <th>A02-Descripción del equipo</th>
+                  <td>{{ metricaReciente?.routerSysDesc || 'N/D' }}</td>
+                </tr>
+                <tr>
+                  <th>A03-Uptime (Tiempo de actividad)</th>
+                  <td>{{ formatearUptime(metricaReciente?.routerUptimeTicks) }}</td>
+                </tr>
+                <tr>
+                  <th>A04-IP de Gestión</th>
+                  <td>{{ detalle.device.ipAddress || equipo.ip || 'N/D' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="estado-router" [class.estado-up]="equipoOnline()" [class.estado-down]="!equipoOnline()">
+            {{ equipoOnline() ? 'UP' : 'DOWN' }}
+          </div>
+        </section>
+
+        <section class="graficas-red" *ngIf="chartOptionsLatencia && chartOptionsTrafico">
+          <article class="grafica-card">
+            <h3>2.1.2 TIEMPO DE RESPUESTA - PAQUETES PERDIDOS</h3>
+            <apx-chart
+              [series]="chartOptionsLatencia.series"
+              [chart]="chartOptionsLatencia.chart"
+              [xaxis]="chartOptionsLatencia.xaxis"
+              [yaxis]="chartOptionsLatencia.yaxis"
+              [stroke]="chartOptionsLatencia.stroke"
+              [dataLabels]="chartOptionsLatencia.dataLabels"
+              [colors]="chartOptionsLatencia.colors"
+            ></apx-chart>
+          </article>
+
+          <article class="grafica-card">
+            <h3>2.2.1 TRÁFICO - ERRORES</h3>
+            <apx-chart
+              [series]="chartOptionsTrafico.series"
+              [chart]="chartOptionsTrafico.chart"
+              [xaxis]="chartOptionsTrafico.xaxis"
+              [yaxis]="chartOptionsTrafico.yaxis"
+              [stroke]="chartOptionsTrafico.stroke"
+              [dataLabels]="chartOptionsTrafico.dataLabels"
+              [colors]="chartOptionsTrafico.colors"
+            ></apx-chart>
+          </article>
+        </section>
+
         <div>
           <span>IP Address</span>
           <strong>{{ detalle.device.ipAddress || 'N/D' }}</strong>
@@ -101,8 +164,12 @@
               <dt>Fecha</dt>
               <dd>{{ alerta.openedAt | date:'short' }}</dd>
             </div>
+            <div *ngIf="modo === 'historial'">
+              <dt>Solucionado</dt>
+              <dd>{{ alerta.closedAt ? (alerta.closedAt | date:'short') : 'N/D' }}</dd>
+            </div>
           </dl>
-          <div class="drawer-acciones" *ngIf="sesion.puedeOperar()">
+          <div class="drawer-acciones" *ngIf="sesion.puedeOperar() && modo === 'activas'">
             <button type="button" class="boton pequeno" (click)="reconocer(alerta)" [disabled]="alerta.status !== 'OPEN'">Reconocer</button>
             <button type="button" class="boton pequeno peligro" (click)="cerrar(alerta)" [disabled]="alerta.status === 'CLOSED'">Cerrar</button>
           </div>

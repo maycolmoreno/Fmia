@@ -18,29 +18,29 @@
 
   <ng-container *ngIf="resumen">
     <div class="noc-resumen-grid">
-      <article class="noc-indicador" [class.alerta]="resumen.pos.offline > 0">
-        <span>Maquinas apagadas</span>
-        <strong>{{ resumen.pos.offline }}</strong>
-        <small>{{ resumen.pos.online }} encendidas de {{ resumen.pos.total }}</small>
-      </article>
+      <app-kpi-card
+        label="1.1 ENLACES All"
+        [value]="contadoresEnlaces.total"
+        helper="Total monitoreado"
+        icon="ALL"
+        tone="info"
+      ></app-kpi-card>
 
-      <article class="noc-indicador" [class.alerta]="resumen.network.linkDown > 0">
-        <span>Enlaces caidos</span>
-        <strong>{{ resumen.network.linkDown }}</strong>
-        <small>{{ resumen.network.highLatency }} con latencia alta</small>
-      </article>
+      <app-kpi-card
+        label="1.2 ENLACES UP"
+        [value]="contadoresEnlaces.up"
+        helper="Operativos"
+        icon="UP"
+        tone="success"
+      ></app-kpi-card>
 
-      <article class="noc-indicador" [class.alerta]="resumen.criticFarms.length > 0">
-        <span>Farmacias criticas</span>
-        <strong>{{ resumen.criticFarms.length }}</strong>
-        <small>{{ resumen.atRiskFarms.length }} de turno en riesgo</small>
-      </article>
-
-      <article class="noc-indicador" [class.aviso]="alertasAbiertas > 0">
-        <span>Alertas abiertas</span>
-        <strong>{{ alertasAbiertas }}</strong>
-        <small>{{ alertasRed }} eventos de red</small>
-      </article>
+      <app-kpi-card
+        label="1.1 ENLACES DOWN"
+        [value]="contadoresEnlaces.down"
+        helper="Fuera de servicio"
+        icon="DOWN"
+        tone="danger"
+      ></app-kpi-card>
     </div>
 
     <div class="noc-contexto">
@@ -61,6 +61,42 @@
         <small>{{ resumen.pos.atRisk }} maquinas sin estado conocido</small>
       </article>
     </div>
+
+    <section class="noc-alertas">
+      <div class="tabla-titulo">
+        <h3>Problems</h3>
+        <span>{{ resumen.recentAlerts.length }} recientes</span>
+      </div>
+
+      <div class="tabla-alertas">
+        <table>
+          <thead>
+            <tr>
+              <th>Host</th>
+              <th>Host Groups</th>
+              <th>Severity</th>
+              <th>Problem</th>
+              <th>Age</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let alerta of resumen.recentAlerts">
+              <td>{{ alerta.farmCode || alerta.farmId || 'N/D' }}</td>
+              <td>{{ alerta.networkEvent ? 'ENLACES' : 'FARMACIAS' }}</td>
+              <td>
+                <span class="severity-pill" [ngClass]="claseSeveridad(alerta.severity)">
+                  {{ alerta.severity }}
+                </span>
+              </td>
+              <td>{{ alerta.title || alerta.alertType }}</td>
+              <td>{{ edadAlerta(alerta.openedAt) }}</td>
+              <td>{{ alerta.openedAt | date:'yyyy-MM-dd HH:mm:ss' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </ng-container>
 
   <div class="noc-sin-datos" *ngIf="!resumen && !cargando">

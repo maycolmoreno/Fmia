@@ -9,6 +9,8 @@ import com.farmamia.posupdate.presentacion.dto.RespuestaResumenNocDashboard.Esta
 import com.farmamia.posupdate.presentacion.dto.RespuestaResumenNocDashboard.EstadoRedNocDto;
 import com.farmamia.posupdate.presentacion.dto.RespuestaResumenNocDashboard.FarmaciaCriticaNocDto;
 import java.util.List;
+import java.util.Map;
+import com.farmamia.posupdate.infraestructura.persistencia.repositorio.EquipoRepositorioJpa;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,14 +20,23 @@ import org.springframework.web.bind.annotation.RestController;
 public class ControladorDashboard {
 
     private final ConsultarResumenNocCasoUso consultarResumenNocCasoUso;
+    private final EquipoRepositorioJpa equipoRepositorioJpa;
 
-    public ControladorDashboard(ConsultarResumenNocCasoUso consultarResumenNocCasoUso) {
+    public ControladorDashboard(ConsultarResumenNocCasoUso consultarResumenNocCasoUso, EquipoRepositorioJpa equipoRepositorioJpa) {
         this.consultarResumenNocCasoUso = consultarResumenNocCasoUso;
+        this.equipoRepositorioJpa = equipoRepositorioJpa;
     }
 
     @GetMapping("/resumen-noc")
     public RespuestaResumenNocDashboard resumenNoc() {
         return aRespuestaNoc(consultarResumenNocCasoUso.obtener());
+    }
+
+    @GetMapping("/contadores-enlaces")
+    public Map<String, Long> contadoresEnlaces() {
+        long total = equipoRepositorioJpa.countByDireccionIpIsNotNull();
+        long up = equipoRepositorioJpa.countByDireccionIpIsNotNullAndEstado("ONLINE");
+        return Map.of("total", total, "up", up, "down", total - up);
     }
 
     private RespuestaResumenNocDashboard aRespuestaNoc(ResumenNocDashboard noc) {

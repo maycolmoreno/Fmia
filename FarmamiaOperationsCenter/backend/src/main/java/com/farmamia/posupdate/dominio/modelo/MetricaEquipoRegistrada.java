@@ -13,6 +13,13 @@ public record MetricaEquipoRegistrada(
     Integer latenciaMs,
     BigDecimal porcentajePerdidaPaquetes,
     String estadoAgente,
+    Integer usoCpuPorcentaje,
+    Integer usoRamPorcentaje,
+    Integer tiempoRespuestaMs,
+    BigDecimal traficoInboundKbps,
+    BigDecimal traficoOutboundKbps,
+    Long uptimeRouterTicks,
+    String descripcionRouter,
     OffsetDateTime recolectadoEn
 ) {
 }

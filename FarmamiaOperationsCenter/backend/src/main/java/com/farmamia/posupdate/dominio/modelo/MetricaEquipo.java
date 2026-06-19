@@ -11,6 +11,13 @@ public record MetricaEquipo(
     Boolean procesoPosEjecutandose,
     Integer latenciaMs,
     BigDecimal porcentajePerdidaPaquetes,
-    String estadoAgente
+    String estadoAgente,
+    Integer usoCpuPorcentaje,
+    Integer usoRamPorcentaje,
+    Integer tiempoRespuestaMs,
+    BigDecimal traficoInboundKbps,
+    BigDecimal traficoOutboundKbps,
+    Long uptimeRouterTicks,
+    String descripcionRouter
 ) {
 }

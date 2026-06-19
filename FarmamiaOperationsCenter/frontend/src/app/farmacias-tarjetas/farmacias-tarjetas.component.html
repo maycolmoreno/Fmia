@@ -27,16 +27,28 @@
         </option>
       </select>
     </label>
+
+    <label class="campo-filtro campo-busqueda">
+      <span>Busqueda</span>
+      <input
+        type="text"
+        [(ngModel)]="filtroBusqueda"
+        placeholder="Buscar por IP, nombre o sucursal..."
+      >
+    </label>
+
+    <button type="button" class="boton-registro" (click)="abrirModalRegistro()">Nuevo equipo</button>
   </div>
 
   <div class="estado-panel" *ngIf="cargandoCatalogo">Cargando catalogo geografico...</div>
   <div class="estado-panel estado-error" *ngIf="error">{{ error }}</div>
+  <div class="estado-panel estado-exito" *ngIf="mensaje">{{ mensaje }}</div>
   <div class="estado-panel" *ngIf="cargandoTarjetas">Cargando equipos de {{ provinciaSeleccionada }}...</div>
 
-  <div class="tarjetas-grid" *ngIf="!cargandoTarjetas && tarjetas.length > 0">
+  <div class="tarjetas-grid" *ngIf="!cargandoTarjetas && tarjetasFiltradas.length > 0">
     <article
       class="tarjeta-equipo"
-      *ngFor="let tarjeta of tarjetas; trackBy: trackTarjeta"
+      *ngFor="let tarjeta of tarjetasFiltradas; trackBy: trackTarjeta"
       [class.tarjeta-online]="tarjeta.isOnline"
       [class.tarjeta-offline]="!tarjeta.isOnline"
     >
@@ -69,5 +81,51 @@
     *ngIf="!cargandoCatalogo && !cargandoTarjetas && provinciaSeleccionada && tarjetas.length === 0 && !error"
   >
     No hay equipos registrados para esta provincia.
+  </div>
+
+  <div
+    class="estado-panel"
+    *ngIf="!cargandoTarjetas && tarjetas.length > 0 && tarjetasFiltradas.length === 0"
+  >
+    No hay equipos que coincidan con la busqueda.
+  </div>
+
+  <div class="modal-backdrop" *ngIf="modalRegistroAbierto">
+    <form class="modal-registro" [formGroup]="formularioRegistro" (ngSubmit)="registrarEquipoTecnico()">
+      <header>
+        <h2>Registro tecnico de red</h2>
+        <button type="button" class="modal-cerrar" (click)="cerrarModalRegistro()">x</button>
+      </header>
+
+      <label class="campo-filtro">
+        <span>Codigo de PDV</span>
+        <input
+          type="text"
+          formControlName="codigoPdv"
+          maxlength="5"
+          placeholder="ML006"
+          (input)="normalizarCodigoPdv()"
+        >
+      </label>
+
+      <label class="campo-filtro">
+        <span>Direccion IP</span>
+        <input type="text" formControlName="direccionIp" placeholder="192.168.88.1">
+      </label>
+
+      <label class="campo-filtro">
+        <span>Comunidad SNMP (Read/Trap)</span>
+        <input type="text" formControlName="comunidadSnmp" placeholder="public">
+      </label>
+
+      <p class="ayuda-validacion" *ngIf="formularioRegistro.invalid && formularioRegistro.touched">
+        Completa codigo ML006, IPv4 valida y comunidad SNMP.
+      </p>
+
+      <footer>
+        <button type="button" class="boton-cancelar" (click)="cerrarModalRegistro()">Cancelar</button>
+        <button type="submit" class="boton-guardar" [disabled]="guardandoEquipo">Guardar</button>
+      </footer>
+    </form>
   </div>
 </section>

@@ -3,6 +3,7 @@ package com.farmamia.posupdate.infraestructura.persistencia.adaptador;
 import com.farmamia.posupdate.aplicacion.excepcion.RecursoNoEncontradoException;
 import com.farmamia.posupdate.dominio.modelo.AsignacionEquipoSucursal;
 import com.farmamia.posupdate.dominio.modelo.DatosRegistroAgente;
+import com.farmamia.posupdate.dominio.modelo.DatosRegistroEquipoTecnico;
 import com.farmamia.posupdate.dominio.modelo.Equipo;
 import com.farmamia.posupdate.dominio.modelo.FiltroEquipos;
 import com.farmamia.posupdate.dominio.modelo.Pagina;
@@ -54,6 +55,8 @@ public class RepositorioEquiposJpaAdaptador implements RepositorioEquipos {
         equipo.actualizarRegistro(
             sucursal,
             datosRegistro.direccionIp(),
+            datosRegistro.codigoPdv(),
+            datosRegistro.comunidadSnmp(),
             datosRegistro.direccionMac(),
             datosRegistro.versionWindows(),
             datosRegistro.versionAgente(),
@@ -61,6 +64,15 @@ public class RepositorioEquiposJpaAdaptador implements RepositorioEquipos {
             datosRegistro.rutaPos()
         );
 
+        return aDominio(equipoRepositorioJpa.save(equipo));
+    }
+
+    @Override
+    public Equipo registrarTecnico(DatosRegistroEquipoTecnico datosRegistro) {
+        String codigoPdv = datosRegistro.codigoPdv().trim().toUpperCase(Locale.ROOT);
+        EquipoEntidad equipo = equipoRepositorioJpa.findByCodigoPdv(codigoPdv)
+            .orElseGet(() -> new EquipoEntidad(null, codigoPdv, "/opt/farmamia/pos"));
+        equipo.actualizarRegistroTecnico(codigoPdv, datosRegistro.direccionIp(), datosRegistro.comunidadSnmp());
         return aDominio(equipoRepositorioJpa.save(equipo));
     }
 
@@ -193,7 +205,10 @@ public class RepositorioEquiposJpaAdaptador implements RepositorioEquipos {
             sucursal == null ? "" : sucursal.getCodigo(),
             sucursal == null ? "SIN ASIGNAR" : sucursal.getNombre(),
             entidad.getNombreEquipo(),
+            entidad.getTipo() == null ? "POS_TERMINAL" : entidad.getTipo().name(),
+            entidad.getCodigoPdv(),
             entidad.getDireccionIp(),
+            entidad.getComunidadSnmp(),
             entidad.getDireccionMac(),
             entidad.getVersionWindows(),
             entidad.getVersionAgente(),

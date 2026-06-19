@@ -10,12 +10,14 @@ import {
   CampanaPos,
   CampanaGrupoTrx,
   CatalogoRegion,
+  ContadoresEnlaces,
   DetalleEquipoPos,
   EquipoHuerfano,
   EquipoPos,
   EstadoConexionAgente,
   EstadoOperacionalFarmacia,
   GrupoTrx,
+  MetricaEquipoPos,
   EstadoDespliegue,
   EstadoSaludApi,
   EventoAgente,
@@ -36,6 +38,7 @@ import {
   EventoActualizacion,
   PaquetePos,
   Sucursal,
+  SolicitudRegistroEquipoTecnico,
   UsuarioAdministrativo
 } from '../modelos/modelos-operaciones';
 
@@ -52,6 +55,10 @@ export class OperacionesApiService {
 
   obtenerResumenNoc(): Observable<ResumenNocDashboard> {
     return this.http.get<ResumenNocDashboard>(`${this.baseUrl}/api/dashboard/resumen-noc`);
+  }
+
+  obtenerContadoresEnlaces(): Observable<ContadoresEnlaces> {
+    return this.http.get<ContadoresEnlaces>(`${this.baseUrl}/api/dashboard/contadores-enlaces`);
   }
 
   urlAbsoluta(ruta: string): string {
@@ -160,6 +167,10 @@ export class OperacionesApiService {
     return this.listarEquiposPos();
   }
 
+  registrarEquipoTecnico(datos: SolicitudRegistroEquipoTecnico): Observable<EquipoPos> {
+    return this.http.post<EquipoPos>(`${this.baseUrl}/api/equipos-pos`, datos);
+  }
+
   listarEquiposPosPaginados(
     filtros: {
       q?: string;
@@ -213,6 +224,10 @@ export class OperacionesApiService {
 
   getDetalleEquipo(idEquipo: string): Observable<DetalleEquipo> {
     return this.obtenerDetalleEquipo(idEquipo);
+  }
+
+  listarHistoricoMetricasEquipo(idEquipo: string): Observable<MetricaEquipoPos[]> {
+    return this.http.get<MetricaEquipoPos[]>(`${this.baseUrl}/api/equipos-pos/${idEquipo}/historico-metricas`);
   }
 
   listarEquiposHuerfanos(): Observable<EquipoHuerfano[]> {

@@ -1,6 +1,7 @@
 package com.farmamia.posupdate.infraestructura.persistencia.repositorio;
 
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.EquipoEntidad;
+import com.farmamia.posupdate.infraestructura.persistencia.entidad.TipoEquipo;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -17,7 +18,13 @@ public interface EquipoRepositorioJpa extends JpaRepository<EquipoEntidad, UUID>
 
     Optional<EquipoEntidad> findByNombreEquipo(String nombreEquipo);
 
+    Optional<EquipoEntidad> findByCodigoPdv(String codigoPdv);
+
     long countByEstado(String estado);
+
+    long countByDireccionIpIsNotNull();
+
+    long countByDireccionIpIsNotNullAndEstado(String estado);
 
     @Query("""
         select equipo.versionPos
@@ -33,6 +40,12 @@ public interface EquipoRepositorioJpa extends JpaRepository<EquipoEntidad, UUID>
     java.util.List<EquipoEntidad> findAll();
 
     List<EquipoEntidad> findBySucursalIsNullOrderByNombreEquipoAsc();
+
+    @EntityGraph(attributePaths = "sucursal")
+    List<EquipoEntidad> findByDireccionIpIsNotNullOrderByNombreEquipoAsc();
+
+    @EntityGraph(attributePaths = "sucursal")
+    List<EquipoEntidad> findByTipoAndDireccionIpIsNotNullOrderByNombreEquipoAsc(TipoEquipo tipo);
 
     long countByIdInAndSucursalIsNull(Set<UUID> ids);
 

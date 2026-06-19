@@ -10,6 +10,8 @@ import com.farmamia.posupdate.infraestructura.persistencia.repositorio.EquipoRep
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.MetricaEquipoRepositorioJpa;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -39,7 +41,14 @@ public class RepositorioMetricasEquipoJpaAdaptador implements RepositorioMetrica
             metrica.procesoPosEjecutandose(),
             metrica.latenciaMs(),
             metrica.porcentajePerdidaPaquetes(),
-            metrica.estadoAgente()
+            metrica.estadoAgente(),
+            metrica.usoCpuPorcentaje(),
+            metrica.usoRamPorcentaje(),
+            metrica.tiempoRespuestaMs(),
+            metrica.traficoInboundKbps(),
+            metrica.traficoOutboundKbps(),
+            metrica.uptimeRouterTicks(),
+            metrica.descripcionRouter()
         ));
     }
 
@@ -59,7 +68,22 @@ public class RepositorioMetricasEquipoJpaAdaptador implements RepositorioMetrica
             entidad.getLatenciaMs(),
             entidad.getPorcentajePerdidaPaquetes(),
             entidad.getEstadoAgente(),
+            entidad.getUsoCpuPorcentaje(),
+            entidad.getUsoRamPorcentaje(),
+            entidad.getTiempoRespuestaMs(),
+            entidad.getTraficoInboundKbps(),
+            entidad.getTraficoOutboundKbps(),
+            entidad.getUptimeRouterTicks(),
+            entidad.getDescripcionRouter(),
             entidad.getRecolectadoEn()
         );
+    }
+
+    @Override
+    public List<MetricaEquipoRegistrada> listarUltimasPorEquipo(UUID idEquipo, int limite) {
+        return metricaEquipoRepositorioJpa.findByEquipo_IdOrderByRecolectadoEnDesc(idEquipo, PageRequest.of(0, limite))
+            .stream()
+            .map(this::aDominio)
+            .toList();
     }
 }

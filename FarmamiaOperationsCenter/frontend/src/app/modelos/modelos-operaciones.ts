@@ -144,7 +144,10 @@ export interface EquipoPos {
   branchCode: string;
   branchName: string;
   hostname: string;
+  tipo: 'POS_TERMINAL' | 'NETWORK_LINK';
+  codigoPdv?: string | null;
   ipAddress?: string | null;
+  snmpCommunity?: string | null;
   macAddress?: string | null;
   windowsVersion?: string | null;
   agentVersion?: string | null;
@@ -186,6 +189,19 @@ export interface MetricaEquipoPos {
   latencyMs?: number | null;
   packetLossPercent?: number | null;
   agentStatus?: string | null;
+  usoCpuPorcentaje?: number | null;
+  usoRamPorcentaje?: number | null;
+  cpuUsagePercent?: number | null;
+  ramUsagePercent?: number | null;
+  responseTimeMs?: number | null;
+  traficoInboundKbps?: number | null;
+  traficoOutboundKbps?: number | null;
+  uptimeRouterTicks?: number | null;
+  routerDescription?: string | null;
+  inboundTrafficKbps?: number | null;
+  outboundTrafficKbps?: number | null;
+  routerUptimeTicks?: number | null;
+  routerSysDesc?: string | null;
   collectedAt: string;
 }
 
@@ -498,6 +514,12 @@ export interface ResumenNocDashboard {
   generatedAt: string;
 }
 
+export interface ContadoresEnlaces {
+  total: number;
+  up: number;
+  down: number;
+}
+
 // --- type aliases (backwards compat) ---
 
 export type PaquetePos = VersionPos;
@@ -508,3 +530,9 @@ export type ObjetivoEquipo = ObjetivoCampanaEquipoPos;
 export type DetalleEquipo = DetalleEquipoPos;
 export type Despliegue = CampanaPos;
 export type EventoActualizacion = EventoAgente;
+
+export interface SolicitudRegistroEquipoTecnico {
+  codigoPdv: string;
+  direccionIp: string;
+  comunidadSnmp: string;
+}

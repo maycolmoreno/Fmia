@@ -7,6 +7,8 @@ public record SolicitudRegistroAgente(
     @JsonProperty("branchCode") String codigoSucursal,
     @JsonProperty("hostname") @NotBlank String nombreEquipo,
     @JsonProperty("ipAddress") String direccionIp,
+    @JsonProperty("codigoPdv") String codigoPdv,
+    @JsonProperty("snmpCommunity") String comunidadSnmp,
     @JsonProperty("macAddress") String direccionMac,
     @JsonProperty("windowsVersion") String versionWindows,
     @JsonProperty("agentVersion") String versionAgente,

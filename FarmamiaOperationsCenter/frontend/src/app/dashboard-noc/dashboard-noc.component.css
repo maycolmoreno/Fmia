@@ -56,10 +56,9 @@
 .noc-resumen-grid {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.noc-indicador,
 .noc-contexto-card {
   background: var(--color-card, #161b22);
   border: 1px solid var(--color-border, #30363d);
@@ -72,30 +71,11 @@
   padding: 18px;
 }
 
-.noc-indicador {
-  border-top: 4px solid var(--color-success, #3fb950);
-}
-
-.noc-indicador.alerta {
-  border-top-color: var(--color-danger, #f85149);
-}
-
-.noc-indicador.aviso {
-  border-top-color: var(--color-warning, #e3b341);
-}
-
-.noc-indicador span,
 .noc-contexto-card span {
   color: var(--color-muted, #8b949e);
   font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
-}
-
-.noc-indicador strong {
-  color: var(--color-text, #e6edf3);
-  font-size: clamp(2.2rem, 5vw, 3.4rem);
-  line-height: 0.95;
 }
 
 .noc-contexto-card strong {
@@ -104,7 +84,6 @@
   line-height: 1.25;
 }
 
-.noc-indicador small,
 .noc-contexto-card small {
   color: var(--color-muted, #8b949e);
   font-size: 0.84rem;
@@ -114,6 +93,81 @@
   display: grid;
   gap: 14px;
   grid-template-columns: 1.4fr 0.8fr;
+}
+
+.noc-alertas {
+  background: var(--color-card, #161b22);
+  border: 1px solid var(--color-border, #30363d);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tabla-titulo {
+  align-items: center;
+  border-bottom: 1px solid var(--color-border, #30363d);
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 14px;
+}
+
+.tabla-titulo h3 {
+  color: var(--color-text, #e6edf3);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.tabla-titulo span {
+  color: var(--color-muted, #8b949e);
+  font-size: 0.8rem;
+}
+
+.tabla-alertas {
+  overflow-x: auto;
+}
+
+.tabla-alertas table {
+  border-collapse: collapse;
+  min-width: 760px;
+  width: 100%;
+}
+
+.tabla-alertas th,
+.tabla-alertas td {
+  border-bottom: 1px solid var(--color-border, #30363d);
+  color: var(--color-text, #e6edf3);
+  font-size: 0.82rem;
+  padding: 10px 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tabla-alertas th {
+  background: #0f172a;
+  color: #cbd5e1;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.severity-pill {
+  border-radius: 4px;
+  color: #ffffff;
+  display: inline-block;
+  font-weight: 900;
+  min-width: 82px;
+  padding: 5px 8px;
+  text-align: center;
+}
+
+.sev-disaster {
+  background: #ff1f1f;
+}
+
+.sev-warning {
+  background: #f59e0b;
+}
+
+.sev-info {
+  background: #2563eb;
 }
 
 .noc-sin-datos {

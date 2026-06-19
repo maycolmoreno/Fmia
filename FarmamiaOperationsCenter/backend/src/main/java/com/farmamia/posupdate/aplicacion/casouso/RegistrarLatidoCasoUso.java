@@ -36,7 +36,14 @@ public class RegistrarLatidoCasoUso {
             datosLatido.procesoPosEjecutandose(),
             datosLatido.latenciaMs(),
             datosLatido.porcentajePerdidaPaquetes(),
-            "ONLINE"
+            "ONLINE",
+            null,
+            null,
+            datosLatido.latenciaMs(),
+            null,
+            null,
+            null,
+            null
         ));
     }
 }

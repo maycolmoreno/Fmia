@@ -453,7 +453,7 @@
             <span>Ultimo latido</span>
             <span>Accion</span>
           </div>
-          <div class="tabla-fila" *ngFor="let equipo of equipos">
+          <div class="tabla-fila" *ngFor="let equipo of equiposPos">
             <span>{{ equipo.hostname }}</span>
             <span>{{ equipo.branchCode }}</span>
             <span>{{ equipo.ipAddress || 'N/D' }}</span>
@@ -465,7 +465,38 @@
               <button type="button" class="boton pequeno" (click)="verDetalleEquipo(equipo)">Ver</button>
             </span>
           </div>
-          <p class="vacio" *ngIf="equipos.length === 0">Registra un agente para ver equipos aqui.</p>
+          <p class="vacio" *ngIf="equiposPos.length === 0">Registra un agente para ver equipos aqui.</p>
+        </div>
+      </article>
+
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Infraestructura de Red y Enlaces (NOC)</h2>
+        </div>
+        <div class="tabla tabla-enlaces">
+          <div class="tabla-fila cabecera">
+            <span>Codigo PDV</span>
+            <span>Equipo / Router</span>
+            <span>Farmacia</span>
+            <span>IP Gestion</span>
+            <span>Comunidad SNMP</span>
+            <span>Estado</span>
+            <span>Ultimo latido</span>
+            <span>Accion</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let equipo of equiposRed">
+            <span>{{ equipo.codigoPdv || equipo.branchCode || 'N/D' }}</span>
+            <span>{{ equipo.hostname }}</span>
+            <span>{{ equipo.branchName || equipo.branchCode || 'SIN ASIGNAR' }}</span>
+            <span>{{ equipo.ipAddress || 'N/D' }}</span>
+            <span>{{ equipo.snmpCommunity || 'N/D' }}</span>
+            <span><app-status-badge [status]="equipo.status"></app-status-badge></span>
+            <span>{{ equipo.lastHeartbeatAt ? (equipo.lastHeartbeatAt | date:'short') : 'Sin latido' }}</span>
+            <span>
+              <button type="button" class="boton pequeno" (click)="verDetalleEquipo(equipo)">Ver</button>
+            </span>
+          </div>
+          <p class="vacio" *ngIf="equiposRed.length === 0">Sin enlaces de red registrados.</p>
         </div>
       </article>
 
@@ -475,32 +506,63 @@
           <button type="button" class="boton pequeno secundario" (click)="cerrarDetalleEquipo()">Cerrar</button>
         </div>
 
-        <div class="detalle-grid">
-          <section>
-            <h3>Inventario</h3>
-            <div class="detalle-lista">
-              <span>Farmacia</span><strong>{{ detalleEquipo.device.branchCode }}</strong>
-              <span>IP</span><strong>{{ detalleEquipo.device.ipAddress || 'N/D' }}</strong>
-              <span>MAC</span><strong>{{ detalleEquipo.device.macAddress || 'N/D' }}</strong>
-              <span>Windows</span><strong>{{ detalleEquipo.device.windowsVersion || 'N/D' }}</strong>
-              <span>Ruta POS</span><strong>{{ detalleEquipo.device.posPath }}</strong>
-            </div>
-          </section>
+        <ng-container *ngIf="detalleEquipo.device.tipo === 'POS_TERMINAL'">
+          <div class="detalle-grid">
+            <section>
+              <h3>Inventario</h3>
+              <div class="detalle-lista">
+                <span>Farmacia</span><strong>{{ detalleEquipo.device.branchCode }}</strong>
+                <span>IP</span><strong>{{ detalleEquipo.device.ipAddress || 'N/D' }}</strong>
+                <span>MAC</span><strong>{{ detalleEquipo.device.macAddress || 'N/D' }}</strong>
+                <span>Windows</span><strong>{{ detalleEquipo.device.windowsVersion || 'N/D' }}</strong>
+                <span>Ruta POS</span><strong>{{ detalleEquipo.device.posPath }}</strong>
+              </div>
+            </section>
 
-          <section>
-            <h3>Ultima metrica</h3>
-            <div class="detalle-lista" *ngIf="detalleEquipo.lastMetric; else sinMetrica">
-              <span>Disco usado</span><strong>{{ porcentajeDisco(detalleEquipo.lastMetric) }}%</strong>
-              <span>Libre</span><strong>{{ detalleEquipo.lastMetric.diskFreeMb || 0 }} MB</strong>
-              <span>POS activo</span><strong>{{ detalleEquipo.lastMetric.posProcessRunning ? 'Si' : 'No' }}</strong>
-              <span>Latencia</span><strong>{{ detalleEquipo.lastMetric.latencyMs || 0 }} ms</strong>
-              <span>Recolectado</span><strong>{{ detalleEquipo.lastMetric.collectedAt | date:'short' }}</strong>
-            </div>
-            <ng-template #sinMetrica>
-              <p class="vacio">Sin metricas registradas.</p>
-            </ng-template>
-          </section>
-        </div>
+            <section>
+              <h3>Ultima metrica</h3>
+              <div class="detalle-lista" *ngIf="detalleEquipo.lastMetric; else sinMetricaPos">
+                <span>Disco usado</span><strong>{{ porcentajeDisco(detalleEquipo.lastMetric) }}%</strong>
+                <span>Libre</span><strong>{{ detalleEquipo.lastMetric.diskFreeMb || 0 }} MB</strong>
+                <span>POS activo</span><strong>{{ detalleEquipo.lastMetric.posProcessRunning ? 'Si' : 'No' }}</strong>
+                <span>Latencia</span><strong>{{ detalleEquipo.lastMetric.latencyMs || 0 }} ms</strong>
+                <span>Recolectado</span><strong>{{ detalleEquipo.lastMetric.collectedAt | date:'short' }}</strong>
+              </div>
+              <ng-template #sinMetricaPos>
+                <p class="vacio">Sin metricas registradas.</p>
+              </ng-template>
+            </section>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="detalleEquipo.device.tipo === 'NETWORK_LINK'">
+          <div class="detalle-grid">
+            <section>
+              <h3>Inventario de Red</h3>
+              <div class="detalle-lista">
+                <span>IP Gestion</span><strong>{{ detalleEquipo.device.ipAddress || 'N/D' }}</strong>
+                <span>Comunidad</span><strong>{{ detalleEquipo.device.snmpCommunity || 'N/D' }}</strong>
+                <span>Puerto SNMP</span><strong>161</strong>
+                <span>Descripcion</span><strong>{{ detalleEquipo.lastMetric?.routerDescription || 'N/D' }}</strong>
+              </div>
+            </section>
+
+            <section>
+              <h3>Metricas SNMP</h3>
+              <div class="detalle-lista" *ngIf="detalleEquipo.lastMetric; else sinMetricaRed">
+                <span>Uso CPU</span><strong>{{ detalleEquipo.lastMetric.usoCpuPorcentaje ?? 0 }}%</strong>
+                <span>Uso RAM</span><strong>{{ detalleEquipo.lastMetric.usoRamPorcentaje ?? 0 }}%</strong>
+                <span>Trafico IN</span><strong>{{ detalleEquipo.lastMetric.traficoInboundKbps ?? 0 }} Kbps</strong>
+                <span>Trafico OUT</span><strong>{{ detalleEquipo.lastMetric.traficoOutboundKbps ?? 0 }} Kbps</strong>
+                <span>Uptime</span><strong>{{ detalleEquipo.lastMetric.uptimeRouterTicks ?? 'N/D' }}</strong>
+                <span>Latencia</span><strong>{{ detalleEquipo.lastMetric.latencyMs ?? 0 }} ms</strong>
+              </div>
+              <ng-template #sinMetricaRed>
+                <p class="vacio">Sin metricas SNMP registradas.</p>
+              </ng-template>
+            </section>
+          </div>
+        </ng-container>
 
         <div class="rejilla-dos">
           <section>

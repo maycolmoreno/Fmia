@@ -2,6 +2,8 @@ package com.farmamia.posupdate.infraestructura.persistencia.entidad;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -28,8 +30,18 @@ public class EquipoEntidad {
     @Column(name = "hostname", nullable = false, unique = true, length = 120)
     private String nombreEquipo;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "equipment_type", nullable = false, length = 40)
+    private TipoEquipo tipo = TipoEquipo.POS_TERMINAL;
+
+    @Column(name = "pdv_code", length = 20)
+    private String codigoPdv;
+
     @Column(name = "ip_address", length = 45)
     private String direccionIp;
+
+    @Column(name = "snmp_community", length = 120)
+    private String comunidadSnmp;
 
     @Column(name = "mac_address", unique = true, length = 32)
     private String direccionMac;
@@ -77,12 +89,24 @@ public class EquipoEntidad {
         return nombreEquipo;
     }
 
+    public TipoEquipo getTipo() {
+        return tipo;
+    }
+
+    public String getCodigoPdv() {
+        return codigoPdv;
+    }
+
     public SucursalEntidad getSucursal() {
         return sucursal;
     }
 
     public String getDireccionIp() {
         return direccionIp;
+    }
+
+    public String getComunidadSnmp() {
+        return comunidadSnmp;
     }
 
     public String getDireccionMac() {
@@ -124,6 +148,8 @@ public class EquipoEntidad {
     public void actualizarRegistro(
         SucursalEntidad sucursal,
         String direccionIp,
+        String codigoPdv,
+        String comunidadSnmp,
         String direccionMac,
         String versionWindows,
         String versionAgente,
@@ -132,11 +158,33 @@ public class EquipoEntidad {
     ) {
         this.sucursal = sucursal;
         this.direccionIp = blancoANulo(direccionIp);
+        this.codigoPdv = blancoANulo(codigoPdv);
+        this.comunidadSnmp = blancoANulo(comunidadSnmp);
         this.direccionMac = blancoANulo(direccionMac);
         this.versionWindows = blancoANulo(versionWindows);
         this.versionAgente = blancoANulo(versionAgente);
         this.versionPos = blancoANulo(versionPos);
         this.rutaPos = rutaPos;
+        this.estado = "REGISTERED";
+    }
+
+    public void actualizarRegistro(
+        SucursalEntidad sucursal,
+        String direccionIp,
+        String direccionMac,
+        String versionWindows,
+        String versionAgente,
+        String versionPos,
+        String rutaPos
+    ) {
+        actualizarRegistro(sucursal, direccionIp, null, null, direccionMac, versionWindows, versionAgente, versionPos, rutaPos);
+    }
+
+    public void actualizarRegistroTecnico(String codigoPdv, String direccionIp, String comunidadSnmp) {
+        this.tipo = TipoEquipo.NETWORK_LINK;
+        this.codigoPdv = blancoANulo(codigoPdv);
+        this.direccionIp = blancoANulo(direccionIp);
+        this.comunidadSnmp = blancoANulo(comunidadSnmp);
         this.estado = "REGISTERED";
     }
 

@@ -5,6 +5,7 @@ import com.farmamia.posupdate.aplicacion.casouso.ConsultarDetalleEquipoCasoUso;
 import com.farmamia.posupdate.aplicacion.casouso.ConsultarCatalogoOperativoCasoUso;
 import com.farmamia.posupdate.dominio.modelo.AsignacionEquipoSucursal;
 import com.farmamia.posupdate.dominio.modelo.CatalogoRegion;
+import com.farmamia.posupdate.dominio.modelo.DatosRegistroEquipoTecnico;
 import com.farmamia.posupdate.dominio.modelo.DetalleEquipo;
 import com.farmamia.posupdate.dominio.modelo.Equipo;
 import com.farmamia.posupdate.dominio.modelo.EquipoHuerfano;
@@ -14,6 +15,7 @@ import com.farmamia.posupdate.dominio.modelo.MetricaEquipoRegistrada;
 import com.farmamia.posupdate.dominio.modelo.ObjetivoDespliegueEquipo;
 import com.farmamia.posupdate.dominio.modelo.Pagina;
 import com.farmamia.posupdate.dominio.modelo.ResumenAsignacionMasiva;
+import com.farmamia.posupdate.dominio.puerto.RepositorioMetricasEquipo;
 import com.farmamia.posupdate.infraestructura.sse.CanalSseAgentes;
 import com.farmamia.posupdate.presentacion.dto.RespuestaAsignacionMasivaEquipos;
 import com.farmamia.posupdate.presentacion.dto.RespuestaCatalogoRegion;
@@ -26,11 +28,13 @@ import com.farmamia.posupdate.presentacion.dto.RespuestaMetricaEquipo;
 import com.farmamia.posupdate.presentacion.dto.RespuestaObjetivoEquipo;
 import com.farmamia.posupdate.presentacion.dto.RespuestaPagina;
 import com.farmamia.posupdate.presentacion.dto.SolicitudAsignacionMasivaEquipos;
+import com.farmamia.posupdate.presentacion.dto.SolicitudRegistroEquipoTecnico;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,6 +42,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -48,17 +53,20 @@ public class ControladorEquipos {
     private final ConsultarDetalleEquipoCasoUso consultarDetalleEquipoCasoUso;
     private final AprovisionarEquiposHuerfanosCasoUso aprovisionarEquiposHuerfanosCasoUso;
     private final CanalSseAgentes canalSseAgentes;
+    private final RepositorioMetricasEquipo repositorioMetricasEquipo;
 
     public ControladorEquipos(
         ConsultarCatalogoOperativoCasoUso consultarCatalogoOperativoCasoUso,
         ConsultarDetalleEquipoCasoUso consultarDetalleEquipoCasoUso,
         AprovisionarEquiposHuerfanosCasoUso aprovisionarEquiposHuerfanosCasoUso,
-        CanalSseAgentes canalSseAgentes
+        CanalSseAgentes canalSseAgentes,
+        RepositorioMetricasEquipo repositorioMetricasEquipo
     ) {
         this.consultarCatalogoOperativoCasoUso = consultarCatalogoOperativoCasoUso;
         this.consultarDetalleEquipoCasoUso = consultarDetalleEquipoCasoUso;
         this.aprovisionarEquiposHuerfanosCasoUso = aprovisionarEquiposHuerfanosCasoUso;
         this.canalSseAgentes = canalSseAgentes;
+        this.repositorioMetricasEquipo = repositorioMetricasEquipo;
     }
 
     @GetMapping
@@ -106,6 +114,29 @@ public class ControladorEquipos {
             detalle.eventosRecientes().stream().map(this::aRespuestaEvento).toList(),
             detalle.despliegues().stream().map(this::aRespuestaObjetivo).toList()
         );
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public RespuestaEquipo registrarTecnico(
+        @Valid @RequestBody SolicitudRegistroEquipoTecnico solicitud,
+        Authentication autenticacion
+    ) {
+        exigirOperador(autenticacion);
+        Equipo equipo = consultarCatalogoOperativoCasoUso.registrarEquipoTecnico(new DatosRegistroEquipoTecnico(
+            solicitud.codigoPdv(),
+            solicitud.direccionIp(),
+            solicitud.comunidadSnmp()
+        ));
+        return aRespuesta(equipo);
+    }
+
+    @GetMapping("/{id}/historico-metricas")
+    public List<RespuestaMetricaEquipo> historicoMetricas(@PathVariable UUID id) {
+        return repositorioMetricasEquipo.listarUltimasPorEquipo(id, 20)
+            .stream()
+            .map(this::aRespuestaMetrica)
+            .toList();
     }
 
     @GetMapping("/huerfanos")
@@ -173,7 +204,10 @@ public class ControladorEquipos {
             equipo.codigoSucursal(),
             equipo.nombreSucursal(),
             equipo.nombreEquipo(),
+            equipo.tipo(),
+            equipo.codigoPdv(),
             equipo.direccionIp(),
+            equipo.comunidadSnmp(),
             equipo.direccionMac(),
             equipo.versionWindows(),
             equipo.versionAgente(),
@@ -231,6 +265,13 @@ public class ControladorEquipos {
             metrica.latenciaMs(),
             metrica.porcentajePerdidaPaquetes(),
             metrica.estadoAgente(),
+            metrica.usoCpuPorcentaje(),
+            metrica.usoRamPorcentaje(),
+            metrica.tiempoRespuestaMs(),
+            metrica.traficoInboundKbps(),
+            metrica.traficoOutboundKbps(),
+            metrica.uptimeRouterTicks(),
+            metrica.descripcionRouter(),
             metrica.recolectadoEn()
         );
     }

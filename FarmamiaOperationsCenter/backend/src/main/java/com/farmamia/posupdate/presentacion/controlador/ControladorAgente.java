@@ -66,6 +66,8 @@ public class ControladorAgente {
             solicitud.codigoSucursal(),
             solicitud.nombreEquipo(),
             solicitud.direccionIp(),
+            solicitud.codigoPdv(),
+            solicitud.comunidadSnmp(),
             solicitud.direccionMac(),
             solicitud.versionWindows(),
             solicitud.versionAgente(),

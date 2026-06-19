@@ -71,7 +71,8 @@ export class AppComponent implements OnInit, OnDestroy {
   salud?: EstadoSaludApi;
   farmacias: Farmacia[] = [];
   estadoFarmacias: EstadoOperacionalFarmacia[] = [];
-  equiposPos: EquipoPos[] = [];
+  equiposPos: Equipo[] = [];
+  equiposRed: Equipo[] = [];
   equiposPosPagina?: RespuestaPagina<EquipoPos>;
   equiposHuerfanos: EquipoHuerfano[] = [];
   campanasPos: CampanaPos[] = [];
@@ -691,7 +692,9 @@ export class AppComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (pagina) => {
         this.equiposPagina = pagina;
-        this.equipos = pagina.content;
+        const equipos = [...pagina.content];
+        this.equiposPos = equipos.filter((equipo) => (equipo.tipo ?? 'POS_TERMINAL') === 'POS_TERMINAL');
+        this.equiposRed = equipos.filter((equipo) => equipo.tipo === 'NETWORK_LINK');
       },
       error: () => this.error = 'No se pudo cargar el listado de equipos.'
     });

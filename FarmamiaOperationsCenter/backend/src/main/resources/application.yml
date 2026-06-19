@@ -50,3 +50,10 @@ farmamia:
     events-days: ${FARMAMIA_RETENTION_EVENTS_DAYS:90}
     metrics-days: ${FARMAMIA_RETENTION_METRICS_DAYS:30}
     audit-days: ${FARMAMIA_RETENTION_AUDIT_DAYS:365}
+  snmp:
+    enabled: ${FARMAMIA_SNMP_ENABLED:true}
+    community: ${FARMAMIA_SNMP_COMMUNITY:public}
+    port: ${FARMAMIA_SNMP_PORT:161}
+    timeout-ms: ${FARMAMIA_SNMP_TIMEOUT_MS:1500}
+    retries: ${FARMAMIA_SNMP_RETRIES:1}
+    fixed-delay-ms: ${FARMAMIA_SNMP_DELAY_MS:30000}
