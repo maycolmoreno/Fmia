@@ -6,31 +6,19 @@ import { finalize } from 'rxjs';
 import {
   AlertaOperativa,
   AuditoriaAdministrativa,
-  CampanaGrupoTrx,
   CampanaPos,
   DetalleEquipoPos,
   EquipoHuerfano,
   EquipoPos,
-  EstadoDespliegue,
-  EstadoCampanaFarmacia,
   EstadoOperacionalFarmacia,
   EstadoSaludApi,
   EventoAgente,
   GrupoTrx,
-  OleadaOrquestacion,
-  PlanOrquestacion,
   RespuestaPagina,
-  ResumenCampanaGruposTrx,
-  ResumenEstadoCampanaFarmacia,
-  SolicitudCrearDespliegue,
   Farmacia,
-  Despliegue,
   DetalleEquipo,
   Equipo,
   EventoActualizacion,
-  PaquetePos,
-  Sucursal,
-  VersionPos,
   UsuarioAdministrativo
 } from './modelos/modelos-operaciones';
 import { DashboardNocComponent } from './dashboard-noc/dashboard-noc.component';
@@ -47,7 +35,7 @@ import { MapaEcuadorComponent } from './componentes-ui/mapa-ecuador.component';
 import { OperacionesApiService } from './servicios/operaciones-api.service';
 import { SesionAdminService } from './servicios/sesion-admin.service';
 
-type Vista = 'dashboard' | 'turno' | 'incidentes' | 'operaciones' | 'equipos' | 'paquetes' | 'despliegues' | 'actualizaciones' | 'gruposTrx' | 'agentes' | 'red' | 'eventos' | 'alertas' | 'auditoria' | 'seguridad' | 'usuarios';
+type Vista = 'dashboard' | 'turno' | 'incidentes' | 'operaciones' | 'equipos' | 'actualizaciones' | 'gruposTrx' | 'agentes' | 'red' | 'eventos' | 'alertas' | 'auditoria' | 'seguridad' | 'usuarios';
 
 @Component({
   selector: 'app-root',
@@ -80,40 +68,23 @@ export class AppComponent implements OnInit, OnDestroy {
   subTabFarmacias: 'tarjetas' | 'todas' | 'turno' | 'huerfanos' = 'tarjetas';
   subTabAlertas: 'activas' | 'incidentes' | 'red' = 'activas';
   subTabAgentes: 'equipos' | 'eventos' = 'equipos';
-  subTabDespliegues: 'estado' | 'orquestacion' = 'estado';
-  campanaExpandidaId: string | null = null;
-  filtroCampana = { nombre: '', estado: '' };
   salud?: EstadoSaludApi;
   farmacias: Farmacia[] = [];
   estadoFarmacias: EstadoOperacionalFarmacia[] = [];
   equiposPos: EquipoPos[] = [];
   equiposPosPagina?: RespuestaPagina<EquipoPos>;
   equiposHuerfanos: EquipoHuerfano[] = [];
-  versionesPos: VersionPos[] = [];
   campanasPos: CampanaPos[] = [];
   gruposTrx: GrupoTrx[] = [];
   gruposTrxPagina?: RespuestaPagina<GrupoTrx>;
   grupoTrxSeleccionado?: GrupoTrx;
   eventosAgente: EventoAgente[] = [];
-  alertas: AlertaOperativa[] = [];
   alertasDashboard: AlertaOperativa[] = [];
-  alertasPagina?: RespuestaPagina<AlertaOperativa>;
   auditoria: AuditoriaAdministrativa[] = [];
   auditoriaPagina?: RespuestaPagina<AuditoriaAdministrativa>;
   usuariosAdministrativos: UsuarioAdministrativo[] = [];
   detalleEquipoPos?: DetalleEquipoPos;
-  estadoSeleccionado?: EstadoDespliegue;
-  estadoCampanaFarmacia?: ResumenEstadoCampanaFarmacia;
-  campanaEstadoFarmacia?: CampanaPos;
-  farmaciaCampanaSeleccionada?: EstadoCampanaFarmacia;
-  estadoCampanaGruposTrx?: ResumenCampanaGruposTrx;
-  campanaEstadoTrx?: CampanaPos;
-  grupoTrxCampanaSeleccionado?: CampanaGrupoTrx;
-  campanaOrquestacion?: CampanaPos;
-  planOrquestacion?: PlanOrquestacion;
   cargando = false;
-  guardandoPaquete = false;
-  guardandoDespliegue = false;
   guardandoGrupoTrx = false;
   guardandoSeguridad = false;
   guardandoUsuario = false;
@@ -127,36 +98,6 @@ export class AppComponent implements OnInit, OnDestroy {
   loginFormulario = {
     usuario: 'admin',
     contrasena: ''
-  };
-
-  paqueteFormulario = {
-    version: '',
-    archivo: undefined as File | undefined
-  };
-
-  despliegueFormulario = {
-    packageId: '',
-    name: '',
-    description: '',
-    scheduledAt: '',
-    targetGroup: '',
-    pilot: true,
-    deviceIds: '',
-    grupoTrxId: '',
-    ruta: 'C:/Program Files (x86)/Farmamia Cia Ltda - Elipse/Zabyca POS',
-    programa: 'Zabyca.Pos.Desktop.exe',
-    orden: 'DESCARGAR_INSTALAR'
-  };
-
-  estadoCampanaFarmaciaFiltros = {
-    estadoTecnico: '',
-    estadoOperacional: '',
-    grupoTrx: '',
-    deTurno: '' as '' | boolean,
-    q: '',
-    page: 0,
-    size: 20,
-    sort: 'prioridad,asc'
   };
 
   grupoTrxFormulario = {
@@ -182,20 +123,6 @@ export class AppComponent implements OnInit, OnDestroy {
     motivo: ''
   };
 
-  grupoTrxCampanaFormulario = {
-    grupoTrxId: '',
-    motivo: ''
-  };
-
-  orquestacionFormulario = {
-    maxFailurePercent: 10,
-    autoPauseEnabled: true,
-    retryLimit: 2,
-    maxParallelDevices: 25,
-    maintenanceWindowStart: '',
-    maintenanceWindowEnd: ''
-  };
-
   seguridadFormulario = {
     contrasenaActual: '',
     contrasenaNueva: '',
@@ -213,20 +140,6 @@ export class AppComponent implements OnInit, OnDestroy {
     sort: 'creadoEn,desc'
   };
 
-  alertasFiltros = {
-    status: '',
-    severity: '',
-    type: '',
-    hostname: '',
-    branchCode: '',
-    dateFrom: '',
-    dateTo: '',
-    networkEvent: undefined as boolean | undefined,
-    page: 0,
-    size: 20,
-    sort: 'openedAt,desc'
-  };
-
   equiposFiltros = {
     q: '',
     status: '',
@@ -240,12 +153,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   estadosEquipo = ['', 'ONLINE', 'OFFLINE', 'STALE', 'ERROR'];
   estadosGrupoTrx = ['', 'ACTIVO', 'PAUSADO', 'RETIRADO'];
-  estadosTecnicosCampanaFarmacia = ['', 'PENDIENTE', 'EN_PROGRESO', 'COMPLETADA', 'COMPLETADA_CON_FALLOS', 'FALLIDA'];
-  estadosOperacionalesCampanaFarmacia = ['', 'NORMAL', 'EN_RIESGO', 'CRITICA'];
-
-  estadosAlerta = ['', 'OPEN', 'ACKNOWLEDGED', 'RESOLVED', 'CLOSED'];
-  severidadesAlerta = ['', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'WARNING', 'INFO'];
-  tiposAlerta = ['', 'UPDATE_FAILED', 'ROLLBACK_FAILED', 'DEVICE_OFFLINE', 'DISK_LOW', 'AGENT_STOPPED'];
 
   usuarioFormulario = {
     username: '',
@@ -261,18 +168,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   rolesAdministrativos = ['ADMIN', 'OPERATOR', 'AUDITOR', 'VIEWER'];
 
-  equiposSeleccionados = new Set<string>();
   huerfanosSeleccionados = new Set<string>();
   asignacionManualHuerfanos: Record<string, string> = {};
-  campanaAutorizadaTurno = false;
-
-  get sucursales(): Sucursal[] {
-    return this.farmacias;
-  }
-
-  set sucursales(valor: Sucursal[]) {
-    this.farmacias = valor;
-  }
 
   get equipos(): Equipo[] {
     return this.equiposPos;
@@ -288,39 +185,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   set equiposPagina(valor: RespuestaPagina<Equipo> | undefined) {
     this.equiposPosPagina = valor;
-  }
-
-  get paquetes(): PaquetePos[] {
-    return this.versionesPos;
-  }
-
-  set paquetes(valor: PaquetePos[]) {
-    this.versionesPos = valor;
-  }
-
-  get despliegues(): Despliegue[] {
-    return this.campanasPos;
-  }
-
-  set despliegues(valor: Despliegue[]) {
-    this.campanasPos = valor;
-  }
-
-  get desplieguesFiltrados(): Despliegue[] {
-    const nombre = this.filtroCampana.nombre.toLowerCase().trim();
-    const estado = this.filtroCampana.estado;
-    return this.campanasPos.filter(c =>
-      (!nombre || c.name.toLowerCase().includes(nombre) || c.packageVersion.toLowerCase().includes(nombre)) &&
-      (!estado || c.status === estado)
-    );
-  }
-
-  toggleCampanaExpandida(id: string): void {
-    this.campanaExpandidaId = this.campanaExpandidaId === id ? null : id;
-  }
-
-  estadosUnicos(): string[] {
-    return [...new Set(this.campanasPos.map(c => c.status))].sort();
   }
 
   get eventos(): EventoActualizacion[] {
@@ -339,33 +203,11 @@ export class AppComponent implements OnInit, OnDestroy {
     this.detalleEquipoPos = valor;
   }
 
-  get despliegueOrquestacion(): Despliegue | undefined {
-    return this.campanaOrquestacion;
-  }
-
-  set despliegueOrquestacion(valor: Despliegue | undefined) {
-    this.campanaOrquestacion = valor;
-  }
-
-  get desplieguesOperativos(): Despliegue[] {
-    return this.campanasOperativas;
-  }
-
   constructor(
     private readonly api: OperacionesApiService,
     public readonly sesion: SesionAdminService,
     private readonly router: Router
   ) {
-  }
-
-  get paquetesAprobados(): number {
-    return this.versionesPos.filter((version) => version.status === 'APPROVED').length;
-  }
-
-  get desplieguesActivos(): number {
-    return this.campanasPos.filter((campana) =>
-      ['SCHEDULED', 'PILOT_RUNNING', 'APPROVED', 'RUNNING'].includes(campana.status)
-    ).length;
   }
 
   get equiposOnline(): number {
@@ -404,30 +246,12 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.asignacionesHuerfanosResueltas.length > 0 && !this.procesandoHuerfanos;
   }
 
-  get eventosCriticos(): number {
-    return this.eventosAgente.filter((evento) =>
-      ['FAILED', 'VALIDATION_FAILED', 'ROLLBACK_STARTED', 'ROLLBACK_COMPLETED'].includes(evento.eventType)
-    ).length;
-  }
-
   get alertasAbiertas(): number {
     return this.alertasDashboard.filter((alerta) => alerta.status === 'OPEN').length;
   }
 
   get totalEquiposDashboard(): number {
     return this.equiposPos.length;
-  }
-
-  get totalPaquetesDashboard(): number {
-    return this.versionesPos.length;
-  }
-
-  get totalEventosDashboard(): number {
-    return this.eventosAgente.length;
-  }
-
-  get totalAlertasDashboard(): number {
-    return this.alertasDashboard.length;
   }
 
   get alertasCriticasDashboard(): AlertaOperativa[] {
@@ -469,38 +293,6 @@ export class AppComponent implements OnInit, OnDestroy {
       });
   }
 
-  get farmaciasTurnoSeleccionadasCampana(): Farmacia[] {
-    if (this.establecimientosGrupoDespliegue.length > 0) {
-      const codigosSeleccionados = new Set(this.establecimientosGrupoDespliegue.map((establecimiento) => establecimiento.codigo));
-      return this.farmacias
-        .filter((farmacia) => farmacia.onDuty && codigosSeleccionados.has(farmacia.code))
-        .sort((a, b) => a.code.localeCompare(b.code));
-    }
-
-    const idsEquipos = this.idsEquiposFormularioCampana();
-    if (idsEquipos.size === 0) {
-      return [];
-    }
-    const farmaciasPorId = new Map(this.farmacias.map((farmacia) => [farmacia.id, farmacia]));
-    const idsFarmacia = new Set(
-      this.equipos
-        .filter((equipo) => idsEquipos.has(equipo.id))
-        .map((equipo) => equipo.branchId)
-    );
-    return Array.from(idsFarmacia)
-      .map((idFarmacia) => farmaciasPorId.get(idFarmacia))
-      .filter((farmacia): farmacia is Farmacia => !!farmacia && farmacia.onDuty)
-      .sort((a, b) => a.code.localeCompare(b.code));
-  }
-
-  get advertenciaCampanaTurno(): string {
-    const cantidad = this.farmaciasTurnoSeleccionadasCampana.length;
-    if (cantidad === 0) {
-      return '';
-    }
-    return `La campana incluye ${cantidad} farmacias de turno. Revise impacto antes de continuar.`;
-  }
-
   private prioridadEstadoOperacional(estado: string): number {
     if (estado === 'CRITICA') {
       return 0;
@@ -525,51 +317,6 @@ export class AppComponent implements OnInit, OnDestroy {
       return 1;
     }
     return 0;
-  }
-
-  private idsEquiposFormularioCampana(): Set<string> {
-    const idsManuales = this.despliegueFormulario.deviceIds
-      .split(/[\n,;]/)
-      .map((id) => id.trim())
-      .filter(Boolean);
-    return new Set([...Array.from(this.equiposSeleccionados), ...idsManuales]);
-  }
-
-  get grupoTrxDespliegueSeleccionado(): GrupoTrx | undefined {
-    return this.gruposTrx.find((grupo) => grupo.id === this.despliegueFormulario.grupoTrxId);
-  }
-
-  get establecimientosGrupoDespliegue(): Array<{ codigo: string; nombre: string; equipos: number }> {
-    const grupo = this.grupoTrxDespliegueSeleccionado;
-    if (!grupo) {
-      return [];
-    }
-
-    const establecimientos = new Map<string, { codigo: string; nombre: string; equipos: number }>();
-    grupo.devices.forEach((equipo) => {
-      const existente = establecimientos.get(equipo.branchCode);
-      if (existente) {
-        existente.equipos += 1;
-        return;
-      }
-      establecimientos.set(equipo.branchCode, {
-        codigo: equipo.branchCode,
-        nombre: equipo.branchName,
-        equipos: 1
-      });
-    });
-
-    return Array.from(establecimientos.values()).sort((a, b) => a.codigo.localeCompare(b.codigo));
-  }
-
-  get ordenDespliegueTexto(): string {
-    if (this.despliegueFormulario.orden === 'DESCARGAR') {
-      return 'Descargar';
-    }
-    if (this.despliegueFormulario.orden === 'INSTALAR') {
-      return 'Instalar';
-    }
-    return 'Descargar - Instalar';
   }
 
   get totalFarmaciasDashboard(): number {
@@ -692,52 +439,6 @@ export class AppComponent implements OnInit, OnDestroy {
     window.open('http://localhost:3000', '_blank', 'noopener,noreferrer');
   }
 
-  get campanasActivasNoc(): CampanaPos[] {
-    return this.campanasOperativas.slice(0, 8);
-  }
-
-  get gruposTrxRiesgoNoc(): Array<{
-    codigo: string;
-    nombre: string;
-    farmaciasAfectadas: number;
-    farmaciasCriticas: number;
-    farmaciasTurno: number;
-    fallos: number;
-    rollbacks: number;
-    recomendacion: string;
-  }> {
-    const gruposDesdeCampana = this.estadoCampanaGruposTrx?.grupos ?? [];
-    if (gruposDesdeCampana.length > 0) {
-      return gruposDesdeCampana
-        .map((grupo) => ({
-          codigo: grupo.codigoGrupoTrx,
-          nombre: grupo.nombreGrupoTrx,
-          farmaciasAfectadas: grupo.farmaciasAfectadas,
-          farmaciasCriticas: grupo.farmaciasCriticas,
-          farmaciasTurno: grupo.farmaciasTurnoAfectadas,
-          fallos: grupo.equiposPosFallidos,
-          rollbacks: grupo.rollbacks,
-          recomendacion: this.recomendacionGrupoTrxCampana(grupo)
-        }))
-        .filter((grupo) => grupo.recomendacion !== 'CONTINUAR')
-        .slice(0, 8);
-    }
-
-    return this.gruposTrx
-      .filter((grupo) => grupo.status === 'PAUSADO')
-      .map((grupo) => ({
-        codigo: grupo.code,
-        nombre: grupo.name,
-        farmaciasAfectadas: grupo.involvedBranches,
-        farmaciasCriticas: 0,
-        farmaciasTurno: 0,
-        fallos: 0,
-        rollbacks: 0,
-        recomendacion: 'VIGILAR'
-      }))
-      .slice(0, 8);
-  }
-
   get gruposTrxActivos(): number {
     return this.gruposTrx.filter((grupo) => grupo.status === 'ACTIVO').length;
   }
@@ -748,30 +449,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   get gruposTrxTieneSiguiente(): boolean {
     return !!this.gruposTrxPagina?.hasNext;
-  }
-
-  get estadoCampanaFarmaciaTieneSiguiente(): boolean {
-    return !!this.estadoCampanaFarmacia?.hasNext;
-  }
-
-  get oleadasActivas(): number {
-    return this.planOrquestacion?.waves.filter((oleada) => ['RUNNING', 'PAUSED'].includes(oleada.status)).length ?? 0;
-  }
-
-  get progresoOrquestacion(): number {
-    if (!this.planOrquestacion || this.planOrquestacion.waves.length === 0) {
-      return 0;
-    }
-    const total = this.planOrquestacion.waves.reduce((acumulado, oleada) => acumulado + oleada.plannedTargets, 0);
-    if (total === 0) {
-      return 0;
-    }
-    const completados = this.planOrquestacion.waves.reduce((acumulado, oleada) => acumulado + oleada.completedTargets, 0);
-    return Math.round((completados / total) * 100);
-  }
-
-  get alertasTieneSiguiente(): boolean {
-    return this.alertasPagina?.hasNext ?? false;
   }
 
   get auditoriaTieneSiguiente(): boolean {
@@ -847,16 +524,14 @@ export class AppComponent implements OnInit, OnDestroy {
 
   cerrarSesion(): void {
     this.sesion.cerrarSesion();
-    this.paquetes = [];
-    this.despliegues = [];
     this.equipos = [];
-    this.sucursales = [];
+    this.farmacias = [];
     this.estadoFarmacias = [];
+    this.campanasPos = [];
     this.gruposTrx = [];
     this.gruposTrxPagina = undefined;
     this.grupoTrxSeleccionado = undefined;
     this.eventos = [];
-    this.alertas = [];
     this.alertasDashboard = [];
     this.auditoria = [];
     this.usuariosAdministrativos = [];
@@ -948,18 +623,8 @@ export class AppComponent implements OnInit, OnDestroy {
       error: () => this.error = 'No se pudo consultar la salud de la API.'
     });
 
-    this.api.listarPaquetes().subscribe({
-      next: (paquetes) => {
-        this.paquetes = paquetes;
-        if (!this.despliegueFormulario.packageId && paquetes.length > 0) {
-          this.despliegueFormulario.packageId = paquetes[0].id;
-        }
-      },
-      error: () => this.error = 'No se pudo cargar el listado de versiones POS.'
-    });
-
     this.api.listarSucursales().subscribe({
-      next: (sucursales) => this.sucursales = sucursales,
+      next: (sucursales) => this.farmacias = sucursales,
       error: () => this.error = 'No se pudo cargar el listado de farmacias.'
     });
 
@@ -976,21 +641,19 @@ export class AppComponent implements OnInit, OnDestroy {
     this.api.listarDespliegues()
       .pipe(finalize(() => this.cargando = false))
       .subscribe({
-        next: (despliegues) => this.despliegues = despliegues,
+        next: (campanas) => this.campanasPos = campanas,
         error: () => this.error = 'No se pudo cargar el listado de campanas POS.'
       });
 
     if (this.sesion.puedeVerEventosYAlertas()) {
       this.api.listarEventos().subscribe({
-        next: (eventos) => this.eventos = eventos,
+        next: (eventos) => this.eventosAgente = eventos,
         error: () => this.error = 'No se pudo cargar el listado de eventos.'
       });
 
-      this.cargarAlertas();
       this.cargarAlertasDashboard();
     } else {
       this.eventos = [];
-      this.alertas = [];
       this.alertasDashboard = [];
     }
 
@@ -1160,28 +823,6 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     this.grupoTrxFiltros.page = siguiente;
     this.cargarGruposTrx();
-  }
-
-  seleccionarBaseDespliegue(grupoId: string): void {
-    this.despliegueFormulario.grupoTrxId = grupoId;
-    this.equiposSeleccionados.clear();
-
-    if (!grupoId) {
-      this.despliegueFormulario.targetGroup = '';
-      return;
-    }
-
-    const grupoResumen = this.gruposTrx.find((grupo) => grupo.id === grupoId);
-    this.despliegueFormulario.targetGroup = grupoResumen?.code ?? '';
-
-    this.api.obtenerGrupoTrx(grupoId).subscribe({
-      next: (detalle) => {
-        this.gruposTrx = this.gruposTrx.map((grupo) => grupo.id === detalle.id ? detalle : grupo);
-        this.despliegueFormulario.targetGroup = detalle.code;
-        detalle.devices.forEach((equipo) => this.equiposSeleccionados.add(equipo.deviceId));
-      },
-      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo cargar el Grupo TRX seleccionado.'
-    });
   }
 
   seleccionarGrupoTrx(grupo: GrupoTrx): void {
@@ -1357,32 +998,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.cargarEquipos();
   }
 
-  cargarAlertas(): void {
-    if (!this.sesion.puedeVerEventosYAlertas()) {
-      this.alertas = [];
-      return;
-    }
-    this.api.listarAlertasPaginadas({
-      status: this.alertasFiltros.status,
-      severity: this.alertasFiltros.severity,
-      type: this.alertasFiltros.type,
-      hostname: this.alertasFiltros.hostname.trim(),
-      branchCode: this.alertasFiltros.branchCode.trim(),
-      dateFrom: this.normalizarFecha(this.alertasFiltros.dateFrom) ?? undefined,
-      dateTo: this.normalizarFecha(this.alertasFiltros.dateTo) ?? undefined,
-      networkEvent: this.alertasFiltros.networkEvent,
-      page: this.alertasFiltros.page,
-      size: this.alertasFiltros.size,
-      sort: this.alertasFiltros.sort
-    }).subscribe({
-      next: (pagina) => {
-        this.alertasPagina = pagina;
-        this.alertas = pagina.content;
-      },
-      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo cargar el listado de alertas.'
-    });
-  }
-
   cargarAlertasDashboard(): void {
     if (!this.sesion.puedeVerEventosYAlertas()) {
       this.alertasDashboard = [];
@@ -1392,40 +1007,6 @@ export class AppComponent implements OnInit, OnDestroy {
       next: (pagina) => this.alertasDashboard = pagina.content,
       error: () => this.alertasDashboard = []
     });
-  }
-
-  filtrarAlertas(): void {
-    this.alertasFiltros.page = 0;
-    this.cargarAlertas();
-  }
-
-  limpiarFiltrosAlertas(): void {
-    this.alertasFiltros = {
-      status: '',
-      severity: '',
-      type: '',
-      hostname: '',
-      branchCode: '',
-      dateFrom: '',
-      dateTo: '',
-      networkEvent: undefined,
-      page: 0,
-      size: 20,
-      sort: 'openedAt,desc'
-    };
-    this.cargarAlertas();
-  }
-
-  paginaAlertas(delta: number): void {
-    const siguiente = this.alertasFiltros.page + delta;
-    if (siguiente < 0) {
-      return;
-    }
-    if (delta > 0 && !this.alertasTieneSiguiente) {
-      return;
-    }
-    this.alertasFiltros.page = siguiente;
-    this.cargarAlertas();
   }
 
   cargarAuditoria(): void {
@@ -1480,320 +1061,6 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     this.auditoriaFiltros.page = siguiente;
     this.cargarAuditoria();
-  }
-
-  seleccionarArchivo(evento: Event): void {
-    const entrada = evento.target as HTMLInputElement;
-    this.paqueteFormulario.archivo = entrada.files?.[0];
-  }
-
-  cargarPaquete(): void {
-    if (!this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para operar versiones POS.';
-      return;
-    }
-    if (!this.paqueteFormulario.version || !this.paqueteFormulario.archivo) {
-      this.error = 'Selecciona una version y un archivo ZIP.';
-      return;
-    }
-
-    this.guardandoPaquete = true;
-    this.error = '';
-    this.api.cargarPaquete(this.paqueteFormulario.version, this.paqueteFormulario.archivo)
-      .pipe(finalize(() => this.guardandoPaquete = false))
-      .subscribe({
-        next: () => {
-          this.mensaje = 'Version POS cargada y validada.';
-          this.paqueteFormulario = { version: '', archivo: undefined };
-          this.recargarTodo();
-        },
-        error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo cargar la version POS.'
-      });
-  }
-
-  aprobarPaquete(paquete: PaquetePos): void {
-    if (!this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para aprobar versiones POS.';
-      return;
-    }
-    this.api.aprobarPaquete(paquete.id).subscribe({
-      next: () => {
-        this.mensaje = 'Version POS aprobada.';
-        this.recargarTodo();
-      },
-      error: () => this.error = 'No se pudo aprobar la version POS.'
-    });
-  }
-
-  retirarPaquete(paquete: PaquetePos): void {
-    if (!this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para retirar versiones POS.';
-      return;
-    }
-    this.api.retirarPaquete(paquete.id).subscribe({
-      next: () => {
-        this.mensaje = 'Version POS retirada.';
-        this.recargarTodo();
-      },
-      error: () => this.error = 'No se pudo retirar la version POS.'
-    });
-  }
-
-  descargarPaquete(paquete: PaquetePos): void {
-    this.error = '';
-    this.api.descargarPaquete(paquete.id).subscribe({
-      next: (contenido) => {
-        const url = URL.createObjectURL(contenido);
-        const enlace = document.createElement('a');
-        enlace.href = url;
-        enlace.download = paquete.fileName || `farmamia-pos-${paquete.version}.zip`;
-        document.body.appendChild(enlace);
-        enlace.click();
-        enlace.remove();
-        URL.revokeObjectURL(url);
-      },
-      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo descargar la version POS.'
-    });
-  }
-
-  crearDespliegue(): void {
-    if (!this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para crear campanas POS.';
-      return;
-    }
-    const deviceIds = Array.from(this.idsEquiposFormularioCampana());
-    const grupo = this.grupoTrxDespliegueSeleccionado;
-
-    if (!this.despliegueFormulario.packageId || !grupo) {
-      this.error = 'Completa version POS y Base/TRX.';
-      return;
-    }
-    if (!this.despliegueFormulario.ruta || !this.despliegueFormulario.programa) {
-      this.error = 'Completa ruta y programa de ejecucion.';
-      return;
-    }
-    if (this.farmaciasTurnoSeleccionadasCampana.length > 0 && !this.campanaAutorizadaTurno) {
-      this.error = 'Debes autorizar explicitamente la campana sobre farmacias de turno.';
-      return;
-    }
-
-    const nombreCampana = this.despliegueFormulario.name ||
-      `Actualizacion POS ${grupo.code} ${new Date().toLocaleDateString('es-EC')}`;
-    const descripcionOperativa = [
-      `Base: ${grupo.code} - ${grupo.name}`,
-      `Establecimientos: ${this.establecimientosGrupoDespliegue.map((item) => item.codigo).join(', ') || 'N/D'}`,
-      `Ruta: ${this.despliegueFormulario.ruta}`,
-      `Programa: ${this.despliegueFormulario.programa}`,
-      `Orden: ${this.ordenDespliegueTexto}`,
-      this.despliegueFormulario.description?.trim()
-    ].filter(Boolean).join('\n');
-
-    const solicitud: SolicitudCrearDespliegue = {
-      packageId: this.despliegueFormulario.packageId,
-      name: nombreCampana,
-      description: descripcionOperativa || null,
-      scheduledAt: this.normalizarFecha(this.despliegueFormulario.scheduledAt),
-      targetGroup: grupo.code,
-      pilot: this.despliegueFormulario.pilot,
-      deviceIds: deviceIds.length > 0 ? deviceIds : []
-    };
-
-    this.guardandoDespliegue = true;
-    this.error = '';
-    this.api.crearDespliegue(solicitud)
-      .pipe(finalize(() => this.guardandoDespliegue = false))
-      .subscribe({
-        next: () => {
-          this.mensaje = 'Campana POS creada.';
-          this.despliegueFormulario.name = '';
-          this.despliegueFormulario.description = '';
-          this.despliegueFormulario.deviceIds = '';
-          this.despliegueFormulario.grupoTrxId = '';
-          this.despliegueFormulario.targetGroup = '';
-          this.equiposSeleccionados.clear();
-          this.campanaAutorizadaTurno = false;
-          this.recargarTodo();
-        },
-        error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo crear la campana POS.'
-      });
-  }
-
-  alternarEquipo(equipo: Equipo, seleccionado: boolean): void {
-    if (seleccionado) {
-      this.equiposSeleccionados.add(equipo.id);
-      return;
-    }
-    this.equiposSeleccionados.delete(equipo.id);
-  }
-
-  estaSeleccionado(equipo: Equipo): boolean {
-    return this.equiposSeleccionados.has(equipo.id);
-  }
-
-  seleccionarOrquestacion(despliegue: Despliegue): void {
-    this.despliegueOrquestacion = despliegue;
-    this.planOrquestacion = undefined;
-    this.error = '';
-    this.api.obtenerPlanOrquestacion(despliegue.id).subscribe({
-      next: (plan) => this.planOrquestacion = plan,
-      error: (respuesta) => {
-        if (respuesta?.status === 404) {
-          this.mensaje = 'La campana aun no tiene plan de orquestacion.';
-          return;
-        }
-        this.error = respuesta?.error?.message ?? 'No se pudo cargar el plan de orquestacion.';
-      }
-    });
-  }
-
-  planificarOrquestacion(): void {
-    if (!this.despliegueOrquestacion) {
-      this.error = 'Selecciona una campana para planificar.';
-      return;
-    }
-    if (!this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para planificar orquestacion.';
-      return;
-    }
-    this.api.planificarOrquestacion(this.despliegueOrquestacion.id, {
-      maxFailurePercent: this.orquestacionFormulario.maxFailurePercent,
-      autoPauseEnabled: this.orquestacionFormulario.autoPauseEnabled,
-      retryLimit: this.orquestacionFormulario.retryLimit,
-      maxParallelDevices: this.orquestacionFormulario.maxParallelDevices,
-      maintenanceWindowStart: this.orquestacionFormulario.maintenanceWindowStart || null,
-      maintenanceWindowEnd: this.orquestacionFormulario.maintenanceWindowEnd || null
-    }).subscribe({
-      next: (plan) => {
-        this.planOrquestacion = plan;
-        this.mensaje = 'Plan de orquestacion generado.';
-      },
-      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo planificar la orquestacion.'
-    });
-  }
-
-  evaluarOrquestacion(): void {
-    if (!this.despliegueOrquestacion) {
-      return;
-    }
-    this.api.evaluarOrquestacion(this.despliegueOrquestacion.id).subscribe({
-      next: (plan) => this.planOrquestacion = plan,
-      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo evaluar la orquestacion.'
-    });
-  }
-
-  iniciarOleada(oleada: OleadaOrquestacion): void {
-    this.operarOleada(oleada, 'start');
-  }
-
-  pausarOleada(oleada: OleadaOrquestacion): void {
-    this.operarOleada(oleada, 'pause');
-  }
-
-  reanudarOleada(oleada: OleadaOrquestacion): void {
-    this.operarOleada(oleada, 'resume');
-  }
-
-  private operarOleada(oleada: OleadaOrquestacion, accion: 'start' | 'pause' | 'resume'): void {
-    if (!this.despliegueOrquestacion || !this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para operar oleadas.';
-      return;
-    }
-    const operacion = accion === 'pause'
-      ? this.api.pausarOleada(this.despliegueOrquestacion.id, oleada.id)
-      : accion === 'resume'
-        ? this.api.reanudarOleada(this.despliegueOrquestacion.id, oleada.id)
-        : this.api.iniciarOleada(this.despliegueOrquestacion.id, oleada.id);
-
-    operacion.subscribe({
-      next: (plan) => {
-        this.planOrquestacion = plan;
-        this.mensaje = 'Oleada actualizada.';
-      },
-      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo operar la oleada.'
-    });
-  }
-
-  pausar(despliegue: Despliegue): void {
-    if (!this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para pausar campanas POS.';
-      return;
-    }
-    this.api.pausarDespliegue(despliegue.id).subscribe({ next: () => this.recargarTodo() });
-  }
-
-  reanudar(despliegue: Despliegue): void {
-    if (!this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para reanudar campanas POS.';
-      return;
-    }
-    this.api.reanudarDespliegue(despliegue.id).subscribe({ next: () => this.recargarTodo() });
-  }
-
-  cancelar(despliegue: Despliegue): void {
-    if (!this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para cancelar campanas POS.';
-      return;
-    }
-    this.api.cancelarDespliegue(despliegue.id).subscribe({ next: () => this.recargarTodo() });
-  }
-
-  aprobar(despliegue: Despliegue): void {
-    if (!this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para aprobar campanas POS.';
-      return;
-    }
-    this.api.aprobarDespliegue(despliegue.id).subscribe({
-      next: () => { this.mensaje = 'Campana aprobada.'; this.recargarTodo(); },
-      error: (r) => this.error = r?.error?.message ?? 'No se pudo aprobar la campana.'
-    });
-  }
-
-  lanzar(despliegue: Despliegue): void {
-    if (!this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para lanzar campanas POS.';
-      return;
-    }
-    this.api.lanzarDespliegue(despliegue.id).subscribe({
-      next: () => { this.mensaje = 'Campana lanzada.'; this.recargarTodo(); },
-      error: (r) => this.error = r?.error?.message ?? 'No se pudo lanzar la campana.'
-    });
-  }
-
-  expandir(despliegue: Despliegue): void {
-    if (!this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para expandir campanas POS.';
-      return;
-    }
-    this.api.expandirDespliegue(despliegue.id).subscribe({
-      next: () => { this.mensaje = 'Campana expandida al total de equipos.'; this.recargarTodo(); },
-      error: (r) => this.error = r?.error?.message ?? 'No se pudo expandir la campana.'
-    });
-  }
-
-  puedeAprobar(despliegue: Despliegue): boolean {
-    return this.sesion.puedeOperar() && ['DRAFT', 'SCHEDULED'].includes(despliegue.status);
-  }
-
-  puedeLanzar(despliegue: Despliegue): boolean {
-    return this.sesion.puedeOperar() && despliegue.status === 'APPROVED';
-  }
-
-  puedeExpandir(despliegue: Despliegue): boolean {
-    return this.sesion.puedeOperar() && despliegue.status === 'PILOT_RUNNING';
-  }
-
-  puedePausar(despliegue: Despliegue): boolean {
-    return this.sesion.puedeOperar()
-      && ['SCHEDULED', 'APPROVED', 'PILOT_RUNNING', 'RUNNING'].includes(despliegue.status);
-  }
-
-  puedeReanudar(despliegue: Despliegue): boolean {
-    return this.sesion.puedeOperar() && despliegue.status === 'PAUSED';
-  }
-
-  puedeCancelar(despliegue: Despliegue): boolean {
-    return this.sesion.puedeOperar()
-      && !['COMPLETED', 'FAILED', 'CANCELLED'].includes(despliegue.status);
   }
 
   cambiarContrasena(): void {
@@ -1954,261 +1221,6 @@ export class AppComponent implements OnInit, OnDestroy {
       });
   }
 
-  reconocerAlerta(alerta: AlertaOperativa): void {
-    if (!this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para reconocer alertas.';
-      return;
-    }
-    this.api.reconocerAlerta(alerta.id).subscribe({
-      next: () => {
-        this.mensaje = 'Alerta reconocida.';
-        this.cargarAlertas();
-        this.cargarAlertasDashboard();
-        if (this.sesion.puedeVerAuditoria()) {
-          this.cargarAuditoria();
-        }
-      },
-      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo reconocer la alerta.'
-    });
-  }
-
-  cerrarAlerta(alerta: AlertaOperativa): void {
-    if (!this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para cerrar alertas.';
-      return;
-    }
-    if (!confirm(`Cerrar alerta ${alerta.title}?`)) {
-      return;
-    }
-    this.api.cerrarAlerta(alerta.id).subscribe({
-      next: () => {
-        this.mensaje = 'Alerta cerrada.';
-        this.cargarAlertas();
-        this.cargarAlertasDashboard();
-        if (this.sesion.puedeVerAuditoria()) {
-          this.cargarAuditoria();
-        }
-      },
-      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo cerrar la alerta.'
-    });
-  }
-
-  verEstado(despliegue: Despliegue): void {
-    this.api.obtenerEstadoDespliegue(despliegue.id).subscribe({
-      next: (estado) => this.estadoSeleccionado = estado,
-      error: () => this.error = 'No se pudo consultar el estado de la campana POS.'
-    });
-  }
-
-  verEstadoPorFarmacia(despliegue: Despliegue): void {
-    this.campanaEstadoFarmacia = despliegue;
-    this.farmaciaCampanaSeleccionada = undefined;
-    this.estadoCampanaFarmaciaFiltros.page = 0;
-    this.cargarEstadoCampanaPorFarmacia();
-  }
-
-  verEquiposSinActualizar(despliegue: Despliegue): void {
-    this.campanaEstadoFarmacia = despliegue;
-    this.farmaciaCampanaSeleccionada = undefined;
-    this.estadoCampanaFarmaciaFiltros.estadoTecnico = 'FALLIDA';
-    this.estadoCampanaFarmaciaFiltros.page = 0;
-    this.cargarEstadoCampanaPorFarmacia();
-  }
-
-  verEstadoPorTrx(despliegue: Despliegue): void {
-    this.campanaEstadoTrx = despliegue;
-    this.grupoTrxCampanaSeleccionado = undefined;
-    this.cargarEstadoCampanaPorTrx();
-  }
-
-  cargarEstadoCampanaPorTrx(): void {
-    if (!this.campanaEstadoTrx) {
-      this.error = 'Selecciona una campana POS.';
-      return;
-    }
-    this.api.obtenerEstadoCampanaPorTrx(this.campanaEstadoTrx.id).subscribe({
-      next: (estado) => {
-        this.estadoCampanaGruposTrx = estado;
-        this.grupoTrxCampanaSeleccionado = estado.grupos[0];
-      },
-      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo consultar el estado por Grupo TRX.'
-    });
-  }
-
-  asociarGrupoTrxCampana(): void {
-    if (!this.campanaEstadoTrx) {
-      this.error = 'Selecciona una campana POS.';
-      return;
-    }
-    if (!this.grupoTrxCampanaFormulario.grupoTrxId) {
-      this.error = 'Selecciona un Grupo TRX activo.';
-      return;
-    }
-    this.api.asociarGrupoTrxCampana(this.campanaEstadoTrx.id, this.grupoTrxCampanaFormulario.grupoTrxId).subscribe({
-      next: () => {
-        this.mensaje = 'Grupo TRX asociado a la campana POS.';
-        this.grupoTrxCampanaFormulario.grupoTrxId = '';
-        this.cargarEstadoCampanaPorTrx();
-      },
-      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo asociar el Grupo TRX a la campana.'
-    });
-  }
-
-  seleccionarGrupoTrxCampana(grupo: CampanaGrupoTrx): void {
-    this.grupoTrxCampanaSeleccionado = grupo;
-  }
-
-  pausarGrupoTrxCampana(grupo: CampanaGrupoTrx): void {
-    if (!this.campanaEstadoTrx || !this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para pausar Grupo TRX dentro de campana.';
-      return;
-    }
-    this.api.pausarGrupoTrxCampana(this.campanaEstadoTrx.id, grupo.grupoTrxId, this.grupoTrxCampanaFormulario.motivo).subscribe({
-      next: () => {
-        this.mensaje = 'Grupo TRX pausado dentro de la campana.';
-        this.cargarEstadoCampanaPorTrx();
-      },
-      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo pausar el Grupo TRX de la campana.'
-    });
-  }
-
-  reanudarGrupoTrxCampana(grupo: CampanaGrupoTrx): void {
-    if (!this.campanaEstadoTrx || !this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para reanudar Grupo TRX dentro de campana.';
-      return;
-    }
-    this.api.reanudarGrupoTrxCampana(this.campanaEstadoTrx.id, grupo.grupoTrxId, this.grupoTrxCampanaFormulario.motivo).subscribe({
-      next: () => {
-        this.mensaje = 'Grupo TRX reanudado dentro de la campana.';
-        this.cargarEstadoCampanaPorTrx();
-      },
-      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo reanudar el Grupo TRX de la campana.'
-    });
-  }
-
-  quitarGrupoTrxCampana(grupo: CampanaGrupoTrx): void {
-    if (!this.campanaEstadoTrx || !this.sesion.puedeOperar()) {
-      this.error = 'No tienes permiso para quitar Grupo TRX de la campana.';
-      return;
-    }
-    this.api.quitarGrupoTrxCampana(this.campanaEstadoTrx.id, grupo.grupoTrxId, this.grupoTrxCampanaFormulario.motivo).subscribe({
-      next: () => {
-        this.mensaje = 'Grupo TRX quitado de la campana POS.';
-        this.cargarEstadoCampanaPorTrx();
-      },
-      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo quitar el Grupo TRX de la campana.'
-    });
-  }
-
-  recomendacionGrupoTrxCampana(grupo: CampanaGrupoTrx): string {
-    if (grupo.estado === 'PAUSADO') {
-      return 'VIGILAR';
-    }
-    if (grupo.farmaciasCriticas > 0 || grupo.farmaciasTurnoAfectadas > 0 || grupo.equiposPosFallidos > 0) {
-      return 'PAUSAR';
-    }
-    if (grupo.farmaciasPendientes > 0 || grupo.rollbacks > 0) {
-      return 'MONITOREAR';
-    }
-    return 'CONTINUAR';
-  }
-
-  farmaciasAfectadasCampana(campana: CampanaPos): number {
-    const porNombre = this.estadoFarmacias.filter((farmacia) => farmacia.campanaActivaPrincipal === campana.name).length;
-    return porNombre || Math.max(0, Math.ceil((campana.targetCount || 0) / 3));
-  }
-
-  farmaciasCriticasCampana(campana: CampanaPos): number {
-    return this.estadoFarmacias.filter((farmacia) =>
-      farmacia.campanaActivaPrincipal === campana.name && farmacia.critica
-    ).length;
-  }
-
-  farmaciasTurnoCampana(campana: CampanaPos): number {
-    return this.estadoFarmacias.filter((farmacia) =>
-      farmacia.campanaActivaPrincipal === campana.name && farmacia.deTurno
-    ).length;
-  }
-
-  grupoTrxCampana(campana: CampanaPos): string {
-    const grupos = this.estadoFarmacias
-      .filter((farmacia) => farmacia.campanaActivaPrincipal === campana.name && !!farmacia.grupoTrxPrincipal)
-      .map((farmacia) => farmacia.grupoTrxPrincipal as string);
-    return Array.from(new Set(grupos)).slice(0, 2).join(', ') || 'GENERAL';
-  }
-
-  cargarEstadoCampanaPorFarmacia(): void {
-    if (!this.campanaEstadoFarmacia) {
-      this.error = 'Selecciona una campana POS.';
-      return;
-    }
-    this.api.obtenerEstadoCampanaPorFarmacia(this.campanaEstadoFarmacia.id, {
-      estadoTecnico: this.estadoCampanaFarmaciaFiltros.estadoTecnico,
-      estadoOperacional: this.estadoCampanaFarmaciaFiltros.estadoOperacional,
-      grupoTrx: this.estadoCampanaFarmaciaFiltros.grupoTrx.trim(),
-      deTurno: this.estadoCampanaFarmaciaFiltros.deTurno,
-      q: this.estadoCampanaFarmaciaFiltros.q.trim(),
-      page: this.estadoCampanaFarmaciaFiltros.page,
-      size: this.estadoCampanaFarmaciaFiltros.size,
-      sort: this.estadoCampanaFarmaciaFiltros.sort
-    }).subscribe({
-      next: (estado) => {
-        this.estadoCampanaFarmacia = estado;
-        this.farmaciaCampanaSeleccionada = estado.farmacias[0];
-      },
-      error: (respuesta) => this.error = respuesta?.error?.message ?? 'No se pudo consultar el estado por farmacia.'
-    });
-  }
-
-  filtrarEstadoCampanaPorFarmacia(): void {
-    this.estadoCampanaFarmaciaFiltros.page = 0;
-    this.cargarEstadoCampanaPorFarmacia();
-  }
-
-  limpiarFiltrosEstadoCampanaPorFarmacia(): void {
-    this.estadoCampanaFarmaciaFiltros = {
-      estadoTecnico: '',
-      estadoOperacional: '',
-      grupoTrx: '',
-      deTurno: '',
-      q: '',
-      page: 0,
-      size: 20,
-      sort: 'prioridad,asc'
-    };
-    this.cargarEstadoCampanaPorFarmacia();
-  }
-
-  paginaEstadoCampanaPorFarmacia(delta: number): void {
-    const siguiente = this.estadoCampanaFarmaciaFiltros.page + delta;
-    if (siguiente < 0) {
-      return;
-    }
-    if (delta > 0 && !this.estadoCampanaFarmaciaTieneSiguiente) {
-      return;
-    }
-    this.estadoCampanaFarmaciaFiltros.page = siguiente;
-    this.cargarEstadoCampanaPorFarmacia();
-  }
-
-  seleccionarFarmaciaCampana(farmacia: EstadoCampanaFarmacia): void {
-    this.farmaciaCampanaSeleccionada = farmacia;
-  }
-
-  descargar(paquete: PaquetePos): string {
-    return this.api.urlAbsoluta(paquete.downloadUrl);
-  }
-
-  formatoBytes(bytes: number): string {
-    if (bytes < 1024) {
-      return `${bytes} B`;
-    }
-    if (bytes < 1024 * 1024) {
-      return `${(bytes / 1024).toFixed(1)} KB`;
-    }
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-  }
-
   porcentajeDisco(metrica?: { diskFreeMb?: number | null; diskTotalMb?: number | null } | null): number {
     if (!metrica?.diskFreeMb || !metrica.diskTotalMb) {
       return 0;
@@ -2235,10 +1247,6 @@ export class AppComponent implements OnInit, OnDestroy {
     return entradas
       .map(([clave, valor]) => `${clave}: ${String(valor)}`)
       .join(' | ');
-  }
-
-  objetivoEstados(): Array<[string, number]> {
-    return Object.entries(this.estadoSeleccionado?.targetsByStatus ?? {});
   }
 
   private normalizarFecha(valor: string): string | null {
