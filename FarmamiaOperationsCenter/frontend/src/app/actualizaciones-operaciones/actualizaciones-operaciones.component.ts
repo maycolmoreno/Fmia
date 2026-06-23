@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import {
@@ -22,6 +22,9 @@ import { SesionAdminService } from '../servicios/sesion-admin.service';
   styleUrl: './actualizaciones-operaciones.component.css'
 })
 export class ActualizacionesOperacionesComponent implements OnInit {
+  /** Mapa de progreso SSE keyed por idEquipo, compartido desde AppComponent. */
+  @Input() progresoDescarga: Map<string, number> = new Map();
+
   tab: 'versiones' | 'monitor' = 'versiones';
   paquetes: PaquetePos[] = [];
   despliegues: Despliegue[] = [];
@@ -56,6 +59,18 @@ export class ActualizacionesOperacionesComponent implements OnInit {
     maintenanceWindowStart: '',
     maintenanceWindowEnd: ''
   };
+
+  /** Número de equipos reportando descarga activa (desde el estado de la campaña). */
+  get equiposDescargando(): number {
+    return this.estadoSeleccionado?.targetsByStatus?.['DOWNLOADING'] ?? 0;
+  }
+
+  /** Progreso promedio de todos los equipos que están descargando ahora mismo. */
+  get progresoPromedioDescarga(): number {
+    if (this.progresoDescarga.size === 0) return 0;
+    const valores = [...this.progresoDescarga.values()];
+    return valores.reduce((s, v) => s + v, 0) / valores.length;
+  }
 
   constructor(
     private readonly api: OperacionesApiService,

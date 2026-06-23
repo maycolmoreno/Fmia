@@ -135,6 +135,19 @@
             <div><span>Pendientes</span><strong>{{ estadoSeleccionado.pendingTargets }}</strong></div>
           </div>
 
+          @if (equiposDescargando > 0) {
+            <div class="descarga-activa">
+              <div class="descarga-activa__cabecera">
+                <span class="descarga-activa__icono" aria-hidden="true">↓</span>
+                <span><strong>{{ equiposDescargando }}</strong> equipo{{ equiposDescargando !== 1 ? 's' : '' }} descargando</span>
+                <span class="descarga-activa__pct">{{ progresoPromedioDescarga | number:'1.0-0' }}% prom.</span>
+              </div>
+              <div class="barra barra--descargando">
+                <span [style.width.%]="progresoPromedioDescarga"></span>
+              </div>
+            </div>
+          }
+
           <div class="orquestacion-form" *ngIf="sesion.puedeOperar()">
             <input type="number" min="0" max="100" [(ngModel)]="orquestacionFormulario.maxFailurePercent" aria-label="Fallo maximo">
             <input type="number" min="0" max="10" [(ngModel)]="orquestacionFormulario.retryLimit" aria-label="Reintentos">

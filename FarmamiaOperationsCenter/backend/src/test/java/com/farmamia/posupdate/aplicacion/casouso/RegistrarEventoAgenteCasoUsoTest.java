@@ -319,6 +319,11 @@ class RegistrarEventoAgenteCasoUsoTest {
             this.resultadoRegistrado = resultado;
             this.vecesResultadoRegistrado++;
         }
+
+        @Override
+        public void actualizarProgresoDescarga(UUID idObjetivoDespliegue, UUID idEquipo, java.math.BigDecimal porcentaje) {
+            // no-op en pruebas
+        }
     }
 
     private static final class RepositorioEventosEnMemoria implements RepositorioEventosActualizacion {

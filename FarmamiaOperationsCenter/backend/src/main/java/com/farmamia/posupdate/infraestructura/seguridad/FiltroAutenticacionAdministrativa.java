@@ -34,8 +34,13 @@ public class FiltroAutenticacionAdministrativa extends OncePerRequestFilter {
         "/api/grupos-trx",
         "/api/alerts",
         "/api/audit-logs",
-        "/api/admin"
+        "/api/admin",
+        "/api/noc"
     );
+
+    // EventSource del browser no puede enviar headers; aceptamos el token por query param
+    // solo para el canal SSE del panel NOC.
+    private static final String RUTA_SSE_NOC = "/api/noc/stream";
 
     private final ServicioJwtAdministrativo servicioJwtAdministrativo;
     private final ServicioAutenticacionAgente servicioAutenticacionAgente;
@@ -59,13 +64,11 @@ public class FiltroAutenticacionAdministrativa extends OncePerRequestFilter {
             return;
         }
 
-        String autorizacion = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (autorizacion == null || !autorizacion.startsWith(PREFIJO_BEARER)) {
+        String token = extraerToken(request);
+        if (token == null) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing admin bearer token");
             return;
         }
-
-        String token = autorizacion.substring(PREFIJO_BEARER.length());
 
         try {
             if (esDescargaPaquete(request) && servicioAutenticacionAgente.validarToken(token)) {
@@ -95,6 +98,19 @@ public class FiltroAutenticacionAdministrativa extends OncePerRequestFilter {
 
         String ruta = request.getRequestURI();
         return PREFIJOS_ADMIN.stream().anyMatch(ruta::startsWith);
+    }
+
+    private String extraerToken(HttpServletRequest request) {
+        // Ruta SSE: el browser no puede enviar headers, usa ?token=
+        if (RUTA_SSE_NOC.equals(request.getRequestURI())) {
+            String queryToken = request.getParameter("token");
+            return (queryToken != null && !queryToken.isBlank()) ? queryToken : null;
+        }
+        String autorizacion = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (autorizacion != null && autorizacion.startsWith(PREFIJO_BEARER)) {
+            return autorizacion.substring(PREFIJO_BEARER.length());
+        }
+        return null;
     }
 
     private boolean esDescargaPaquete(HttpServletRequest request) {

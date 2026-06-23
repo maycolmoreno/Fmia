@@ -5,6 +5,7 @@ import com.farmamia.posupdate.dominio.modelo.ResultadoActualizacion;
 import com.farmamia.posupdate.dominio.puerto.RepositorioObjetivosDespliegue;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.ObjetivoDespliegueEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.ObjetivoDespliegueRepositorioJpa;
+import java.math.BigDecimal;
 import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
@@ -33,6 +34,12 @@ public class RepositorioObjetivosDespliegueJpaAdaptador implements RepositorioOb
             resultado.versionNueva(),
             resultado.mensaje()
         );
+    }
+
+    @Override
+    public void actualizarProgresoDescarga(UUID idObjetivoDespliegue, UUID idEquipo, BigDecimal porcentaje) {
+        ObjetivoDespliegueEntidad objetivo = buscarObjetivo(idObjetivoDespliegue, idEquipo);
+        objetivo.registrarProgresoDescarga(porcentaje);
     }
 
     private ObjetivoDespliegueEntidad buscarObjetivo(UUID idObjetivoDespliegue, UUID idEquipo) {

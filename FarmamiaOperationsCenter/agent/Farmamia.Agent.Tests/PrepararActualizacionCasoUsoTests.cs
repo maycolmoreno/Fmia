@@ -263,7 +263,7 @@ public sealed class PrepararActualizacionCasoUsoTests : IDisposable
             return Task.FromResult<InstruccionActualizacion?>(Instruccion);
         }
 
-        public Task<Stream> DescargarPaqueteAsync(CredencialesAgente credenciales, string urlDescarga, CancellationToken cancellationToken)
+        public Task<Stream> DescargarPaqueteAsync(CredencialesAgente credenciales, string urlDescarga, Guid idObjetivoDespliegue, CancellationToken cancellationToken)
         {
             IntentosDescarga++;
             if (IntentosDescarga <= FallosDescargaAntesDeExito)

@@ -444,6 +444,7 @@ public sealed class PrepararActualizacionCasoUso
                 await using Stream paquete = await clienteOperaciones.DescargarPaqueteAsync(
                     credenciales,
                     instruccion.UrlDescarga!,
+                    instruccion.IdObjetivoDespliegue ?? Guid.Empty,
                     cancellationToken
                 );
                 ArchivoPaqueteLocal archivo = await almacenamientoPaquetes.GuardarAsync(

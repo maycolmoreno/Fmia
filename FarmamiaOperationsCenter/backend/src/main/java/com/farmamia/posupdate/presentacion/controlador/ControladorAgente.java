@@ -14,8 +14,11 @@ import com.farmamia.posupdate.infraestructura.observabilidad.MetricasOperativasF
 import com.farmamia.posupdate.infraestructura.sse.CanalSseAgentes;
 import com.farmamia.posupdate.presentacion.dto.RespuestaInstruccionAgente;
 import com.farmamia.posupdate.presentacion.dto.RespuestaRegistroAgente;
+import com.farmamia.posupdate.dominio.puerto.RepositorioObjetivosDespliegue;
+import com.farmamia.posupdate.infraestructura.sse.CanalSseNoc;
 import com.farmamia.posupdate.presentacion.dto.SolicitudEventoAgente;
 import com.farmamia.posupdate.presentacion.dto.SolicitudLatido;
+import com.farmamia.posupdate.presentacion.dto.SolicitudProgresoDescarga;
 import com.farmamia.posupdate.presentacion.dto.SolicitudRegistroAgente;
 import com.farmamia.posupdate.presentacion.dto.SolicitudResultadoActualizacion;
 import jakarta.validation.Valid;
@@ -42,6 +45,8 @@ public class ControladorAgente {
     private final RegistrarEventoAgenteCasoUso registrarEventoAgenteCasoUso;
     private final MetricasOperativasFarmamia metricasOperativas;
     private final CanalSseAgentes canalSseAgentes;
+    private final RepositorioObjetivosDespliegue repositorioObjetivosDespliegue;
+    private final CanalSseNoc canalSseNoc;
 
     public ControladorAgente(
         RegistrarAgenteCasoUso registrarAgenteCasoUso,
@@ -49,7 +54,9 @@ public class ControladorAgente {
         ConsultarInstruccionesAgenteCasoUso consultarInstruccionesAgenteCasoUso,
         RegistrarEventoAgenteCasoUso registrarEventoAgenteCasoUso,
         MetricasOperativasFarmamia metricasOperativas,
-        CanalSseAgentes canalSseAgentes
+        CanalSseAgentes canalSseAgentes,
+        RepositorioObjetivosDespliegue repositorioObjetivosDespliegue,
+        CanalSseNoc canalSseNoc
     ) {
         this.registrarAgenteCasoUso = registrarAgenteCasoUso;
         this.registrarLatidoCasoUso = registrarLatidoCasoUso;
@@ -57,6 +64,8 @@ public class ControladorAgente {
         this.registrarEventoAgenteCasoUso = registrarEventoAgenteCasoUso;
         this.metricasOperativas = metricasOperativas;
         this.canalSseAgentes = canalSseAgentes;
+        this.repositorioObjetivosDespliegue = repositorioObjetivosDespliegue;
+        this.canalSseNoc = canalSseNoc;
     }
 
     @PostMapping("/register")
@@ -120,6 +129,21 @@ public class ControladorAgente {
             solicitud.metadatos()
         ));
         metricasOperativas.registrarEventoAgente(solicitud.tipoEvento());
+    }
+
+    @PostMapping("/{idEquipo}/download-progress")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @jakarta.transaction.Transactional
+    public void registrarProgresoDescarga(
+        @PathVariable UUID idEquipo,
+        @Valid @RequestBody SolicitudProgresoDescarga solicitud
+    ) {
+        repositorioObjetivosDespliegue.actualizarProgresoDescarga(
+            solicitud.idObjetivoDespliegue(),
+            idEquipo,
+            solicitud.progreso()
+        );
+        canalSseNoc.emitirProgresoDescarga(solicitud.idObjetivoDespliegue(), idEquipo, solicitud.progreso());
     }
 
     @PostMapping("/{idEquipo}/update-result")

@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -74,6 +75,9 @@ public class ObjetivoDespliegueEntidad {
 
     @Column(name = "next_retry_at")
     private OffsetDateTime siguienteReintentoEn;
+
+    @Column(name = "download_progress", precision = 5, scale = 2)
+    private BigDecimal progresoDescarga;
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
@@ -171,6 +175,15 @@ public class ObjetivoDespliegueEntidad {
 
     public boolean estaAutorizado() {
         return "AUTHORIZED".equals(estado);
+    }
+
+    public BigDecimal getProgresoDescarga() {
+        return progresoDescarga;
+    }
+
+    public void registrarProgresoDescarga(BigDecimal porcentaje) {
+        if (porcentaje == null) return;
+        this.progresoDescarga = porcentaje.max(BigDecimal.ZERO).min(BigDecimal.valueOf(100));
     }
 
     public void asignarOleada(OleadaDespliegueEntidad oleada) {

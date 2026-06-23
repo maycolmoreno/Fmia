@@ -568,12 +568,24 @@
           <section>
             <h3>Campanas POS asociadas</h3>
             <div class="lista-compacta">
-              <div class="fila-compacta" *ngFor="let objetivo of detalleEquipo.deployments">
-                <div>
+              <div class="fila-compacta fila-objetivo" *ngFor="let objetivo of detalleEquipo.deployments">
+                <div class="objetivo-info">
                   <strong>{{ objetivo.deploymentName }}</strong>
                   <small>{{ objetivo.packageVersion }} | {{ objetivo.updatedAt | date:'short' }}</small>
                 </div>
-                <app-status-badge [status]="objetivo.targetStatus"></app-status-badge>
+
+                @if (objetivo.targetStatus === 'DOWNLOADING') {
+                  <div class="objetivo-progreso">
+                    <div class="progreso-barra">
+                      <div class="progreso-fill progreso-fill--descargando"
+                           [style.width.%]="progresoDescarga.get(detalleEquipo.device.id) ?? 0">
+                      </div>
+                    </div>
+                    <span class="progreso-pct">{{ (progresoDescarga.get(detalleEquipo.device.id) ?? 0) | number:'1.0-0' }}%</span>
+                  </div>
+                } @else {
+                  <app-status-badge [status]="objetivo.targetStatus"></app-status-badge>
+                }
               </div>
               <p class="vacio" *ngIf="detalleEquipo.deployments.length === 0">Sin campanas POS asociadas.</p>
             </div>
@@ -661,7 +673,10 @@
       </article>
     </section>
 
-    <app-actualizaciones-operaciones *ngIf="vistaActiva === 'actualizaciones'"></app-actualizaciones-operaciones>
+    <app-actualizaciones-operaciones
+      *ngIf="vistaActiva === 'actualizaciones'"
+      [progresoDescarga]="progresoDescarga">
+    </app-actualizaciones-operaciones>
 
     <section class="vista" *ngIf="vistaActiva === 'gruposTrx'">
       <div class="metricas metricas-operaciones">

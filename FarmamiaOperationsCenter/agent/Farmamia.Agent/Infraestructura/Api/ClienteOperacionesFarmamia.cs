@@ -119,6 +119,7 @@ public sealed class ClienteOperacionesFarmamia : IClienteOperacionesFarmamia
     public async Task<Stream> DescargarPaqueteAsync(
         CredencialesAgente credenciales,
         string urlDescarga,
+        Guid idObjetivoDespliegue,
         CancellationToken cancellationToken
     )
     {
@@ -132,11 +133,65 @@ public sealed class ClienteOperacionesFarmamia : IClienteOperacionesFarmamia
         );
         respuesta.EnsureSuccessStatusCode();
 
+        long totalBytes = respuesta.Content.Headers.ContentLength ?? -1;
         await using Stream remoto = await respuesta.Content.ReadAsStreamAsync(cancellationToken);
-        var memoria = new MemoryStream();
-        await remoto.CopyToAsync(memoria, cancellationToken);
+        var memoria = new MemoryStream(totalBytes > 0 ? (int)totalBytes : 0);
+
+        var buffer = new byte[81_920];
+        long bytesLeidos = 0;
+        int umbralSiguiente = 10; // reportar en 10%, 20%, ..., 100%
+        int leido;
+
+        while ((leido = await remoto.ReadAsync(buffer, cancellationToken)) > 0)
+        {
+            await memoria.WriteAsync(buffer.AsMemory(0, leido), cancellationToken);
+            bytesLeidos += leido;
+
+            if (totalBytes > 0)
+            {
+                double porcentaje = (double)bytesLeidos / totalBytes * 100.0;
+                if (porcentaje >= umbralSiguiente)
+                {
+                    umbralSiguiente = (int)(Math.Floor(porcentaje / 10) + 1) * 10;
+                    // fire-and-forget: el progreso es best-effort, no bloquea la descarga
+                    _ = ReportarProgresoDescargaInternoAsync(
+                        credenciales, idObjetivoDespliegue,
+                        Math.Min(porcentaje, 100.0), cancellationToken);
+                }
+            }
+        }
+
         memoria.Position = 0;
         return memoria;
+    }
+
+    private async Task ReportarProgresoDescargaInternoAsync(
+        CredencialesAgente credenciales,
+        Guid idObjetivoDespliegue,
+        double porcentaje,
+        CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            using var solicitud = new HttpRequestMessage(
+                HttpMethod.Post,
+                $"/api/agent/{credenciales.IdEquipo}/download-progress"
+            )
+            {
+                Content = JsonContent.Create(new
+                {
+                    idObjetivoDespliegue,
+                    progreso = Math.Round(porcentaje, 2)
+                })
+            };
+            solicitud.Headers.Authorization = new AuthenticationHeaderValue("Bearer", credenciales.TokenAgente);
+            using HttpResponseMessage _ = await httpClient.SendAsync(solicitud, cancellationToken);
+        }
+        catch
+        {
+            // El progreso es informativo; si falla el POST no debe interrumpir la descarga
+        }
     }
 
     public async Task ReportarEventoAsync(

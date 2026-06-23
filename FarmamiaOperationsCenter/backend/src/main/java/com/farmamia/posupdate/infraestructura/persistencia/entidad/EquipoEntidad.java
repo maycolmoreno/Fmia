@@ -43,6 +43,9 @@ public class EquipoEntidad {
     @Column(name = "snmp_community", length = 120)
     private String comunidadSnmp;
 
+    @Column(name = "snmp_if_index", nullable = false)
+    private int snmpIfIndex = 2;
+
     @Column(name = "mac_address", unique = true, length = 32)
     private String direccionMac;
 
@@ -107,6 +110,14 @@ public class EquipoEntidad {
 
     public String getComunidadSnmp() {
         return comunidadSnmp;
+    }
+
+    public int getSnmpIfIndex() {
+        return snmpIfIndex;
+    }
+
+    public void setSnmpIfIndex(int snmpIfIndex) {
+        this.snmpIfIndex = snmpIfIndex;
     }
 
     public String getDireccionMac() {

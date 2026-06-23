@@ -55,10 +55,11 @@ public sealed class ClienteOperacionesFarmamiaConCola : IClienteOperacionesFarma
     public Task<Stream> DescargarPaqueteAsync(
         CredencialesAgente credenciales,
         string urlDescarga,
+        Guid idObjetivoDespliegue,
         CancellationToken cancellationToken
     )
     {
-        return clienteRemoto.DescargarPaqueteAsync(credenciales, urlDescarga, cancellationToken);
+        return clienteRemoto.DescargarPaqueteAsync(credenciales, urlDescarga, idObjetivoDespliegue, cancellationToken);
     }
 
     public async Task ReportarEventoAsync(

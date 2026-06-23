@@ -10,7 +10,7 @@ public interface IClienteOperacionesFarmamia
 
     Task<InstruccionActualizacion?> ConsultarInstruccionAsync(CredencialesAgente credenciales, CancellationToken cancellationToken);
 
-    Task<Stream> DescargarPaqueteAsync(CredencialesAgente credenciales, string urlDescarga, CancellationToken cancellationToken);
+    Task<Stream> DescargarPaqueteAsync(CredencialesAgente credenciales, string urlDescarga, Guid idObjetivoDespliegue, CancellationToken cancellationToken);
 
     Task ReportarEventoAsync(CredencialesAgente credenciales, EventoAgente evento, CancellationToken cancellationToken);
 

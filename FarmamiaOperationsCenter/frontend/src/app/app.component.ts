@@ -65,6 +65,9 @@ export class AppComponent implements OnInit, OnDestroy {
   horaActual = '';
   panelDerecho = false;
   private intervalReloj?: ReturnType<typeof setInterval>;
+  private canalNoc?: EventSource;
+  /** Progreso de descarga en curso por idEquipo (0–100). Se limpia al recargar campañas. */
+  progresoDescarga = new Map<string, number>();
   subTabFarmacias: 'tarjetas' | 'todas' | 'turno' | 'huerfanos' = 'tarjetas';
   subTabAlertas: 'activas' | 'incidentes' | 'red' = 'activas';
   subTabAgentes: 'equipos' | 'eventos' = 'equipos';
@@ -478,6 +481,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.router.navigate(['/operaciones']);
       this.vistaActiva = 'dashboard';
       this.recargarTodo();
+      this.conectarCanalNoc();
       return;
     }
     this.router.navigate(['/login']);
@@ -485,6 +489,38 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.intervalReloj) clearInterval(this.intervalReloj);
+    this.desconectarCanalNoc();
+  }
+
+  private conectarCanalNoc(): void {
+    this.desconectarCanalNoc();
+    const token = this.sesion.token();
+    if (!token) return;
+
+    const sesionId = crypto.randomUUID();
+    this.canalNoc = new EventSource(`/api/noc/stream?sesion=${sesionId}&token=${encodeURIComponent(token)}`);
+
+    this.canalNoc.addEventListener('progreso_descarga', (e: MessageEvent) => {
+      try {
+        const datos = JSON.parse(e.data) as { idEquipo: string; progreso: number };
+        this.progresoDescarga.set(datos.idEquipo, datos.progreso);
+      } catch {
+        // payload malformado — ignorar
+      }
+    });
+
+    this.canalNoc.onerror = () => {
+      // El browser reconecta automáticamente (EventSource built-in retry).
+      // Solo cerramos si la sesión ya expiró.
+      if (!this.sesion.autenticado()) {
+        this.desconectarCanalNoc();
+      }
+    };
+  }
+
+  private desconectarCanalNoc(): void {
+    this.canalNoc?.close();
+    this.canalNoc = undefined;
   }
 
   togglePanel(): void {
@@ -515,6 +551,7 @@ export class AppComponent implements OnInit, OnDestroy {
           this.router.navigate(['/operaciones']);
           this.vistaActiva = 'dashboard';
           this.recargarTodo();
+          this.conectarCanalNoc();
         },
         error: (respuesta) => {
           const estado = respuesta?.status ? ` HTTP ${respuesta.status}` : '';
@@ -524,6 +561,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   cerrarSesion(): void {
+    this.desconectarCanalNoc();
+    this.progresoDescarga.clear();
     this.sesion.cerrarSesion();
     this.equipos = [];
     this.farmacias = [];
