@@ -4,7 +4,6 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ContadoresEnlaces, EstadoOperacionalFarmacia, ResumenNocDashboard } from '../modelos/modelos-operaciones';
 import { NocDashboardService } from '../servicios/noc-dashboard.service';
-import { NocZonaAlertasComponent } from './zonas/noc-zona-alertas.component';
 import { NocZonaCampanaComponent } from './zonas/noc-zona-campana.component';
 import { NocZonaCriticoComponent } from './zonas/noc-zona-critico.component';
 import { NocZonaPosComponent } from './zonas/noc-zona-pos.component';
@@ -22,7 +21,6 @@ import { KpiCardComponent } from '../componentes-ui/kpi-card.component';
     NocZonaRedComponent,
     NocZonaPosComponent,
     NocZonaCampanaComponent,
-    NocZonaAlertasComponent,
     KpiCardComponent
   ],
   templateUrl: './dashboard-noc.component.html',
@@ -44,8 +42,6 @@ export class DashboardNocComponent implements OnInit, OnDestroy {
   constructor(readonly nocService: NocDashboardService) {}
 
   ngOnInit(): void {
-    this.nocService.iniciarRefresco();
-
     this.nocService.resumen$.pipe(takeUntil(this.destroy$)).subscribe(r => {
       this.resumen = r;
     });
@@ -58,19 +54,12 @@ export class DashboardNocComponent implements OnInit, OnDestroy {
     this.nocService.contadoresEnlaces$.pipe(takeUntil(this.destroy$)).subscribe(contadores => {
       this.contadoresEnlaces = contadores;
     });
-    // El servicio refresca el estado operacional de farmacias en el mismo ciclo de 30 s;
-    // mantiene fresco el panel de detalle, los badges de campana y el filtro de turno.
-    this.nocService.estadoFarmacias$.pipe(takeUntil(this.destroy$)).subscribe(farmacias => {
-      if (farmacias.length > 0) {
-        this.estadoFarmacias = farmacias;
-      }
-    });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    this.nocService.detenerRefresco();
+    // El ciclo de polling lo gestiona app.component; no lo detenemos aquí.
   }
 
   seleccionarFarmaciaDetalleNoc(codigo: string): void {

@@ -10,7 +10,7 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
-          - localhost:8081
+          - host.docker.internal:8081
         labels:
           service: centro-operaciones-api
           environment: piloto

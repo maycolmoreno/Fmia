@@ -189,9 +189,19 @@
   padding: 7px 12px;
 }
 
+.noc-zonas-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 @media (max-width: 980px) {
   .noc-resumen-grid,
   .noc-contexto {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .noc-zonas-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -202,7 +212,8 @@
   }
 
   .noc-resumen-grid,
-  .noc-contexto {
+  .noc-contexto,
+  .noc-zonas-grid {
     grid-template-columns: 1fr;
   }
 }

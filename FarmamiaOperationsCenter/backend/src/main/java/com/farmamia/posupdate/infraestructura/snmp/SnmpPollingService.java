@@ -66,6 +66,7 @@ public class SnmpPollingService {
     private final Map<UUID, Integer> lecturasCpuAltas = new ConcurrentHashMap<>();
     private final Map<UUID, Boolean> alertaCpuEmitida = new ConcurrentHashMap<>();
     private final Map<UUID, Boolean> alertaRamEmitida = new ConcurrentHashMap<>();
+    private final Map<UUID, Boolean> alertaEnlaceCaidoEmitida = new ConcurrentHashMap<>();
     private final Map<UUID, ContadoresTrafico> traficoAnterior = new ConcurrentHashMap<>();
 
     @Value("${farmamia.snmp.community:public}")
@@ -117,10 +118,13 @@ public class SnmpPollingService {
                     lectura.descripcionRouter()
                 ));
                 equipo.registrarLatido(equipo.getVersionPos());
+                alertaEnlaceCaidoEmitida.remove(equipo.getId());
                 LOG.info("[NOC SNMP]  CONEXIÓN EXITOSA con {} ({}) - Estado actualizado a ONLINE", equipo.getCodigoPdv(), equipo.getDireccionIp());
                 evaluarAlertas(equipo, lectura);
             } catch (RuntimeException | IOException ex) {
                 LOG.warn("[NOC SNMP] ❌ ERROR/TIMEOUT al conectar con {} ({}). Detalles: {}", equipo.getCodigoPdv(), equipo.getDireccionIp(), ex.getMessage());
+                equipo.marcarOffline();
+                emitirAlertaEnlaceCaido(equipo);
             }
         }
     }
@@ -135,6 +139,11 @@ public class SnmpPollingService {
             Integer ramUsada = getEntero(snmp, ip, comunidadSnmp, OID_RAM_USED);
             Integer ramTotal = getEntero(snmp, ip, comunidadSnmp, OID_RAM_TOTAL);
             Long uptimeTicks = getLong(snmp, ip, comunidadSnmp, OID_SYS_UPTIME);
+            if (uptimeTicks == null) {
+                // sysUptime es MIB-II obligatorio en cualquier SNMP v2c activo.
+                // Si retorna null el dispositivo no respondió (timeout o comunidad incorrecta).
+                throw new IOException("Sin respuesta SNMP (sysUptime nulo) — " + ip + " inalcanzable");
+            }
             String descripcion = getTexto(snmp, ip, comunidadSnmp, OID_SYS_DESC);
 
             // Intentar contadores HC 64-bit primero; si el dispositivo no los soporta, caer a 32-bit.
@@ -232,6 +241,20 @@ public class SnmpPollingService {
         return equipo.getComunidadSnmp() == null || equipo.getComunidadSnmp().isBlank()
             ? comunidad
             : equipo.getComunidadSnmp();
+    }
+
+    private void emitirAlertaEnlaceCaido(EquipoEntidad equipo) {
+        // Emitir solo una vez por caída; se restablece cuando el dispositivo vuelve a responder.
+        if (alertaEnlaceCaidoEmitida.put(equipo.getId(), true) == null) {
+            alertas.guardar(new AlertaEquipo(
+                equipo.getId(),
+                "CRITICAL",
+                "NETWORK_LINK_DOWN",
+                "Enlace caido: " + equipo.getNombreEquipo(),
+                "Sin respuesta SNMP desde " + equipo.getDireccionIp()
+                    + ". Enlace de red posiblemente inaccesible."
+            ));
+        }
     }
 
     private void evaluarAlertas(EquipoEntidad equipo, LecturaHardware lectura) {

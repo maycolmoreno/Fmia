@@ -2,7 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterOutlet } from '@angular/router';
-import { finalize } from 'rxjs';
+import { Subject, finalize } from 'rxjs';
+import { filter, takeUntil } from 'rxjs/operators';
 import {
   AlertaOperativa,
   AuditoriaAdministrativa,
@@ -32,6 +33,7 @@ import { NocTableComponent } from './componentes-ui/noc-table.component';
 import { StatCardComponent } from './componentes-ui/stat-card.component';
 import { StatusBadgeComponent } from './componentes-ui/status-badge.component';
 import { MapaEcuadorComponent } from './componentes-ui/mapa-ecuador.component';
+import { NocDashboardService } from './servicios/noc-dashboard.service';
 import { OperacionesApiService } from './servicios/operaciones-api.service';
 import { SesionAdminService } from './servicios/sesion-admin.service';
 
@@ -66,9 +68,27 @@ export class AppComponent implements OnInit, OnDestroy {
   panelDerecho = false;
   private intervalReloj?: ReturnType<typeof setInterval>;
   private canalNoc?: EventSource;
+  private readonly destroyKpi$ = new Subject<void>();
+  private intervalAlertasKpi?: ReturnType<typeof setInterval>;
   /** Progreso de descarga en curso por idEquipo (0–100). Se limpia al recargar campañas. */
   progresoDescarga = new Map<string, number>();
-  subTabFarmacias: 'tarjetas' | 'todas' | 'turno' | 'huerfanos' = 'tarjetas';
+  // KPIs derivados de estadoFarmacias — se recalculan solo cuando llegan datos nuevos (no en cada tick del reloj)
+  farmaciasOk = 0;
+  farmaciasEnRiesgo = 0;
+  farmaciasCriticas: EstadoOperacionalFarmacia[] = [];
+  farmaciasTurnoEnRiesgo: EstadoOperacionalFarmacia[] = [];
+  farmaciasDeTurno: EstadoOperacionalFarmacia[] = [];
+  equiposOnline = 0;
+  equiposFueraLinea = 0;
+  totalEquiposPosFarmacias = 0;
+  // KPIs derivados de alertasDashboard — se recalculan al cargar alertas
+  totalAlertasCriticas = 0;
+  alertasCriticasDashboard: AlertaOperativa[] = [];
+  alertasAbiertas = 0;
+  alertasCriticasNoc: AlertaOperativa[] = [];
+  alertasRedCriticas = 0;
+  alertasLatenciaAlta = 0;
+  subTabFarmacias: 'tarjetas' | 'todas' | 'turno' | 'pos' | 'red' | 'huerfanos' = 'tarjetas';
   subTabAlertas: 'activas' | 'incidentes' | 'red' = 'activas';
   subTabAgentes: 'equipos' | 'eventos' = 'equipos';
   salud?: EstadoSaludApi;
@@ -210,16 +230,9 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(
     private readonly api: OperacionesApiService,
     public readonly sesion: SesionAdminService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly nocService: NocDashboardService
   ) {
-  }
-
-  get equiposOnline(): number {
-    return this.equiposPos.filter((equipo) => equipo.status === 'ONLINE').length;
-  }
-
-  get equiposFueraLinea(): number {
-    return this.equiposPos.filter((equipo) => ['OFFLINE', 'STALE', 'ERROR'].includes(equipo.status)).length;
   }
 
   get equiposSinLatido(): EquipoPos[] {
@@ -250,52 +263,10 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.asignacionesHuerfanosResueltas.length > 0 && !this.procesandoHuerfanos;
   }
 
-  get alertasAbiertas(): number {
-    return this.alertasDashboard.filter((alerta) => alerta.status === 'OPEN').length;
-  }
-
   get totalEquiposDashboard(): number {
     return this.equiposPos.length;
   }
 
-  get alertasCriticasDashboard(): AlertaOperativa[] {
-    return this.alertasDashboard
-      .filter((alerta) => alerta.severity === 'CRITICAL')
-      .slice(0, 5);
-  }
-
-  get farmaciasCriticas(): EstadoOperacionalFarmacia[] {
-    return this.estadoFarmacias
-      .filter((farmacia) => farmacia.critica)
-      .sort((a, b) => {
-        const turno = Number(b.deTurno) - Number(a.deTurno);
-        if (turno !== 0) {
-          return turno;
-        }
-        const criticidad = (b.alertasCriticas + b.equiposOffline + b.objetivosCampanaFallidos) -
-          (a.alertasCriticas + a.equiposOffline + a.objetivosCampanaFallidos);
-        if (criticidad !== 0) {
-          return criticidad;
-        }
-        return a.codigoFarmacia.localeCompare(b.codigoFarmacia);
-      });
-  }
-
-  get farmaciasTurnoEnRiesgo(): EstadoOperacionalFarmacia[] {
-    return this.estadoFarmacias
-      .filter((farmacia) => farmacia.turnoEnRiesgo)
-      .sort((a, b) => {
-        const prioridad = this.prioridadEstadoOperacional(a.estadoOperacional) - this.prioridadEstadoOperacional(b.estadoOperacional);
-        if (prioridad !== 0) {
-          return prioridad;
-        }
-        const criticidad = (b.alertasCriticas + b.equiposOffline) - (a.alertasCriticas + a.equiposOffline);
-        if (criticidad !== 0) {
-          return criticidad;
-        }
-        return a.codigoFarmacia.localeCompare(b.codigoFarmacia);
-      });
-  }
 
   private prioridadEstadoOperacional(estado: string): number {
     if (estado === 'CRITICA') {
@@ -327,14 +298,6 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.estadoFarmacias.length || this.farmacias.length;
   }
 
-  get totalEquiposPosFarmacias(): number {
-    return this.estadoFarmacias.reduce((total, farmacia) => total + farmacia.totalEquiposPos, 0);
-  }
-
-  get equiposPosOfflineFarmacias(): number {
-    return this.estadoFarmacias.reduce((total, farmacia) => total + farmacia.equiposOffline, 0);
-  }
-
   get campanasOperativas(): CampanaPos[] {
     return this.campanasPos.filter((campana) =>
       ['SCHEDULED', 'APPROVED', 'PILOT_RUNNING', 'RUNNING', 'PAUSED'].includes(campana.status)
@@ -345,36 +308,8 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.farmaciasTurnoEnRiesgo.slice(0, 10);
   }
 
-  get farmaciasDeTurno(): EstadoOperacionalFarmacia[] {
-    return this.estadoFarmacias
-      .filter((farmacia) => farmacia.deTurno)
-      .sort((a, b) => {
-        const prioridad = this.prioridadEstadoOperacional(a.estadoOperacional) - this.prioridadEstadoOperacional(b.estadoOperacional);
-        if (prioridad !== 0) {
-          return prioridad;
-        }
-        return a.codigoFarmacia.localeCompare(b.codigoFarmacia);
-      });
-  }
-
   get farmaciasCriticasNoc(): EstadoOperacionalFarmacia[] {
     return this.farmaciasCriticas.slice(0, 8);
-  }
-
-  get farmaciasOk(): number {
-    return this.estadoFarmacias.filter((farmacia) => farmacia.estadoOperacional === 'NORMAL' && !farmacia.critica && !farmacia.turnoEnRiesgo).length;
-  }
-
-  get farmaciasEnRiesgo(): number {
-    return this.estadoFarmacias.filter((farmacia) =>
-      farmacia.estadoOperacional === 'EN_RIESGO' || farmacia.turnoEnRiesgo
-    ).length;
-  }
-
-  get totalAlertasCriticas(): number {
-    return this.alertasDashboard.filter((alerta) =>
-      alerta.severity === 'CRITICAL' && alerta.status !== 'CLOSED'
-    ).length;
   }
 
   get porcentajeFarmaciasOk(): string {
@@ -420,27 +355,16 @@ export class AppComponent implements OnInit, OnDestroy {
     return `${Math.round((valor / total) * 100)}%`;
   }
 
-  get alertasCriticasNoc(): AlertaOperativa[] {
-    return this.alertasDashboard
-      .filter((alerta) => alerta.severity === 'CRITICAL' && alerta.status !== 'CLOSED')
-      .sort((a, b) => new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime())
-      .slice(0, 8);
-  }
-
-  get alertasRedCriticas(): number {
-    return this.alertasDashboard.filter((alerta) =>
-      !!alerta.networkEvent && alerta.status !== 'CLOSED' && ['CRITICAL', 'HIGH'].includes(alerta.severity)
-    ).length;
-  }
-
-  get alertasLatenciaAlta(): number {
-    return this.alertasDashboard.filter((alerta) =>
-      alerta.status !== 'CLOSED' && (alerta.alertType.includes('LATENCY') || alerta.alertType.includes('HIGH_LATENCY'))
-    ).length;
-  }
-
   abrirGrafana(): void {
     window.open('http://localhost:3000', '_blank', 'noopener,noreferrer');
+  }
+
+  get equiposRedOnline(): number {
+    return this.equiposRed.filter(e => e.status === 'ONLINE').length;
+  }
+
+  get equiposRedOffline(): number {
+    return this.equiposRed.filter(e => e.status === 'OFFLINE' || e.status === 'STALE').length;
   }
 
   get gruposTrxActivos(): number {
@@ -468,6 +392,75 @@ export class AppComponent implements OnInit, OnDestroy {
     this.horaActual = ahora.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   }
 
+  private recalcularKpisFarmacias(): void {
+    const f = this.estadoFarmacias;
+    this.farmaciasOk = f.filter(x => x.estadoOperacional === 'NORMAL' && !x.critica && !x.turnoEnRiesgo).length;
+    this.farmaciasEnRiesgo = f.filter(x => x.estadoOperacional === 'EN_RIESGO' || x.turnoEnRiesgo).length;
+    this.farmaciasCriticas = f.filter(x => x.critica).sort((a, b) => {
+      const turno = Number(b.deTurno) - Number(a.deTurno);
+      if (turno !== 0) return turno;
+      const crit = (b.alertasCriticas + b.equiposOffline + b.objetivosCampanaFallidos) -
+        (a.alertasCriticas + a.equiposOffline + a.objetivosCampanaFallidos);
+      return crit !== 0 ? crit : a.codigoFarmacia.localeCompare(b.codigoFarmacia);
+    });
+    this.farmaciasTurnoEnRiesgo = f.filter(x => x.turnoEnRiesgo).sort((a, b) => {
+      const p = this.prioridadEstadoOperacional(a.estadoOperacional) - this.prioridadEstadoOperacional(b.estadoOperacional);
+      if (p !== 0) return p;
+      const crit = (b.alertasCriticas + b.equiposOffline) - (a.alertasCriticas + a.equiposOffline);
+      return crit !== 0 ? crit : a.codigoFarmacia.localeCompare(b.codigoFarmacia);
+    });
+    this.farmaciasDeTurno = f.filter(x => x.deTurno).sort((a, b) => {
+      const p = this.prioridadEstadoOperacional(a.estadoOperacional) - this.prioridadEstadoOperacional(b.estadoOperacional);
+      return p !== 0 ? p : a.codigoFarmacia.localeCompare(b.codigoFarmacia);
+    });
+    this.equiposOnline = f.length > 0
+      ? f.reduce((s, x) => s + (x.equiposOnline ?? 0), 0)
+      : this.equiposPos.filter(e => e.status === 'ONLINE').length;
+    this.equiposFueraLinea = f.length > 0
+      ? f.reduce((s, x) => s + (x.equiposOffline ?? 0), 0)
+      : this.equiposPos.filter(e => ['OFFLINE', 'STALE', 'ERROR'].includes(e.status)).length;
+    this.totalEquiposPosFarmacias = f.reduce((s, x) => s + x.totalEquiposPos, 0);
+  }
+
+  private recalcularKpisAlertas(): void {
+    const abiertas = this.alertasDashboard.filter(a => a.status !== 'CLOSED');
+    this.alertasAbiertas = abiertas.filter(a => a.status === 'OPEN').length;
+    this.totalAlertasCriticas = abiertas.filter(a => a.severity === 'CRITICAL').length;
+    this.alertasCriticasDashboard = abiertas.filter(a => a.severity === 'CRITICAL').slice(0, 5);
+    this.alertasCriticasNoc = abiertas
+      .filter(a => a.severity === 'CRITICAL')
+      .sort((a, b) => new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime())
+      .slice(0, 8);
+    this.alertasRedCriticas = abiertas.filter(a => !!a.networkEvent && ['CRITICAL', 'HIGH'].includes(a.severity)).length;
+    this.alertasLatenciaAlta = abiertas.filter(a => a.alertType.includes('LATENCY') || a.alertType.includes('HIGH_LATENCY')).length;
+  }
+
+  private pararKpi(): void {
+    this.destroyKpi$.next();
+    clearInterval(this.intervalAlertasKpi);
+    this.intervalAlertasKpi = undefined;
+  }
+
+  private iniciarSuscripcionesKpi(): void {
+    this.pararKpi();
+    this.nocService.iniciarRefresco();
+    this.nocService.estadoFarmacias$.pipe(
+      takeUntil(this.destroyKpi$),
+      filter(farmacias => farmacias.length > 0)
+    ).subscribe(farmacias => {
+      this.estadoFarmacias = farmacias;
+      this.recalcularKpisFarmacias();
+    });
+    this.intervalAlertasKpi = setInterval(() => {
+      if (this.sesion.autenticado()) this.cargarAlertasDashboard();
+    }, 30_000);
+  }
+
+  private detenerSuscripcionesKpi(): void {
+    this.pararKpi();
+    this.nocService.detenerRefresco();
+  }
+
   ngOnInit(): void {
     this.actualizarReloj();
     this.intervalReloj = setInterval(() => this.actualizarReloj(), 1000);
@@ -482,6 +475,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.vistaActiva = 'dashboard';
       this.recargarTodo();
       this.conectarCanalNoc();
+      this.iniciarSuscripcionesKpi();
       return;
     }
     this.router.navigate(['/login']);
@@ -490,6 +484,7 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.intervalReloj) clearInterval(this.intervalReloj);
     this.desconectarCanalNoc();
+    this.detenerSuscripcionesKpi();
   }
 
   private conectarCanalNoc(): void {
@@ -552,6 +547,7 @@ export class AppComponent implements OnInit, OnDestroy {
           this.vistaActiva = 'dashboard';
           this.recargarTodo();
           this.conectarCanalNoc();
+          this.iniciarSuscripcionesKpi();
         },
         error: (respuesta) => {
           const estado = respuesta?.status ? ` HTTP ${respuesta.status}` : '';
@@ -562,6 +558,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   cerrarSesion(): void {
     this.desconectarCanalNoc();
+    this.detenerSuscripcionesKpi();
     this.progresoDescarga.clear();
     this.sesion.cerrarSesion();
     this.equipos = [];
@@ -1043,11 +1040,18 @@ export class AppComponent implements OnInit, OnDestroy {
   cargarAlertasDashboard(): void {
     if (!this.sesion.puedeVerEventosYAlertas()) {
       this.alertasDashboard = [];
+      this.recalcularKpisAlertas();
       return;
     }
     this.api.listarAlertasPaginadas({ size: 100, sort: 'openedAt,desc' }).subscribe({
-      next: (pagina) => this.alertasDashboard = pagina.content,
-      error: () => this.alertasDashboard = []
+      next: (pagina) => {
+        this.alertasDashboard = pagina.content;
+        this.recalcularKpisAlertas();
+      },
+      error: () => {
+        this.alertasDashboard = [];
+        this.recalcularKpisAlertas();
+      }
     });
   }
 

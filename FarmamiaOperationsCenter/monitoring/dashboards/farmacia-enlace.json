@@ -1,0 +1,237 @@
+{
+  "uid": "farmacia-enlace",
+  "title": "Farmacia — Detalle de Enlace",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "timezone": "browser",
+  "timepicker": {},
+  "templating": {
+    "list": [
+      {
+        "type": "query",
+        "name": "branch",
+        "label": "Farmacia",
+        "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+        "query": {
+          "rawSql": "SELECT code AS __value FROM branches WHERE is_active = true ORDER BY code",
+          "format": "table"
+        },
+        "sort": 1,
+        "refresh": 2,
+        "multi": false,
+        "includeAll": false,
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Estado del Router",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT d.status AS value FROM devices d JOIN branches b ON d.branch_id = b.id WHERE b.code = '$branch' AND d.equipment_type = 'NETWORK_LINK' LIMIT 1",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "ONLINE":  { "color": "green",  "text": "ONLINE",  "index": 0 } } },
+            { "type": "value", "options": { "OFFLINE": { "color": "red",    "text": "OFFLINE", "index": 1 } } },
+            { "type": "value", "options": { "STALE":   { "color": "yellow", "text": "STALE",   "index": 2 } } }
+          ]
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "CPU % actual",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT m.cpu_usage_percent AS value FROM device_metrics m JOIN devices d ON m.device_id = d.id JOIN branches b ON d.branch_id = b.id WHERE b.code = '$branch' AND d.equipment_type = 'NETWORK_LINK' ORDER BY m.collected_at DESC LIMIT 1",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "RAM % actual",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT m.ram_usage_percent AS value FROM device_metrics m JOIN devices d ON m.device_id = d.id JOIN branches b ON d.branch_id = b.id WHERE b.code = '$branch' AND d.equipment_type = 'NETWORK_LINK' ORDER BY m.collected_at DESC LIMIT 1",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "red", "value": 95 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Latencia SNMP (ms)",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT m.response_time_ms AS value FROM device_metrics m JOIN devices d ON m.device_id = d.id JOIN branches b ON d.branch_id = b.id WHERE b.code = '$branch' AND d.equipment_type = 'NETWORK_LINK' ORDER BY m.collected_at DESC LIMIT 1",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 150 },
+              { "color": "red", "value": 500 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Info del dispositivo",
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT d.hostname AS \"Hostname\", d.ip_address AS \"IP\", d.status AS \"Estado\", m.router_sys_desc AS \"Descripcion\" FROM devices d JOIN branches b ON d.branch_id = b.id LEFT JOIN device_metrics m ON m.device_id = d.id WHERE b.code = '$branch' AND d.equipment_type = 'NETWORK_LINK' ORDER BY m.collected_at DESC LIMIT 1",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "CPU y RAM (%)",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT m.collected_at AS time, 'CPU' AS metric, m.cpu_usage_percent AS value FROM device_metrics m JOIN devices d ON m.device_id = d.id JOIN branches b ON d.branch_id = b.id WHERE b.code = '$branch' AND d.equipment_type = 'NETWORK_LINK' AND $__timeFilter(m.collected_at) AND m.cpu_usage_percent IS NOT NULL ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        },
+        {
+          "rawSql": "SELECT m.collected_at AS time, 'RAM' AS metric, m.ram_usage_percent AS value FROM device_metrics m JOIN devices d ON m.device_id = d.id JOIN branches b ON d.branch_id = b.id WHERE b.code = '$branch' AND d.equipment_type = 'NETWORK_LINK' AND $__timeFilter(m.collected_at) AND m.ram_usage_percent IS NOT NULL ORDER BY 1",
+          "format": "time_series",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Trafico (Kbps)",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT m.collected_at AS time, 'Inbound' AS metric, m.inbound_traffic_kbps::FLOAT AS value FROM device_metrics m JOIN devices d ON m.device_id = d.id JOIN branches b ON d.branch_id = b.id WHERE b.code = '$branch' AND d.equipment_type = 'NETWORK_LINK' AND $__timeFilter(m.collected_at) AND m.inbound_traffic_kbps IS NOT NULL ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        },
+        {
+          "rawSql": "SELECT m.collected_at AS time, 'Outbound' AS metric, m.outbound_traffic_kbps::FLOAT AS value FROM device_metrics m JOIN devices d ON m.device_id = d.id JOIN branches b ON d.branch_id = b.id WHERE b.code = '$branch' AND d.equipment_type = 'NETWORK_LINK' AND $__timeFilter(m.collected_at) AND m.outbound_traffic_kbps IS NOT NULL ORDER BY 1",
+          "format": "time_series",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "kbytes" } }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Latencia SNMP (ms)",
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 7 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT m.collected_at AS time, 'Latencia' AS metric, m.response_time_ms AS value FROM device_metrics m JOIN devices d ON m.device_id = d.id JOIN branches b ON d.branch_id = b.id WHERE b.code = '$branch' AND d.equipment_type = 'NETWORK_LINK' AND $__timeFilter(m.collected_at) AND m.response_time_ms IS NOT NULL ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 150 },
+              { "color": "red", "value": 500 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "table",
+      "title": "Historial de Alertas (24h)",
+      "gridPos": { "x": 0, "y": 19, "w": 24, "h": 7 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT a.severity AS \"Severidad\", a.alert_type AS \"Tipo\", a.title AS \"Titulo\", a.status AS \"Estado\", a.opened_at AS \"Abierta\", a.resolved_at AS \"Resuelta\", a.message AS \"Detalle\" FROM alerts a JOIN branches b ON a.branch_id = b.id WHERE b.code = '$branch' AND a.opened_at >= NOW() - INTERVAL '24 hours' ORDER BY a.opened_at DESC LIMIT 100",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

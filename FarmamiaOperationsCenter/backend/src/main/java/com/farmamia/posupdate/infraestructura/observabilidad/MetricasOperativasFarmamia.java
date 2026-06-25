@@ -87,6 +87,10 @@ public class MetricasOperativasFarmamia {
             .description("Alertas criticas abiertas")
             .register(meterRegistry);
 
+        Gauge.builder("farmamia.links.down", alertas, repositorio -> repositorio.countByTipoAlertaAndEstado("NETWORK_LINK_DOWN", "OPEN"))
+            .description("Enlaces de red con alerta activa de caida")
+            .register(meterRegistry);
+
         Gauge.builder("farmamia.orchestration.instruction.leases.expired", objetivos, repositorio -> repositorio.countByLeaseInstruccionHastaBefore(OffsetDateTime.now()))
             .description("Leases de instrucciones expirados y aun registrados en objetivos de despliegue")
             .register(meterRegistry);

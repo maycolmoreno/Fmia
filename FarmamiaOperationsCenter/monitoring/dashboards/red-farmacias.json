@@ -1,0 +1,271 @@
+{
+  "uid": "red-farmacias",
+  "title": "Red Farmacias — SNMP",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-3h", "to": "now" },
+  "timezone": "browser",
+  "timepicker": {},
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Routers ONLINE",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(*) AS value FROM devices WHERE equipment_type = 'NETWORK_LINK' AND status = 'ONLINE'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Routers OFFLINE",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(*) AS value FROM devices WHERE equipment_type = 'NETWORK_LINK' AND status = 'OFFLINE'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Alertas RED abiertas",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(*) AS value FROM alerts WHERE alert_type = 'NETWORK_LINK_DOWN' AND status = 'OPEN'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Alta Latencia abiertas",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(*) AS value FROM alerts WHERE alert_type = 'HIGH_LATENCY' AND status = 'OPEN'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Alertas de Red Activas",
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 7 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT a.title AS \"Alerta\", a.severity AS \"Severidad\", a.alert_type AS \"Tipo\", d.hostname AS \"Dispositivo\", d.ip_address AS \"IP\", COALESCE(b.code, '-') AS \"Farmacia\", a.opened_at AS \"Abierta\", a.message AS \"Detalle\" FROM alerts a LEFT JOIN devices d ON a.device_id = d.id LEFT JOIN branches b ON a.branch_id = b.id WHERE a.status = 'OPEN' ORDER BY a.opened_at DESC LIMIT 100",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "sortBy": [{ "desc": true, "displayName": "Abierta" }],
+        "footer": { "show": true, "reducer": ["count"], "fields": ["Alerta"] }
+      },
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Severidad" },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "CRITICAL": { "color": "red", "index": 0 } } },
+                  { "type": "value", "options": { "WARNING": { "color": "yellow", "index": 1 } } },
+                  { "type": "value", "options": { "INFO": { "color": "blue", "index": 2 } } }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "CPU % por Router",
+      "gridPos": { "x": 0, "y": 11, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT m.collected_at AS time, d.hostname AS metric, m.cpu_usage_percent AS value FROM device_metrics m JOIN devices d ON m.device_id = d.id WHERE d.equipment_type = 'NETWORK_LINK' AND $__timeFilter(m.collected_at) AND m.cpu_usage_percent IS NOT NULL ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "RAM % por Router",
+      "gridPos": { "x": 12, "y": 11, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT m.collected_at AS time, d.hostname AS metric, m.ram_usage_percent AS value FROM device_metrics m JOIN devices d ON m.device_id = d.id WHERE d.equipment_type = 'NETWORK_LINK' AND $__timeFilter(m.collected_at) AND m.ram_usage_percent IS NOT NULL ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "red", "value": 95 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Trafico Inbound (Kbps)",
+      "gridPos": { "x": 0, "y": 19, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT m.collected_at AS time, d.hostname AS metric, m.inbound_traffic_kbps::FLOAT AS value FROM device_metrics m JOIN devices d ON m.device_id = d.id WHERE d.equipment_type = 'NETWORK_LINK' AND $__timeFilter(m.collected_at) AND m.inbound_traffic_kbps IS NOT NULL ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "kbytes" } }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Trafico Outbound (Kbps)",
+      "gridPos": { "x": 12, "y": 19, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT m.collected_at AS time, d.hostname AS metric, m.outbound_traffic_kbps::FLOAT AS value FROM device_metrics m JOIN devices d ON m.device_id = d.id WHERE d.equipment_type = 'NETWORK_LINK' AND $__timeFilter(m.collected_at) AND m.outbound_traffic_kbps IS NOT NULL ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "kbytes" } }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Tiempo de Respuesta SNMP (ms)",
+      "gridPos": { "x": 0, "y": 27, "w": 24, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "farmamia-postgres" },
+      "targets": [
+        {
+          "rawSql": "SELECT m.collected_at AS time, d.hostname AS metric, m.response_time_ms AS value FROM device_metrics m JOIN devices d ON m.device_id = d.id WHERE d.equipment_type = 'NETWORK_LINK' AND $__timeFilter(m.collected_at) AND m.response_time_ms IS NOT NULL ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 150 },
+              { "color": "red", "value": 500 }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

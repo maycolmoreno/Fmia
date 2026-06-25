@@ -1,0 +1,28 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: farmamia-prometheus
+    url: http://prometheus:9090
+    access: proxy
+    isDefault: true
+    jsonData:
+      timeInterval: "15s"
+
+  - name: PostgreSQL
+    type: postgres
+    uid: farmamia-postgres
+    url: host.docker.internal:5432
+    access: proxy
+    database: farmamia_ops
+    user: postgres
+    secureJsonData:
+      password: ".r4e3w2q1"
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 5
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+      postgresVersion: 1600
+      timescaledb: false

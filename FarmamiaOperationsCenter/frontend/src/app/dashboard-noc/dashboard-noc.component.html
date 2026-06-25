@@ -97,6 +97,27 @@
         </table>
       </div>
     </section>
+    <div class="noc-zonas-grid">
+      <app-noc-zona-critico
+        [farmaciasCriticas]="resumen!.criticFarms"
+        [farmaciasDeTurnoEnRiesgo]="resumen!.atRiskFarms"
+        [grafanaUrl]="grafanaUrl"
+        [estadoFarmacias]="estadoFarmacias"
+        (seleccionarFarmacia)="seleccionarFarmaciaDetalleNoc($event)">
+      </app-noc-zona-critico>
+
+      <app-noc-zona-red
+        [red]="resumen!.network"
+        [grafanaUrl]="grafanaUrl">
+      </app-noc-zona-red>
+
+      <app-noc-zona-pos [pos]="resumen!.pos"></app-noc-zona-pos>
+
+      <app-noc-zona-campana
+        *ngIf="resumen!.activeCampaign"
+        [campana]="resumen!.activeCampaign">
+      </app-noc-zona-campana>
+    </div>
   </ng-container>
 
   <div class="noc-sin-datos" *ngIf="!resumen && !cargando">

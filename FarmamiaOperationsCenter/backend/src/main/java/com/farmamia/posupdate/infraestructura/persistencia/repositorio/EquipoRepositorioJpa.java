@@ -22,6 +22,10 @@ public interface EquipoRepositorioJpa extends JpaRepository<EquipoEntidad, UUID>
 
     long countByEstado(String estado);
 
+    long countByTipo(TipoEquipo tipo);
+
+    long countByTipoAndEstado(TipoEquipo tipo, String estado);
+
     long countByDireccionIpIsNotNull();
 
     long countByDireccionIpIsNotNullAndEstado(String estado);

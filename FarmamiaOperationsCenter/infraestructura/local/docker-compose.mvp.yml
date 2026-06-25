@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: farmamia
       POSTGRES_PASSWORD: farmamia
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - farmamia_ops_postgres_mvp:/var/lib/postgresql/data
     healthcheck:
@@ -16,5 +16,40 @@ services:
       timeout: 5s
       retries: 20
 
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: farmamia_prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    volumes:
+      - ../../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../../monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - farmamia_prometheus:/prometheus
+    ports:
+      - "9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: farmamia_grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: farmamia
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../monitoring/provisioning:/etc/grafana/provisioning:ro
+      - ../../monitoring/dashboards:/var/lib/grafana/dashboards:ro
+      - farmamia_grafana:/var/lib/grafana
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   farmamia_ops_postgres_mvp:
+  farmamia_prometheus:
+  farmamia_grafana:

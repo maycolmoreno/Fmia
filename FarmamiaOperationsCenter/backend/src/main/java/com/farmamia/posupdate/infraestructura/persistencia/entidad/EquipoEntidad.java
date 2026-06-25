@@ -205,6 +205,10 @@ public class EquipoEntidad {
         this.ultimoLatidoEn = OffsetDateTime.now();
     }
 
+    public void marcarOffline() {
+        this.estado = "OFFLINE";
+    }
+
     public void actualizarVersionPos(String versionPos) {
         this.versionPos = blancoANulo(versionPos);
     }

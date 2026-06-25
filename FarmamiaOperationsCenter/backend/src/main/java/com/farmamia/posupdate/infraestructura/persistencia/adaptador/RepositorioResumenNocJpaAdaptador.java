@@ -9,6 +9,7 @@ import com.farmamia.posupdate.infraestructura.persistencia.entidad.AlertaEntidad
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.DespliegueEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.EquipoEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.SucursalEntidad;
+import com.farmamia.posupdate.infraestructura.persistencia.entidad.TipoEquipo;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.AlertaRepositorioJpa;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.DespliegueRepositorioJpa;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.EquipoRepositorioJpa;
@@ -47,18 +48,18 @@ public class RepositorioResumenNocJpaAdaptador implements RepositorioResumenNoc 
     @Transactional(readOnly = true)
     public EstadoRedNoc obtenerEstadoRed() {
         return new EstadoRedNoc(
-            alertaRepositorioJpa.countByTipoAlertaAndEstado("LINK_DOWN", "OPEN"),
-            alertaRepositorioJpa.countByTipoAlertaAndEstado("LATENCIA_ALTA", "OPEN"),
-            alertaRepositorioJpa.countByTipoAlertaAndEstado("VPN_CAIDA", "OPEN")
+            alertaRepositorioJpa.countByTipoAlertaAndEstado("NETWORK_LINK_DOWN", "OPEN"),
+            alertaRepositorioJpa.countByTipoAlertaAndEstado("HIGH_LATENCY", "OPEN"),
+            alertaRepositorioJpa.countByTipoAlertaAndEstado("VPN_DOWN", "OPEN")
         );
     }
 
     @Override
     @Transactional(readOnly = true)
     public EstadoPosNoc obtenerEstadoPos() {
-        long totalPos = equipoRepositorioJpa.count();
-        long posOnline = equipoRepositorioJpa.countByEstado("ONLINE");
-        long posOffline = equipoRepositorioJpa.countByEstado("OFFLINE");
+        long totalPos    = equipoRepositorioJpa.countByTipo(TipoEquipo.POS_TERMINAL);
+        long posOnline   = equipoRepositorioJpa.countByTipoAndEstado(TipoEquipo.POS_TERMINAL, "ONLINE");
+        long posOffline  = equipoRepositorioJpa.countByTipoAndEstado(TipoEquipo.POS_TERMINAL, "OFFLINE");
         long posEnRiesgo = Math.max(0L, totalPos - posOnline - posOffline);
         String versionActual = equipoRepositorioJpa
             .findVersionesPosPorFrecuencia(PageRequest.of(0, 1))

@@ -1,0 +1,136 @@
+{
+  "uid": "noc-overview",
+  "title": "Farmamia NOC Overview",
+  "schemaVersion": 39,
+  "version": 2,
+  "refresh": "15s",
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Equipos online",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "farmamia-prometheus" },
+      "targets": [
+        { "expr": "farmamia_devices_online", "legendFormat": "online", "refId": "A" }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" } } }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Equipos offline",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "farmamia-prometheus" },
+      "targets": [
+        { "expr": "farmamia_devices_offline", "legendFormat": "offline", "refId": "A" }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Alertas criticas abiertas",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "farmamia-prometheus" },
+      "targets": [
+        { "expr": "farmamia_alerts_critical_open", "legendFormat": "criticas", "refId": "A" }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Despliegues activos",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "farmamia-prometheus" },
+      "targets": [
+        { "expr": "farmamia_deployments_active", "legendFormat": "activos", "refId": "A" }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" } } }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Enlaces de red caidos",
+      "gridPos": { "x": 0, "y": 4, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "farmamia-prometheus" },
+      "targets": [
+        { "expr": "farmamia_links_down", "legendFormat": "enlaces DOWN", "refId": "A" }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }]
+          }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Heartbeats por minuto",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "farmamia-prometheus" },
+      "targets": [
+        { "expr": "sum(rate(farmamia_agent_heartbeats_total[1m])) * 60", "legendFormat": "heartbeats/min", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Eventos de agentes por tipo",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "farmamia-prometheus" },
+      "targets": [
+        { "expr": "sum by (event_type) (rate(farmamia_agent_events_total[5m]))", "legendFormat": "{{event_type}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Resultados de actualizacion POS",
+      "gridPos": { "x": 0, "y": 15, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "farmamia-prometheus" },
+      "targets": [
+        { "expr": "sum by (status) (rate(farmamia_agent_update_results_total[5m]))", "legendFormat": "{{status}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Descargas de paquetes POS",
+      "gridPos": { "x": 12, "y": 15, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "farmamia-prometheus" },
+      "targets": [
+        { "expr": "rate(farmamia_package_downloads_total[5m]) * 60", "legendFormat": "descargas/min", "refId": "A" }
+      ]
+    }
+  ]
+}

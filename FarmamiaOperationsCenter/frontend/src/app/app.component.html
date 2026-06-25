@@ -48,7 +48,7 @@
         Farmacias
       </button>
       <button type="button" *ngIf="sesion.puedeVerEventosYAlertas()" [class.activo]="vistaActiva === 'alertas'" (click)="cambiarVista('alertas')">
-        Alertas
+        Incidencias
       </button>
       <button type="button" [class.activo]="vistaActiva === 'agentes'" (click)="cambiarVista('agentes')">
         Agentes
@@ -180,47 +180,6 @@
         </button>
       </div>
 
-      <div class="dashboard-focos">
-        <article class="tarjeta foco-card">
-          <div class="titulo-tarjeta">
-            <div>
-              <h2>Atencion inmediata</h2>
-              <small>Primeras farmacias o alertas que conviene revisar</small>
-            </div>
-            <button type="button" class="boton pequeno secundario" (click)="cambiarVista('equipos')">Abrir</button>
-          </div>
-          <div class="lista-compacta">
-            <button type="button" class="fila-compacta fila-boton" *ngFor="let farmacia of farmaciasCriticasNoc" (click)="cambiarVista('equipos')">
-              <div>
-                <strong>{{ farmacia.codigoFarmacia }} | {{ farmacia.nombreFarmacia }}</strong>
-                <small>{{ farmacia.equiposOffline }} POS apagados · {{ farmacia.alertasCriticas }} alertas criticas</small>
-              </div>
-              <app-status-badge [status]="farmacia.estadoOperacional"></app-status-badge>
-            </button>
-            <p class="vacio" *ngIf="farmaciasCriticasNoc.length === 0">Sin farmacias criticas.</p>
-          </div>
-        </article>
-
-        <article class="tarjeta foco-card" *ngIf="sesion.puedeVerEventosYAlertas()">
-          <div class="titulo-tarjeta">
-            <div>
-              <h2>Alertas abiertas</h2>
-              <small>Solo las criticas para no saturar el dashboard</small>
-            </div>
-            <button type="button" class="boton pequeno secundario" (click)="cambiarVista('alertas')">Abrir</button>
-          </div>
-          <div class="lista-compacta">
-            <div class="fila-compacta" *ngFor="let alerta of alertasCriticasNoc">
-              <div>
-                <strong>{{ alerta.branchCode || 'Red' }} | {{ alerta.title }}</strong>
-                <small>{{ alerta.networkEvent ? 'Evento de red' : (alerta.hostname || 'Farmacia') }} · {{ alerta.openedAt | date:'short' }}</small>
-              </div>
-              <app-status-badge [status]="alerta.severity"></app-status-badge>
-            </div>
-            <p class="vacio" *ngIf="alertasCriticasNoc.length === 0">Sin alertas criticas abiertas.</p>
-          </div>
-        </article>
-      </div>
     </section>
 
     <section class="vista" *ngIf="vistaActiva === 'equipos' && subTabFarmacias === 'turno'">
@@ -342,6 +301,8 @@
       <button type="button" class="sub-tab" [class.activo]="subTabFarmacias === 'tarjetas'" (click)="subTabFarmacias = 'tarjetas'">Tarjetas</button>
       <button type="button" class="sub-tab" [class.activo]="subTabFarmacias === 'todas'" (click)="subTabFarmacias = 'todas'">Todas</button>
       <button type="button" class="sub-tab" [class.activo]="subTabFarmacias === 'turno'" (click)="subTabFarmacias = 'turno'">De Turno</button>
+      <button type="button" class="sub-tab" [class.activo]="subTabFarmacias === 'pos'" (click)="subTabFarmacias = 'pos'">Equipos POS</button>
+      <button type="button" class="sub-tab" [class.activo]="subTabFarmacias === 'red'" (click)="subTabFarmacias = 'red'">Red</button>
       <button type="button" class="sub-tab" *ngIf="sesion.puedeVerEventosYAlertas()" [class.activo]="subTabFarmacias === 'huerfanos'" (click)="subTabFarmacias = 'huerfanos'">Sin asignar</button>
     </nav>
 
@@ -357,44 +318,56 @@
 
     <section class="vista" *ngIf="vistaActiva === 'equipos' && subTabFarmacias === 'todas'">
       <div class="metricas metricas-operaciones">
-        <app-stat-card label="Farmacias" [value]="totalFarmaciasDashboard" [helper]="farmaciasCriticas.length + ' criticas'"></app-stat-card>
+        <app-stat-card label="Total farmacias" [value]="totalFarmaciasDashboard" [helper]="farmaciasOk + ' operativas'"></app-stat-card>
+        <app-stat-card label="En riesgo" [value]="farmaciasEnRiesgo" helper="requieren atencion"></app-stat-card>
+        <app-stat-card label="Criticas" [value]="farmaciasCriticas.length" helper="intervencion inmediata"></app-stat-card>
         <app-stat-card label="Turno en riesgo" [value]="farmaciasTurnoEnRiesgo.length" helper="prioridad NOC"></app-stat-card>
-        <app-stat-card label="Equipos POS" [value]="totalEquiposPosFarmacias || totalEquiposDashboard" [helper]="(equiposPosOfflineFarmacias || equiposFueraLinea) + ' offline'"></app-stat-card>
-        <app-stat-card label="Alertas abiertas" [value]="alertasAbiertas" [helper]="alertasCriticasDashboard.length + ' criticas recientes'"></app-stat-card>
       </div>
 
       <article class="tarjeta">
         <div class="titulo-tarjeta">
-          <h2>Estado operacional por farmacia</h2>
+          <h2>Estado operacional de farmacias</h2>
           <button type="button" class="boton pequeno secundario" (click)="recargarTodo()">Actualizar</button>
         </div>
-        <div class="tabla tabla-sucursales">
+        <div class="tabla tabla-farmacias-estado">
           <div class="tabla-fila cabecera">
+            <span>Codigo</span>
             <span>Farmacia</span>
             <span>Turno</span>
             <span>Estado</span>
-            <span>Equipos POS</span>
+            <span>POS online</span>
+            <span>POS offline</span>
             <span>Alertas</span>
-            <span>Campanas</span>
             <span>Version POS</span>
             <span>Ultimo latido</span>
           </div>
-          <div class="tabla-fila" *ngFor="let farmacia of estadoFarmacias">
+          <div class="tabla-fila" *ngFor="let f of estadoFarmacias"
+               [class.fila-critica]="f.critica"
+               [class.fila-riesgo]="f.turnoEnRiesgo && !f.critica">
+            <span><strong>{{ f.codigoFarmacia }}</strong></span>
+            <span>{{ f.nombreFarmacia }}</span>
             <span>
-              <strong>{{ farmacia.codigoFarmacia }}</strong>
-              <small>{{ farmacia.nombreFarmacia }}</small>
+              <app-status-badge *ngIf="f.deTurno" status="TURNO" [tone]="f.turnoEnRiesgo ? 'danger' : 'success'"></app-status-badge>
+              <span *ngIf="!f.deTurno" class="texto-suave">—</span>
             </span>
-            <span><app-status-badge [status]="farmacia.deTurno ? 'TURNO' : 'NORMAL'" [tone]="farmacia.turnoEnRiesgo ? 'danger' : 'success'"></app-status-badge></span>
-            <span><app-status-badge [status]="farmacia.estadoOperacional"></app-status-badge></span>
-            <span>{{ farmacia.equiposOnline }}/{{ farmacia.totalEquiposPos }} online | {{ farmacia.equiposOffline }} offline</span>
-            <span>{{ farmacia.alertasAbiertas }} abiertas | {{ farmacia.alertasCriticas }} criticas</span>
-            <span>{{ farmacia.campanasActivas }} activas | {{ farmacia.objetivosCampanaPendientes }} pend.</span>
-            <span>{{ farmacia.versionPosDominante || 'N/D' }}</span>
-            <span>{{ farmacia.ultimoLatidoEn ? (farmacia.ultimoLatidoEn | date:'short') : 'Sin latido' }}</span>
+            <span><app-status-badge [status]="f.estadoOperacional"></app-status-badge></span>
+            <span class="valor-ok">{{ f.equiposOnline }}</span>
+            <span [class.valor-alerta]="f.equiposOffline > 0">{{ f.equiposOffline }}</span>
+            <span [class.valor-alerta]="f.alertasCriticas > 0">{{ f.alertasAbiertas }} ({{ f.alertasCriticas }} crit.)</span>
+            <span>{{ f.versionPosDominante || '—' }}</span>
+            <span>{{ f.ultimoLatidoEn ? (f.ultimoLatidoEn | date:'short') : 'Sin latido' }}</span>
           </div>
-          <p class="vacio" *ngIf="estadoFarmacias.length === 0">Sin estado operacional de farmacias.</p>
+          <p class="vacio" *ngIf="estadoFarmacias.length === 0">Cargando estado operacional de farmacias...</p>
         </div>
       </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'equipos' && subTabFarmacias === 'pos'">
+      <div class="metricas metricas-operaciones">
+        <app-stat-card label="Equipos POS" [value]="totalEquiposPosFarmacias || totalEquiposDashboard" [helper]="equiposOnline + ' online'"></app-stat-card>
+        <app-stat-card label="Offline" [value]="equiposFueraLinea" helper="sin conexion"></app-stat-card>
+        <app-stat-card label="Alertas abiertas" [value]="alertasAbiertas" [helper]="totalAlertasCriticas + ' criticas'"></app-stat-card>
+      </div>
 
       <article class="tarjeta formulario">
         <div class="titulo-tarjeta">
@@ -469,38 +442,7 @@
         </div>
       </article>
 
-      <article class="tarjeta">
-        <div class="titulo-tarjeta">
-          <h2>Infraestructura de Red y Enlaces (NOC)</h2>
-        </div>
-        <div class="tabla tabla-enlaces">
-          <div class="tabla-fila cabecera">
-            <span>Codigo PDV</span>
-            <span>Equipo / Router</span>
-            <span>Farmacia</span>
-            <span>IP Gestion</span>
-            <span>Comunidad SNMP</span>
-            <span>Estado</span>
-            <span>Ultimo latido</span>
-            <span>Accion</span>
-          </div>
-          <div class="tabla-fila" *ngFor="let equipo of equiposRed">
-            <span>{{ equipo.codigoPdv || equipo.branchCode || 'N/D' }}</span>
-            <span>{{ equipo.hostname }}</span>
-            <span>{{ equipo.branchName || equipo.branchCode || 'SIN ASIGNAR' }}</span>
-            <span>{{ equipo.ipAddress || 'N/D' }}</span>
-            <span>{{ equipo.snmpCommunity || 'N/D' }}</span>
-            <span><app-status-badge [status]="equipo.status"></app-status-badge></span>
-            <span>{{ equipo.lastHeartbeatAt ? (equipo.lastHeartbeatAt | date:'short') : 'Sin latido' }}</span>
-            <span>
-              <button type="button" class="boton pequeno" (click)="verDetalleEquipo(equipo)">Ver</button>
-            </span>
-          </div>
-          <p class="vacio" *ngIf="equiposRed.length === 0">Sin enlaces de red registrados.</p>
-        </div>
-      </article>
-
-      <article class="tarjeta" *ngIf="detalleEquipo">
+      <article class="tarjeta" *ngIf="detalleEquipo && detalleEquipo.device.tipo === 'POS_TERMINAL'">
         <div class="titulo-tarjeta">
           <h2>{{ detalleEquipo.device.hostname }}</h2>
           <button type="button" class="boton pequeno secundario" (click)="cerrarDetalleEquipo()">Cerrar</button>
@@ -530,35 +472,6 @@
               </div>
               <ng-template #sinMetricaPos>
                 <p class="vacio">Sin metricas registradas.</p>
-              </ng-template>
-            </section>
-          </div>
-        </ng-container>
-
-        <ng-container *ngIf="detalleEquipo.device.tipo === 'NETWORK_LINK'">
-          <div class="detalle-grid">
-            <section>
-              <h3>Inventario de Red</h3>
-              <div class="detalle-lista">
-                <span>IP Gestion</span><strong>{{ detalleEquipo.device.ipAddress || 'N/D' }}</strong>
-                <span>Comunidad</span><strong>{{ detalleEquipo.device.snmpCommunity || 'N/D' }}</strong>
-                <span>Puerto SNMP</span><strong>161</strong>
-                <span>Descripcion</span><strong>{{ detalleEquipo.lastMetric?.routerDescription || 'N/D' }}</strong>
-              </div>
-            </section>
-
-            <section>
-              <h3>Metricas SNMP</h3>
-              <div class="detalle-lista" *ngIf="detalleEquipo.lastMetric; else sinMetricaRed">
-                <span>Uso CPU</span><strong>{{ detalleEquipo.lastMetric.usoCpuPorcentaje ?? 0 }}%</strong>
-                <span>Uso RAM</span><strong>{{ detalleEquipo.lastMetric.usoRamPorcentaje ?? 0 }}%</strong>
-                <span>Trafico IN</span><strong>{{ detalleEquipo.lastMetric.traficoInboundKbps ?? 0 }} Kbps</strong>
-                <span>Trafico OUT</span><strong>{{ detalleEquipo.lastMetric.traficoOutboundKbps ?? 0 }} Kbps</strong>
-                <span>Uptime</span><strong>{{ detalleEquipo.lastMetric.uptimeRouterTicks ?? 'N/D' }}</strong>
-                <span>Latencia</span><strong>{{ detalleEquipo.lastMetric.latencyMs ?? 0 }} ms</strong>
-              </div>
-              <ng-template #sinMetricaRed>
-                <p class="vacio">Sin metricas SNMP registradas.</p>
               </ng-template>
             </section>
           </div>
@@ -603,6 +516,79 @@
               </div>
               <p class="vacio" *ngIf="detalleEquipo.recentEvents.length === 0">Sin eventos recientes.</p>
             </div>
+          </section>
+        </div>
+      </article>
+    </section>
+
+    <section class="vista" *ngIf="vistaActiva === 'equipos' && subTabFarmacias === 'red'">
+      <div class="metricas metricas-operaciones">
+        <app-stat-card label="Routers / enlaces" [value]="equiposRed.length" helper="registrados"></app-stat-card>
+        <app-stat-card label="Online" [value]="equiposRedOnline" helper="respondiendo SNMP"></app-stat-card>
+        <app-stat-card label="Offline / Stale" [value]="equiposRedOffline" [helper]="alertasRedCriticas + ' alertas criticas'"></app-stat-card>
+      </div>
+
+      <article class="tarjeta">
+        <div class="titulo-tarjeta">
+          <h2>Infraestructura de Red y Enlaces (NOC)</h2>
+          <button type="button" class="boton pequeno secundario" (click)="recargarTodo()">Actualizar</button>
+        </div>
+        <div class="tabla tabla-enlaces">
+          <div class="tabla-fila cabecera">
+            <span>Codigo PDV</span>
+            <span>Equipo / Router</span>
+            <span>Farmacia</span>
+            <span>IP Gestion</span>
+            <span>Comunidad SNMP</span>
+            <span>Estado</span>
+            <span>Ultimo latido</span>
+            <span>Accion</span>
+          </div>
+          <div class="tabla-fila" *ngFor="let equipo of equiposRed">
+            <span>{{ equipo.codigoPdv || equipo.branchCode || 'N/D' }}</span>
+            <span>{{ equipo.hostname }}</span>
+            <span>{{ equipo.branchName || equipo.branchCode || 'SIN ASIGNAR' }}</span>
+            <span>{{ equipo.ipAddress || 'N/D' }}</span>
+            <span>{{ equipo.snmpCommunity || 'N/D' }}</span>
+            <span><app-status-badge [status]="equipo.status"></app-status-badge></span>
+            <span>{{ equipo.lastHeartbeatAt ? (equipo.lastHeartbeatAt | date:'short') : 'Sin latido' }}</span>
+            <span>
+              <button type="button" class="boton pequeno" (click)="verDetalleEquipo(equipo)">Ver</button>
+            </span>
+          </div>
+          <p class="vacio" *ngIf="equiposRed.length === 0">Sin enlaces de red registrados.</p>
+        </div>
+      </article>
+
+      <article class="tarjeta" *ngIf="detalleEquipo && detalleEquipo.device.tipo === 'NETWORK_LINK'">
+        <div class="titulo-tarjeta">
+          <h2>{{ detalleEquipo.device.hostname }}</h2>
+          <button type="button" class="boton pequeno secundario" (click)="cerrarDetalleEquipo()">Cerrar</button>
+        </div>
+        <div class="detalle-grid">
+          <section>
+            <h3>Inventario de Red</h3>
+            <div class="detalle-lista">
+              <span>IP Gestion</span><strong>{{ detalleEquipo.device.ipAddress || 'N/D' }}</strong>
+              <span>Farmacia</span><strong>{{ detalleEquipo.device.branchCode || 'Sin asignar' }}</strong>
+              <span>Comunidad</span><strong>{{ detalleEquipo.device.snmpCommunity || 'N/D' }}</strong>
+              <span>Puerto SNMP</span><strong>161</strong>
+              <span>Descripcion</span><strong>{{ detalleEquipo.lastMetric?.routerDescription || 'N/D' }}</strong>
+            </div>
+          </section>
+          <section>
+            <h3>Metricas SNMP</h3>
+            <div class="detalle-lista" *ngIf="detalleEquipo.lastMetric; else sinMetricaRed">
+              <span>Uso CPU</span><strong>{{ detalleEquipo.lastMetric.usoCpuPorcentaje ?? 0 }}%</strong>
+              <span>Uso RAM</span><strong>{{ detalleEquipo.lastMetric.usoRamPorcentaje ?? 0 }}%</strong>
+              <span>Trafico IN</span><strong>{{ detalleEquipo.lastMetric.traficoInboundKbps ?? 0 }} Kbps</strong>
+              <span>Trafico OUT</span><strong>{{ detalleEquipo.lastMetric.traficoOutboundKbps ?? 0 }} Kbps</strong>
+              <span>Latencia</span><strong>{{ detalleEquipo.lastMetric.latencyMs ?? 0 }} ms</strong>
+              <span>Uptime</span><strong>{{ detalleEquipo.lastMetric.uptimeRouterTicks ?? 'N/D' }}</strong>
+            </div>
+            <ng-template #sinMetricaRed>
+              <p class="vacio">Sin metricas SNMP registradas.</p>
+            </ng-template>
           </section>
         </div>
       </article>
