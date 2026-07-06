@@ -4,7 +4,7 @@ spring:
   datasource:
     url: ${FARMAMIA_DB_URL:jdbc:postgresql://localhost:5432/farmamia_ops}
     username: ${FARMAMIA_DB_USER:postgres}
-    password: ${FARMAMIA_DB_PASSWORD:.r4e3w2q1}
+    password: ${FARMAMIA_DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -34,7 +34,7 @@ farmamia:
   agent:
     token-header-prefix: Bearer
   security:
-    jwt-secret: ${FARMAMIA_JWT_SECRET:dev-secret-change-me}
+    jwt-secret: ${FARMAMIA_JWT_SECRET}
     jwt-expiration-minutes: ${FARMAMIA_JWT_EXPIRATION_MINUTES:480}
     cors-allowed-origins: ${FARMAMIA_CORS_ALLOWED_ORIGINS:http://localhost:4200,http://127.0.0.1:4200,http://192.168.0.168:4200}
   paquetes:
@@ -57,3 +57,6 @@ farmamia:
     timeout-ms: ${FARMAMIA_SNMP_TIMEOUT_MS:1500}
     retries: ${FARMAMIA_SNMP_RETRIES:1}
     fixed-delay-ms: ${FARMAMIA_SNMP_DELAY_MS:30000}
+  cache:
+    resumen-noc:
+      ttl-segundos: ${FARMAMIA_CACHE_RESUMEN_NOC_TTL_SEGUNDOS:15}

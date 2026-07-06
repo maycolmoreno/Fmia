@@ -27,6 +27,37 @@ public interface AlertaRepositorioJpa extends JpaRepository<AlertaEntidad, UUID>
     @EntityGraph(attributePaths = {"equipo", "equipo.sucursal", "sucursal"})
     List<AlertaEntidad> findByEstadoIn(List<String> estados);
 
+    // Deduplicacion por dispositivo: evita crear otra alerta del mismo tipo para el mismo
+    // dispositivo mientras ya haya una activa (defensa adicional a los latches en memoria de
+    // SnmpPollingService, que se pierden si el proceso se reinicia).
+    List<AlertaEntidad> findByEquipo_IdAndTipoAlertaAndEstadoIn(UUID idEquipo, String tipoAlerta, List<String> estados);
+
+    // Deduplicacion por farmacia para alertas de red sin dispositivo (webhook de Alertmanager).
+    List<AlertaEntidad> findBySucursal_IdAndTipoAlertaAndEstadoIn(UUID idSucursal, String tipoAlerta, List<String> estados);
+
+    // Deduplicacion/ancla de correlacion por farmacia: resuelve la farmacia efectiva ya sea que
+    // la alerta este atada a un equipo (ej. dispositivo NETWORK_LINK) o directamente a la
+    // sucursal (alertas de red del webhook de Alertmanager, sin dispositivo).
+    @Query("""
+        select alerta
+        from AlertaEntidad alerta
+        left join alerta.equipo equipo
+        left join equipo.sucursal equipoSucursal
+        left join alerta.sucursal alertaSucursal
+        where alerta.tipoAlerta in :tiposAlerta
+          and alerta.estado in :estados
+          and (
+            (equipo is not null and equipoSucursal.id = :idSucursal)
+            or (equipo is null and alertaSucursal.id = :idSucursal)
+          )
+        order by alerta.abiertaEn asc
+        """)
+    List<AlertaEntidad> buscarPorSucursalTiposYEstados(
+        @Param("idSucursal") UUID idSucursal,
+        @Param("tiposAlerta") List<String> tiposAlerta,
+        @Param("estados") List<String> estados
+    );
+
     @Query("""
         select alerta
         from AlertaEntidad alerta

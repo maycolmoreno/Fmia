@@ -28,6 +28,16 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
 
     private static final OffsetDateTime FECHA_NEUTRA = OffsetDateTime.parse("1970-01-01T00:00:00Z");
     private static final UUID UUID_NEUTRO = new UUID(0L, 0L);
+    private static final List<String> ESTADOS_ALERTA_ACTIVA = List.of("OPEN", "ACKNOWLEDGED");
+
+    // Tipos que representan salud de red/enlace de una farmacia, sin importar si el productor
+    // fue el polling SNMP (device-scoped) o el webhook de Alertmanager (branch-scoped, sin
+    // dispositivo). Alertas de estos tipos para la misma farmacia se agrupan bajo un mismo
+    // incidente: la mas antigua activa es el "ancla" (correlationId propio nulo).
+    private static final List<String> TIPOS_RED_CORRELACIONABLES = List.of(
+        "NETWORK_LINK_DOWN", "LINK_DOWN", "LATENCIA_ALTA", "ROUTER_REINICIADO",
+        "VPN_CAIDA", "HIGH_CPU_USAGE", "LOW_MEMORY", "NETWORK_EVENT"
+    );
 
     private final EquipoRepositorioJpa equipoRepositorioJpa;
     private final AlertaRepositorioJpa alertaRepositorioJpa;
@@ -51,20 +61,51 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
         EquipoEntidad equipo = equipoRepositorioJpa.findById(alerta.idEquipo())
             .orElseThrow(() -> new RecursoNoEncontradoException("Equipo no encontrado: " + alerta.idEquipo()));
 
-        alertaRepositorioJpa.save(new AlertaEntidad(
+        boolean yaActiva = !alertaRepositorioJpa
+            .findByEquipo_IdAndTipoAlertaAndEstadoIn(equipo.getId(), alerta.tipoAlerta(), ESTADOS_ALERTA_ACTIVA)
+            .isEmpty();
+        if (yaActiva) {
+            return;
+        }
+
+        AlertaEntidad nueva = new AlertaEntidad(
             equipo,
             severidadOperacional(alerta, equipo),
             alerta.tipoAlerta(),
             alerta.titulo(),
             alerta.mensaje()
-        ));
+        );
+        UUID idSucursal = equipo.getSucursal() != null ? equipo.getSucursal().getId() : null;
+        correlacionarSiAplica(nueva, idSucursal, alerta.tipoAlerta());
+        alertaRepositorioJpa.save(nueva);
     }
 
     @Override
     public void guardarAlertaRed(AlertaRed alerta) {
         SucursalEntidad sucursal = sucursalRepositorioJpa.findByCodigo(alerta.codigoSucursal())
             .orElseThrow(() -> new RecursoNoEncontradoException("Farmacia no encontrada: " + alerta.codigoSucursal()));
-        alertaRepositorioJpa.save(new AlertaEntidad(sucursal, alerta.severidad(), alerta.tipoAlerta(), alerta.titulo(), alerta.mensaje()));
+
+        boolean yaActiva = !alertaRepositorioJpa
+            .findBySucursal_IdAndTipoAlertaAndEstadoIn(sucursal.getId(), alerta.tipoAlerta(), ESTADOS_ALERTA_ACTIVA)
+            .isEmpty();
+        if (yaActiva) {
+            return;
+        }
+
+        AlertaEntidad nueva = new AlertaEntidad(sucursal, alerta.severidad(), alerta.tipoAlerta(), alerta.titulo(), alerta.mensaje());
+        correlacionarSiAplica(nueva, sucursal.getId(), alerta.tipoAlerta());
+        alertaRepositorioJpa.save(nueva);
+    }
+
+    private void correlacionarSiAplica(AlertaEntidad nueva, UUID idSucursal, String tipoAlerta) {
+        if (idSucursal == null || !TIPOS_RED_CORRELACIONABLES.contains(tipoAlerta)) {
+            return;
+        }
+
+        alertaRepositorioJpa.buscarPorSucursalTiposYEstados(idSucursal, TIPOS_RED_CORRELACIONABLES, ESTADOS_ALERTA_ACTIVA)
+            .stream()
+            .findFirst()
+            .ifPresent(ancla -> nueva.asignarCorrelacion(ancla.getCorrelacionId() != null ? ancla.getCorrelacionId() : ancla.getId()));
     }
 
     @Override
@@ -184,7 +225,8 @@ public class RepositorioAlertasJpaAdaptador implements RepositorioAlertas {
             alerta.getReconocidaEn(),
             alerta.getCerradaPor() == null ? null : alerta.getCerradaPor().getUsuario(),
             alerta.getCerradaEn(),
-            alerta.isEventoDeRed()
+            alerta.isEventoDeRed(),
+            alerta.getCorrelacionId()
         );
     }
 

@@ -10,6 +10,8 @@ public record RespuestaEstadoOperacionalFarmacia(
     @JsonProperty("nombreFarmacia") String nombreFarmacia,
     @JsonProperty("ciudad") String ciudad,
     @JsonProperty("zona") String zona,
+    @JsonProperty("latitud") Double latitud,
+    @JsonProperty("longitud") Double longitud,
     @JsonProperty("deTurno") boolean deTurno,
     @JsonProperty("activa") boolean activa,
     @JsonProperty("estadoOperacional") String estadoOperacional,

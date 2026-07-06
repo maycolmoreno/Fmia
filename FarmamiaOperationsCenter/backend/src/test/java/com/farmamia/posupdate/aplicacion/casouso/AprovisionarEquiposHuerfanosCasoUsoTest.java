@@ -228,6 +228,11 @@ class AprovisionarEquiposHuerfanosCasoUsoTest {
         public Pagina<Sucursal> listarPaginado(FiltroSucursales filtro) {
             return new Pagina<>(List.of(), 0, 1, 0, 0, false);
         }
+
+        @Override
+        public Sucursal actualizarCoordenadas(UUID id, Double latitud, Double longitud) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     private static final class RepositorioAuditoriaEnMemoria implements RepositorioAuditoria {

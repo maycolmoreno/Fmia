@@ -4,15 +4,43 @@ param(
     [switch]$PostgresLocal,
     [string]$DbUrl = "jdbc:postgresql://localhost:5432/farmamia_ops",
     [string]$DbUser = "postgres",
-    [string]$DbPassword = ".r4e3w2q1",
+    [string]$DbPassword,
+    [string]$GrafanaAdminPassword,
     [switch]$NoLevantarPanel
 )
 
 $ErrorActionPreference = "Stop"
 
+function Nueva-ContrasenaAleatoria {
+    param([int]$Longitud = 24)
+    $caracteres = (48..57) + (65..90) + (97..122)
+    -join ((1..$Longitud) | ForEach-Object { [char]($caracteres | Get-Random) })
+}
+
+if ($PostgresLocal) {
+    if (-not $DbPassword) {
+        throw "Con -PostgresLocal debe indicar -DbPassword con la contrasena real de su PostgreSQL local; no se asume ningun valor por defecto."
+    }
+} else {
+    # Se usara el Postgres/Grafana levantados por docker-compose.mvp.yml en este mismo run.
+    # Si no se indica una contrasena, se genera una aleatoria (nunca un valor fijo en el repo).
+    if (-not $DbPassword) {
+        $DbPassword = Nueva-ContrasenaAleatoria
+        Write-Host "FARMAMIA_DB_PASSWORD generada automaticamente para este run: $DbPassword"
+    }
+}
+
+if (-not $GrafanaAdminPassword) {
+    $GrafanaAdminPassword = Nueva-ContrasenaAleatoria
+    Write-Host "FARMAMIA_GRAFANA_ADMIN_PASSWORD generada automaticamente para este run: $GrafanaAdminPassword"
+}
+
+$env:FARMAMIA_DB_PASSWORD = $DbPassword
+$env:FARMAMIA_GRAFANA_ADMIN_PASSWORD = $GrafanaAdminPassword
+
 $raiz = Resolve-Path (Join-Path $PSScriptRoot "..\..")
-$backend = Join-Path $raiz "backend-api"
-$panel = Join-Path $raiz "admin-panel"
+$backend = Join-Path $raiz "backend"
+$panel = Join-Path $raiz "frontend"
 $compose = Join-Path $raiz "infraestructura\local\docker-compose.mvp.yml"
 $runtime = Join-Path $raiz ".runtime"
 $logs = Join-Path $runtime "logs"
@@ -68,9 +96,12 @@ if ($PostgresLocal) {
 } else {
     Write-Host "Levantando PostgreSQL MVP con Docker Compose..."
     docker compose -f $compose up -d postgres
-    $DbUrl = "jdbc:postgresql://localhost:5432/farmamia_ops"
+    # El compose mapea el contenedor (5432) al puerto de host 5433 (ver
+    # infraestructura\local\docker-compose.mvp.yml) para no chocar con un Postgres local existente.
+    $DbUrl = "jdbc:postgresql://localhost:5433/farmamia_ops"
     $DbUser = "farmamia"
-    $DbPassword = "farmamia"
+    # $DbPassword ya quedo definida arriba (indicada por el usuario o generada aleatoriamente)
+    # y coincide con la que docker compose acaba de usar via FARMAMIA_DB_PASSWORD.
 }
 
 $env:FARMAMIA_DB_URL = $DbUrl

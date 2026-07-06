@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface ObjetivoDespliegueRepositorioJpa extends JpaRepository<ObjetivoDespliegueEntidad, UUID> {
 
@@ -39,4 +41,15 @@ public interface ObjetivoDespliegueRepositorioJpa extends JpaRepository<Objetivo
 
     @EntityGraph(attributePaths = {"despliegue", "despliegue.paquete", "grupoTrx"})
     List<ObjetivoDespliegueEntidad> findByEquipo_IdOrderByActualizadoEnDesc(UUID idEquipo);
+
+    @Query("""
+        select distinct o.equipo.sucursal.id
+        from ObjetivoDespliegueEntidad o
+        where o.equipo.sucursal.id in :idsSucursal
+          and o.estado not in :estadosFinales
+        """)
+    List<UUID> buscarSucursalesConObjetivoActivo(
+        @Param("idsSucursal") List<UUID> idsSucursal,
+        @Param("estadosFinales") List<String> estadosFinales
+    );
 }

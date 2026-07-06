@@ -53,8 +53,14 @@ public class ConfiguracionSeguridad {
                 .requestMatchers("/api/farmacias/**", "/api/equipos-pos/**", "/api/versiones-pos/**").authenticated()
                 .requestMatchers("/api/deployments/**", "/api/orchestration/**", "/api/dashboard/**", "/api/update-events/**", "/api/alerts/**").authenticated()
                 .requestMatchers("/api/campanas-pos/**", "/api/eventos-agente/**", "/api/grupos-trx/**").authenticated()
-                .requestMatchers("/api/audit-logs/**", "/api/admin/**").authenticated()
-                .anyRequest().permitAll()
+                .requestMatchers("/api/audit-logs/**", "/api/admin/**", "/api/noc/**").authenticated()
+                // El resto de /api/agent/** (heartbeat, instructions, events, download-progress,
+                // update-result) se autentica dentro de FiltroAutenticacionAgente mediante el token
+                // Bearer del agente; ese filtro no registra un Authentication de Spring Security,
+                // por lo que estas rutas deben quedar permitAll aqui (la autorizacion real ya ocurre
+                // en el filtro antes de llegar a este punto).
+                .requestMatchers("/api/agent/**").permitAll()
+                .anyRequest().authenticated()
             )
             .addFilterBefore(filtroAutenticacionAdministrativa, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(filtroAutenticacionAgente, UsernamePasswordAuthenticationFilter.class)

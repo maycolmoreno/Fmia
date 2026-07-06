@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Farmamia.Agent\Farmamia.Agent.csproj" />
+    <ProjectReference Include="..\Farmamia.Agent.Tests.PosSimulado\Farmamia.Agent.Tests.PosSimulado.csproj" />
   </ItemGroup>
 
 </Project>

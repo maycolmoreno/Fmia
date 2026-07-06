@@ -138,7 +138,7 @@ class ProcesarAlertaRedCasoUsoTest {
     }
 
     private Sucursal sucursal(String codigo, String nombre, boolean deTurno) {
-        return new Sucursal(UUID.randomUUID(), codigo, nombre, null, null, null,
+        return new Sucursal(UUID.randomUUID(), codigo, nombre, null, null, null, null, null,
             deTurno, true, OffsetDateTime.now(), OffsetDateTime.now());
     }
 
@@ -187,6 +187,11 @@ class ProcesarAlertaRedCasoUsoTest {
 
         @Override
         public Pagina<Sucursal> listarPaginado(FiltroSucursales filtro) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Sucursal actualizarCoordenadas(UUID id, Double latitud, Double longitud) {
             throw new UnsupportedOperationException();
         }
     }

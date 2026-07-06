@@ -20,6 +20,7 @@ public record RespuestaAlerta(
     @JsonProperty("acknowledgedAt") OffsetDateTime reconocidaEn,
     @JsonProperty("closedBy") String cerradaPor,
     @JsonProperty("closedAt") OffsetDateTime cerradaEn,
-    @JsonProperty("networkEvent") boolean eventoDeRed
+    @JsonProperty("networkEvent") boolean eventoDeRed,
+    @JsonProperty("correlationId") UUID correlacionId
 ) {
 }

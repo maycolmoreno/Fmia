@@ -18,7 +18,7 @@ datasources:
     database: farmamia_ops
     user: postgres
     secureJsonData:
-      password: ".r4e3w2q1"
+      password: "$FARMAMIA_DB_PASSWORD"
     jsonData:
       sslmode: disable
       maxOpenConns: 5

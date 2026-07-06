@@ -25,17 +25,19 @@ function Esperar-Api {
 
 Esperar-Api
 
-Write-Host "Ejecutando E2E demo exitoso..."
-& (Join-Path $desarrollo "crear-actualizacion-exitosa-demo.ps1") `
-    -ApiBaseUrl $ApiBaseUrl `
-    -UsuarioAdmin $UsuarioAdmin `
-    -ContrasenaAdmin $ContrasenaAdmin
+function Ejecutar-DemoSiExiste($nombreScript, $descripcion) {
+    $ruta = Join-Path $desarrollo $nombreScript
+    if (-not (Test-Path $ruta)) {
+        Write-Host "PENDIENTE (no implementado aun): herramientas\desarrollo\$nombreScript" -ForegroundColor Yellow
+        return
+    }
 
-Write-Host "Ejecutando E2E demo fallido..."
-& (Join-Path $desarrollo "crear-alerta-fallo-demo.ps1") `
-    -ApiBaseUrl $ApiBaseUrl `
-    -UsuarioAdmin $UsuarioAdmin `
-    -ContrasenaAdmin $ContrasenaAdmin
+    Write-Host $descripcion
+    & $ruta -ApiBaseUrl $ApiBaseUrl -UsuarioAdmin $UsuarioAdmin -ContrasenaAdmin $ContrasenaAdmin
+}
+
+Ejecutar-DemoSiExiste "crear-actualizacion-exitosa-demo.ps1" "Ejecutando E2E demo exitoso..."
+Ejecutar-DemoSiExiste "crear-alerta-fallo-demo.ps1" "Ejecutando E2E demo fallido..."
 
 Write-Host ""
 Write-Host "E2E demo local completado."

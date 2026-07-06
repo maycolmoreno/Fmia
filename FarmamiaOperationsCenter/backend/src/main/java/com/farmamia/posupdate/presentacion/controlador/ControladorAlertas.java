@@ -158,7 +158,8 @@ public class ControladorAlertas {
             alerta.reconocidaEn(),
             alerta.cerradaPor(),
             alerta.cerradaEn(),
-            alerta.eventoDeRed()
+            alerta.eventoDeRed(),
+            alerta.correlacionId()
         );
     }
 

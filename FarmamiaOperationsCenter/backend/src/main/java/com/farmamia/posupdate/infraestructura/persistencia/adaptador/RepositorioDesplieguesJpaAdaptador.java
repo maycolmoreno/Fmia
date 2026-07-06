@@ -12,15 +12,18 @@ import com.farmamia.posupdate.infraestructura.persistencia.entidad.EquipoEntidad
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.GrupoTrxEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.ObjetivoDespliegueEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.PaquetePosEntidad;
+import com.farmamia.posupdate.infraestructura.persistencia.entidad.SucursalEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.DespliegueRepositorioJpa;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.EquipoRepositorioJpa;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.GrupoTrxRepositorioJpa;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.ObjetivoDespliegueRepositorioJpa;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.PaquetePosRepositorioJpa;
 import java.time.OffsetDateTime;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -73,6 +76,16 @@ public class RepositorioDesplieguesJpaAdaptador implements RepositorioDespliegue
             throw new IllegalArgumentException("El paquete POS debe estar aprobado para crear un despliegue");
         }
 
+        validarTopeMensualCampanias();
+
+        GrupoTrxEntidad grupoTrxObjetivo = resolverGrupoTrxObjetivo(datos.grupoObjetivo());
+        List<UUID> idsObjetivo = resolverIdsObjetivo(datos, grupoTrxObjetivo).stream().distinct().toList();
+        if (idsObjetivo.isEmpty()) {
+            throw new IllegalArgumentException("La campana debe tener al menos un equipo POS objetivo.");
+        }
+
+        validarFarmaciasSinCampaniaActiva(idsObjetivo);
+
         DespliegueEntidad despliegue = despliegueRepositorioJpa.save(new DespliegueEntidad(
             paquete,
             datos.nombre(),
@@ -80,20 +93,65 @@ public class RepositorioDesplieguesJpaAdaptador implements RepositorioDespliegue
             datos.programadoEn()
         ));
 
-        GrupoTrxEntidad grupoTrxObjetivo = resolverGrupoTrxObjetivo(datos.grupoObjetivo());
-        List<UUID> idsObjetivo = resolverIdsObjetivo(datos, grupoTrxObjetivo);
-        if (idsObjetivo.isEmpty()) {
-            throw new IllegalArgumentException("La campana debe tener al menos un equipo POS objetivo.");
-        }
-
         List<ObjetivoDespliegueEntidad> objetivos = idsObjetivo
             .stream()
-            .distinct()
             .map(idEquipo -> crearObjetivo(datos, despliegue, paquete, idEquipo, grupoTrxObjetivo))
             .toList();
         objetivoDespliegueRepositorioJpa.saveAll(objetivos);
 
         return aDominio(despliegue, objetivos.size());
+    }
+
+    private static final int TOPE_CAMPANIAS_POR_MES = 3;
+    private static final List<String> ESTADOS_CAMPANIA_ACTIVA = List.of("PILOT_RUNNING", "RUNNING");
+
+    private void validarTopeMensualCampanias() {
+        OffsetDateTime ahora = OffsetDateTime.now();
+        YearMonth mesActual = YearMonth.from(ahora);
+        OffsetDateTime inicioMes = mesActual.atDay(1).atStartOfDay().atOffset(ahora.getOffset());
+        OffsetDateTime inicioSiguienteMes = inicioMes.plusMonths(1);
+
+        long campaniasDelMes = despliegueRepositorioJpa.countByCreadoEnGreaterThanEqualAndCreadoEnLessThan(
+            inicioMes,
+            inicioSiguienteMes
+        );
+        if (campaniasDelMes >= TOPE_CAMPANIAS_POR_MES) {
+            throw new IllegalArgumentException(
+                "Se alcanzo el limite de " + TOPE_CAMPANIAS_POR_MES + " campanas para el mes calendario actual (" + mesActual + ")"
+            );
+        }
+    }
+
+    private void validarFarmaciasSinCampaniaActiva(List<UUID> idsEquiposObjetivo) {
+        List<UUID> idsSucursal = equipoRepositorioJpa.findAllById(idsEquiposObjetivo)
+            .stream()
+            .map(EquipoEntidad::getSucursal)
+            .filter(Objects::nonNull)
+            .map(SucursalEntidad::getId)
+            .distinct()
+            .toList();
+
+        if (idsSucursal.isEmpty()) {
+            return;
+        }
+
+        List<UUID> sucursalesEnConflicto = objetivoDespliegueRepositorioJpa
+            .buscarSucursalesConObjetivoActivo(idsSucursal, ESTADOS_FINALES);
+        if (!sucursalesEnConflicto.isEmpty()) {
+            throw new IllegalArgumentException(
+                "Ya existe una actualizacion POS activa para " + sucursalesEnConflicto.size()
+                    + " farmacia(s) objetivo; debe completarse (o fallar) antes de lanzar una nueva actualizacion sobre la misma farmacia."
+            );
+        }
+    }
+
+    private void validarSinOtraCampaniaActiva() {
+        long activas = despliegueRepositorioJpa.countByEstadoIn(ESTADOS_CAMPANIA_ACTIVA);
+        if (activas > 0) {
+            throw new IllegalArgumentException(
+                "Ya existe otra campana en curso (PILOT_RUNNING/RUNNING); debe completarse o pausarse antes de lanzar una nueva."
+            );
+        }
     }
 
     @Override
@@ -159,6 +217,7 @@ public class RepositorioDesplieguesJpaAdaptador implements RepositorioDespliegue
     @Override
     public Despliegue lanzar(UUID id) {
         DespliegueEntidad despliegue = buscarDespliegue(id);
+        validarSinOtraCampaniaActiva();
         despliegue.lanzar();
         return aDominio(despliegue, objetivoDespliegueRepositorioJpa.countByDespliegue_Id(id));
     }

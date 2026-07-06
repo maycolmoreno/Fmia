@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: farmamia_ops
       POSTGRES_USER: farmamia
-      POSTGRES_PASSWORD: farmamia
+      POSTGRES_PASSWORD: ${FARMAMIA_DB_PASSWORD:?Defina FARMAMIA_DB_PASSWORD antes de levantar el stack (ver herramientas/verificacion/levantar-stack-mvp-local.ps1)}
     ports:
       - "5433:5432"
     volumes:
@@ -37,9 +37,12 @@ services:
     container_name: farmamia_grafana
     environment:
       GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: farmamia
+      GF_SECURITY_ADMIN_PASSWORD: ${FARMAMIA_GRAFANA_ADMIN_PASSWORD:?Defina FARMAMIA_GRAFANA_ADMIN_PASSWORD antes de levantar el stack (ver herramientas/verificacion/levantar-stack-mvp-local.ps1)}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # Reenviada al contenedor para que datasources.yml pueda expandir $FARMAMIA_DB_PASSWORD
+      # en el datasource PostgreSQL provisionado (ver monitoring/provisioning/datasources).
+      FARMAMIA_DB_PASSWORD: ${FARMAMIA_DB_PASSWORD}
     ports:
       - "3000:3000"
     volumes:

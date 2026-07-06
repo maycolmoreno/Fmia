@@ -172,7 +172,7 @@ public sealed class PrepararActualizacionCasoUsoTests : IDisposable
             new AlmacenamientoPaquetesLocal(Options.Create(opciones)),
             inventario,
             new RespaldoPosLocal(Options.Create(opciones)),
-            actualizadorPos ?? new ActualizadorPosZip(),
+            actualizadorPos ?? new FakeActualizadorPosConValidacionExitosa(opciones),
             new FakeProcesoPos(),
             new FakeRelojSistema(),
             new FakeAvisadorUsuario(),
@@ -323,9 +323,32 @@ public sealed class PrepararActualizacionCasoUsoTests : IDisposable
             return Task.CompletedTask;
         }
 
-        public bool Validar(string rutaPos)
+        public Task<ResultadoValidacionPos> ValidarAsync(string rutaPos, CancellationToken cancellationToken)
         {
-            return false;
+            return Task.FromResult(ResultadoValidacionPos.Fallo("TEST_STUB", "Fallo simulado por prueba"));
+        }
+    }
+
+    // Delega AplicarAsync al extractor real (para conservar la cobertura de extraccion de ZIP en
+    // las pruebas de orquestacion) pero evita ejecutar un proceso real en ValidarAsync: el "exe"
+    // que las pruebas escriben en el ZIP es un archivo de texto, no un binario Win32 valido.
+    private sealed class FakeActualizadorPosConValidacionExitosa : IActualizadorPos
+    {
+        private readonly ActualizadorPosZip interno;
+
+        public FakeActualizadorPosConValidacionExitosa(OpcionesAgente opciones)
+        {
+            interno = new ActualizadorPosZip(Options.Create(opciones));
+        }
+
+        public Task AplicarAsync(ArchivoPaqueteLocal paquete, string rutaPos, CancellationToken cancellationToken)
+        {
+            return interno.AplicarAsync(paquete, rutaPos, cancellationToken);
+        }
+
+        public Task<ResultadoValidacionPos> ValidarAsync(string rutaPos, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(ResultadoValidacionPos.Exito("TEST_STUB"));
         }
     }
 

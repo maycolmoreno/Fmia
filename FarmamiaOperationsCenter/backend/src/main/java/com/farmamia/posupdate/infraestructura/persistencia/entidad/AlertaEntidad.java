@@ -49,6 +49,11 @@ public class AlertaEntidad {
     @Column(name = "branch_code_red", length = 30)
     private String codigoSucursalRed;
 
+    // Id de la alerta "ancla" del incidente de red al que pertenece esta alerta (misma farmacia,
+    // tipo correlacionable, aun activa cuando esta se creo). NULL si esta alerta es el ancla.
+    @Column(name = "correlation_id")
+    private UUID correlacionId;
+
     @CreationTimestamp
     @Column(name = "opened_at", nullable = false, updatable = false)
     private OffsetDateTime abiertaEn;
@@ -106,6 +111,14 @@ public class AlertaEntidad {
 
     public String getCodigoSucursalRed() {
         return codigoSucursalRed;
+    }
+
+    public UUID getCorrelacionId() {
+        return correlacionId;
+    }
+
+    public void asignarCorrelacion(UUID idAlertaAncla) {
+        this.correlacionId = idAlertaAncla;
     }
 
     public String getSeveridad() {

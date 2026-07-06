@@ -413,7 +413,8 @@ class RegistrarEventoAgenteCasoUsoTest {
                     null,
                     null,
                     null,
-                    false
+                    false,
+                    null
                 ))
                 .toList();
         }

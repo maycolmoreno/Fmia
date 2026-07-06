@@ -191,19 +191,27 @@ public sealed class PrepararActualizacionCasoUso
             );
             await actualizadorPos.AplicarAsync(archivo, inventario.RutaPos, cancellationToken);
 
-            if (!actualizadorPos.Validar(inventario.RutaPos))
+            ResultadoValidacionPos resultadoValidacion = await actualizadorPos.ValidarAsync(inventario.RutaPos, cancellationToken);
+            if (!resultadoValidacion.Exitoso)
             {
                 await clienteOperaciones.ReportarEventoAsync(
                     credenciales,
-                    Evento(instruccion, "VALIDATION_FAILED", "No se encontro Zabyca.Pos.Desktop.exe despues de actualizar", inventario, archivo, respaldo),
+                    Evento(
+                        instruccion,
+                        "VALIDATION_FAILED",
+                        $"Validacion POS fallida ({resultadoValidacion.Metodo}): {resultadoValidacion.Causa}",
+                        inventario,
+                        archivo,
+                        respaldo
+                    ),
                     cancellationToken
                 );
-                throw new InvalidOperationException("Validacion POS fallida despues de actualizar");
+                throw new InvalidOperationException("Validacion POS fallida: " + resultadoValidacion.Causa);
             }
 
             await clienteOperaciones.ReportarEventoAsync(
                 credenciales,
-                Evento(instruccion, "VALIDATION_OK", "Validacion POS correcta", inventario, archivo, respaldo),
+                Evento(instruccion, "VALIDATION_OK", $"Validacion POS correcta ({resultadoValidacion.Metodo})", inventario, archivo, respaldo),
                 cancellationToken
             );
 
@@ -221,7 +229,7 @@ public sealed class PrepararActualizacionCasoUso
                     "COMPLETED",
                     inventario.VersionPos,
                     instruccion.Version,
-                    "Actualizacion POS completada"
+                    $"Actualizacion POS completada (metodo de validacion: {resultadoValidacion.Metodo})"
                 ),
                 cancellationToken
             );

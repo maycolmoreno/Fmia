@@ -16,6 +16,8 @@ public interface DespliegueRepositorioJpa extends JpaRepository<DespliegueEntida
 
     long countByEstadoIn(List<String> estados);
 
+    long countByCreadoEnGreaterThanEqualAndCreadoEnLessThan(OffsetDateTime desde, OffsetDateTime hasta);
+
     @EntityGraph(attributePaths = "paquete")
     Optional<DespliegueEntidad> findFirstByEstadoInOrderByCreadoEnDesc(List<String> estados);
 

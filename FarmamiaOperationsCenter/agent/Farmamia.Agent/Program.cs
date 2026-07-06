@@ -34,7 +34,7 @@ builder.Services.AddSingleton<IRespaldoPos, RespaldoPosLocal>();
 builder.Services.AddSingleton<IActualizadorPos, ActualizadorPosZip>();
 builder.Services.AddSingleton<IBloqueoActualizacion, BloqueoActualizacionMutex>();
 builder.Services.AddSingleton<IProcesoPos, ProcesoPosWindows>();
-builder.Services.AddSingleton<IAvisadorUsuario, AvisadorUsuarioArchivo>();
+builder.Services.AddSingleton<IAvisadorUsuario, AvisadorUsuarioSesionInteractiva>();
 builder.Services.AddSingleton<IEstadoAvisosActualizacion, EstadoAvisosActualizacionLocal>();
 builder.Services.AddSingleton<IEstadoLocalAgente, EstadoLocalAgenteArchivo>();
 builder.Services.AddSingleton<IColaEventosAgente, ColaEventosAgenteSqlite>();

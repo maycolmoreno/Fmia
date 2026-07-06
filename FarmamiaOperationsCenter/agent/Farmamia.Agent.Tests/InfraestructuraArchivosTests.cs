@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Text.Json;
 using Farmamia.Agent.Dominio.Modelos;
 using Farmamia.Agent.Infraestructura.Actualizacion;
 using Farmamia.Agent.Infraestructura.Configuracion;
@@ -31,6 +32,29 @@ public sealed class InfraestructuraArchivosTests : IDisposable
         Assert.True(Directory.Exists(Path.Combine(raiz, "Logs")));
         Assert.True(Directory.Exists(Path.Combine(raiz, "Temp")));
         Assert.True(Directory.Exists(Path.Combine(raiz, "State")));
+
+        string contenido = await File.ReadAllTextAsync(Path.Combine(raiz, "State", "credenciales.json"));
+        Assert.DoesNotContain("token-tecnico", contenido);
+        Assert.Contains("proteccion", contenido);
+    }
+
+    [Fact]
+    public async Task Configuracion_lee_credenciales_legacy_sin_proteccion()
+    {
+        OpcionesAgente opciones = Opciones();
+        var configuracion = new ConfiguracionLocalAgente(Options.Create(opciones));
+        CredencialesAgente credenciales = new(Guid.NewGuid(), "token-legacy");
+
+        await configuracion.PrepararEstructuraAsync(CancellationToken.None);
+        await File.WriteAllTextAsync(
+            Path.Combine(raiz, "State", "credenciales.json"),
+            JsonSerializer.Serialize(credenciales, new JsonSerializerOptions(JsonSerializerDefaults.Web)),
+            CancellationToken.None
+        );
+
+        CredencialesAgente? recuperadas = await configuracion.LeerCredencialesAsync(CancellationToken.None);
+
+        Assert.Equal(credenciales, recuperadas);
     }
 
     [Fact]
@@ -54,18 +78,17 @@ public sealed class InfraestructuraArchivosTests : IDisposable
     }
 
     [Fact]
-    public async Task Actualizador_zip_valido_copia_archivos_y_valida_ejecutable_principal()
+    public async Task Actualizador_zip_valido_copia_archivos_y_ejecutable_queda_presente()
     {
         string zip = Path.Combine(raiz, "paquete-valido.zip");
         string rutaPos = Path.Combine(raiz, "POS");
         CrearZip(zip, ("Zabyca.Pos.Desktop.exe", "version-nueva"), ("version.txt", "2026.06.2-success"));
 
-        var actualizador = new ActualizadorPosZip();
+        var actualizador = new ActualizadorPosZip(Options.Create(Opciones()));
         var paquete = new ArchivoPaqueteLocal(zip, new FileInfo(zip).Length, "checksum-no-relevante");
 
         await actualizador.AplicarAsync(paquete, rutaPos, CancellationToken.None);
 
-        Assert.True(actualizador.Validar(rutaPos));
         Assert.Equal("version-nueva", File.ReadAllText(Path.Combine(rutaPos, "Zabyca.Pos.Desktop.exe")));
         Assert.Equal("2026.06.2-success", File.ReadAllText(Path.Combine(rutaPos, "version.txt")));
     }
@@ -77,13 +100,64 @@ public sealed class InfraestructuraArchivosTests : IDisposable
         string rutaPos = Path.Combine(raiz, "POS");
         CrearZip(zip, ("version.txt", "2026.06.2-fail"));
 
-        var actualizador = new ActualizadorPosZip();
+        var actualizador = new ActualizadorPosZip(Options.Create(Opciones()));
         var paquete = new ArchivoPaqueteLocal(zip, new FileInfo(zip).Length, "checksum-no-relevante");
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             actualizador.AplicarAsync(paquete, rutaPos, CancellationToken.None)
         );
-        Assert.False(actualizador.Validar(rutaPos));
+
+        ResultadoValidacionPos resultado = await actualizador.ValidarAsync(rutaPos, CancellationToken.None);
+        Assert.False(resultado.Exitoso);
+        Assert.Equal("EJECUTABLE_NO_ENCONTRADO", resultado.Metodo);
+    }
+
+    [Fact]
+    public async Task Validar_usa_smoke_test_y_reporta_exito_si_el_codigo_de_salida_es_cero()
+    {
+        string rutaPos = PrepararPosSimulado(exitCodeSmokeTest: 0);
+        var actualizador = new ActualizadorPosZip(Options.Create(OpcionesConTimeoutsCortos()));
+
+        ResultadoValidacionPos resultado = await actualizador.ValidarAsync(rutaPos, CancellationToken.None);
+
+        Assert.True(resultado.Exitoso);
+        Assert.Equal("SMOKE_TEST", resultado.Metodo);
+    }
+
+    [Fact]
+    public async Task Validar_usa_smoke_test_y_reporta_fallo_si_el_codigo_de_salida_no_es_cero()
+    {
+        string rutaPos = PrepararPosSimulado(exitCodeSmokeTest: 1);
+        var actualizador = new ActualizadorPosZip(Options.Create(OpcionesConTimeoutsCortos()));
+
+        ResultadoValidacionPos resultado = await actualizador.ValidarAsync(rutaPos, CancellationToken.None);
+
+        Assert.False(resultado.Exitoso);
+        Assert.Equal("SMOKE_TEST", resultado.Metodo);
+    }
+
+    [Fact]
+    public async Task Validar_cae_a_proceso_vivo_si_la_version_no_soporta_smoke_test_y_reporta_exito()
+    {
+        string rutaPos = PrepararPosSimulado(ignoraSmokeTest: true, vidaSegundos: 30);
+        var actualizador = new ActualizadorPosZip(Options.Create(OpcionesConTimeoutsCortos()));
+
+        ResultadoValidacionPos resultado = await actualizador.ValidarAsync(rutaPos, CancellationToken.None);
+
+        Assert.True(resultado.Exitoso);
+        Assert.Equal("PROCESO_VIVO_20S", resultado.Metodo);
+    }
+
+    [Fact]
+    public async Task Validar_cae_a_proceso_vivo_y_reporta_fallo_si_el_proceso_muere_antes_de_tiempo()
+    {
+        string rutaPos = PrepararPosSimulado(ignoraSmokeTest: true, vidaSegundos: 0);
+        var actualizador = new ActualizadorPosZip(Options.Create(OpcionesConTimeoutsCortos()));
+
+        ResultadoValidacionPos resultado = await actualizador.ValidarAsync(rutaPos, CancellationToken.None);
+
+        Assert.False(resultado.Exitoso);
+        Assert.Equal("PROCESO_VIVO_20S", resultado.Metodo);
     }
 
     public void Dispose()
@@ -101,6 +175,43 @@ public sealed class InfraestructuraArchivosTests : IDisposable
             RutaAgente = raiz,
             RutaPos = Path.Combine(raiz, "POS")
         };
+    }
+
+    private OpcionesAgente OpcionesConTimeoutsCortos()
+    {
+        return new OpcionesAgente
+        {
+            RutaAgente = raiz,
+            RutaPos = Path.Combine(raiz, "POS"),
+            SmokeTestTimeoutSegundos = 3,
+            ValidacionProcesoVivoSegundos = 3
+        };
+    }
+
+    private string PrepararPosSimulado(int exitCodeSmokeTest = 0, bool ignoraSmokeTest = false, int vidaSegundos = 60)
+    {
+        string rutaPos = Path.Combine(raiz, "POS");
+        Directory.CreateDirectory(rutaPos);
+
+        // El apphost tiene el nombre de su .dll administrada embebido en el binario desde el build
+        // (no lo deriva en tiempo de ejecucion reemplazando la extension), asi que renombrar los
+        // archivos despues de compilados no funciona: el proyecto Farmamia.Agent.Tests.PosSimulado
+        // ya se compila con AssemblyName=Zabyca.Pos.Desktop para que esto sea una copia simple.
+        const string nombreEjecutable = "Zabyca.Pos.Desktop";
+        foreach (string extension in new[] { ".exe", ".dll", ".runtimeconfig.json", ".deps.json" })
+        {
+            string origen = Path.Combine(AppContext.BaseDirectory, nombreEjecutable + extension);
+            if (File.Exists(origen))
+            {
+                File.Copy(origen, Path.Combine(rutaPos, nombreEjecutable + extension), overwrite: true);
+            }
+        }
+
+        File.WriteAllText(
+            Path.Combine(rutaPos, "simulado.config"),
+            $"{exitCodeSmokeTest};{ignoraSmokeTest.ToString().ToLowerInvariant()};{vidaSegundos}"
+        );
+        return rutaPos;
     }
 
     private static void CrearZip(string rutaZip, params (string Ruta, string Contenido)[] archivos)

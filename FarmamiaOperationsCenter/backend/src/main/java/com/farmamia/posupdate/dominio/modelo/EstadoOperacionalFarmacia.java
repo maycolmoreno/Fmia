@@ -9,6 +9,8 @@ public record EstadoOperacionalFarmacia(
     String nombreFarmacia,
     String ciudad,
     String zona,
+    Double latitud,
+    Double longitud,
     boolean deTurno,
     boolean activa,
     String estadoOperacional,

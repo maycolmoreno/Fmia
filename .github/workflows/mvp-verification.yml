@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: FarmamiaOperationsCenter/backend-api
+        working-directory: FarmamiaOperationsCenter/backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,7 +29,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
-          key: maven-${{ runner.os }}-${{ hashFiles('FarmamiaOperationsCenter/backend-api/pom.xml') }}
+          key: maven-${{ runner.os }}-${{ hashFiles('FarmamiaOperationsCenter/backend/pom.xml') }}
           restore-keys: |
             maven-${{ runner.os }}-
 
@@ -38,12 +38,12 @@ jobs:
           chmod +x ./mvnw
           ./mvnw test
 
-  admin-panel:
-    name: Admin Panel Angular
+  frontend:
+    name: Frontend Angular
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: FarmamiaOperationsCenter/admin-panel
+        working-directory: FarmamiaOperationsCenter/frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,7 +53,7 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: FarmamiaOperationsCenter/admin-panel/package-lock.json
+          cache-dependency-path: FarmamiaOperationsCenter/frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -79,7 +79,7 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        working-directory: FarmamiaOperationsCenter/windows-agent
+        working-directory: FarmamiaOperationsCenter/agent
     steps:
       - name: Checkout
         uses: actions/checkout@v4

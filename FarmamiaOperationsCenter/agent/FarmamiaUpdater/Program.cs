@@ -46,9 +46,47 @@ switch (comando.ToLowerInvariant())
     case "diagnostico":
         await EnviarDiagnosticoAsync(opciones, credenciales, rutaEstado);
         break;
-    default:
-        Console.WriteLine("Comandos: estado | version | buscar | instalar-ahora | diagnostico");
+    case "probar-sesion":
+        await ProbarSesionInteractivaAsync(opciones);
         break;
+    default:
+        Console.WriteLine("Comandos: estado | version | buscar | instalar-ahora | diagnostico | probar-sesion");
+        break;
+}
+
+// Diagnostico manual para el riesgo de Sesion 0: ejecuta este comando dentro de una tarea
+// programada como SYSTEM (ver herramientas/laboratorio-pos/probar-sesion0-real.ps1) para
+// reproducir el mismo aislamiento de sesion del servicio real, sin depender del backend.
+static async Task ProbarSesionInteractivaAsync(OpcionesAgente opciones)
+{
+    using ILoggerFactory loggerFactory = LoggerFactory.Create(_ => { });
+    IOptions<OpcionesAgente> opcionesMonitor = Options.Create(opciones);
+    var avisador = new AvisadorUsuarioSesionInteractiva(opcionesMonitor, loggerFactory.CreateLogger<AvisadorUsuarioSesionInteractiva>());
+    var procesoPos = new ProcesoPosWindows();
+
+    Console.WriteLine("[1/3] Enviando aviso de prueba via WTSSendMessage...");
+    await avisador.EnviarAsync(
+        new AvisoUsuario(
+            Guid.NewGuid(),
+            "9.9.9-prueba-sesion",
+            TimeOnly.FromDateTime(DateTime.Now),
+            TimeOnly.FromDateTime(DateTime.Now.AddMinutes(5)),
+            "PRUEBA DE DIAGNOSTICO: si ve este mensaje, WTSSendMessage funciona desde este contexto. Puede ignorarlo."
+        ),
+        CancellationToken.None
+    );
+    Console.WriteLine("[1/3] Aviso enviado.");
+
+    Console.WriteLine("[2/3] Intentando cerrar Zabyca.Pos.Desktop.exe si esta en ejecucion...");
+    bool huboProcesoQueCerrar = await procesoPos.CerrarSiEjecutandoseAsync(CancellationToken.None);
+    Console.WriteLine(huboProcesoQueCerrar
+        ? "[2/3] Se encontro y se intento cerrar el proceso POS."
+        : "[2/3] No se encontro ningun proceso POS en ejecucion.");
+
+    Console.WriteLine("[3/3] Reabriendo POS en " + opciones.RutaPos + "...");
+    await procesoPos.IniciarAsync(opciones.RutaPos, CancellationToken.None);
+    Console.WriteLine("[3/3] Comando de apertura enviado.");
+    Console.WriteLine("Diagnostico de sesion completado.");
 }
 
 static async Task BuscarActualizacionAsync(OpcionesAgente opciones, CredencialesAgente? credenciales)
@@ -90,10 +128,10 @@ static async Task InstalarAhoraAsync(OpcionesAgente opciones, CredencialesAgente
         new AlmacenamientoPaquetesLocal(opcionesMonitor),
         new InventarioWindows(opcionesMonitor),
         new RespaldoPosLocal(opcionesMonitor),
-        new ActualizadorPosZip(),
+        new ActualizadorPosZip(opcionesMonitor),
         new ProcesoPosWindows(),
         new RelojSistema(),
-        new AvisadorUsuarioArchivo(opcionesMonitor),
+        new AvisadorUsuarioSesionInteractiva(opcionesMonitor, loggerFactory.CreateLogger<AvisadorUsuarioSesionInteractiva>()),
         new EstadoAvisosActualizacionLocal(opcionesMonitor),
         new EstadoLocalAgenteArchivo(opcionesMonitor),
         new BloqueoActualizacionMutex(),

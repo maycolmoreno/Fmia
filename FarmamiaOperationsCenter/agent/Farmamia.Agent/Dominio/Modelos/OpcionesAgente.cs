@@ -23,4 +23,10 @@ public sealed class OpcionesAgente
     public int BackoffMaximoSegundos { get; init; } = 300;
 
     public int MaxIntentosColaEventos { get; init; } = 8;
+
+    /// <summary>Tiempo maximo de espera para que "--smoke-test" termine antes de asumir que la version instalada no soporta ese flag.</summary>
+    public int SmokeTestTimeoutSegundos { get; init; } = 20;
+
+    /// <summary>Tiempo de espera del metodo de respaldo (version antigua): lanzar el POS y confirmar que sigue vivo.</summary>
+    public int ValidacionProcesoVivoSegundos { get; init; } = 20;
 }

@@ -10,6 +10,8 @@ public record Sucursal(
     String ciudad,
     String zona,
     String direccion,
+    Double latitud,
+    Double longitud,
     boolean deTurno,
     boolean activa,
     OffsetDateTime creadoEn,

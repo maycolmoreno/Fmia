@@ -25,4 +25,6 @@ public interface RepositorioSucursales {
     List<CatalogoRegion> listarCatalogoRegiones();
 
     Pagina<Sucursal> listarPaginado(FiltroSucursales filtro);
+
+    Sucursal actualizarCoordenadas(UUID id, Double latitud, Double longitud);
 }

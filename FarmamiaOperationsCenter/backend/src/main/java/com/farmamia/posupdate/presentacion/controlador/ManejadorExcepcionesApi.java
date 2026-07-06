@@ -5,6 +5,8 @@ import com.farmamia.posupdate.aplicacion.excepcion.ConflictoIdempotenciaExceptio
 import com.farmamia.posupdate.aplicacion.excepcion.ConflictoOperacionException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -16,6 +18,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class ManejadorExcepcionesApi {
+
+    private static final Logger log = LoggerFactory.getLogger(ManejadorExcepcionesApi.class);
 
     @ExceptionHandler(RecursoNoEncontradoException.class)
     public ResponseEntity<RespuestaErrorApi> manejarRecursoNoEncontrado(RecursoNoEncontradoException ex) {
@@ -67,6 +71,7 @@ public class ManejadorExcepcionesApi {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<RespuestaErrorApi> manejarInesperado(Exception ex) {
+        log.error("Error inesperado no controlado", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(RespuestaErrorApi.de("INTERNAL_ERROR", "Unexpected server error"));
     }

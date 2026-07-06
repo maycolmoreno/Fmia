@@ -36,6 +36,12 @@ public class SucursalEntidad {
     @Column(name = "address")
     private String direccion;
 
+    @Column(name = "latitude")
+    private Double latitud;
+
+    @Column(name = "longitude")
+    private Double longitud;
+
     @Column(name = "is_on_duty", nullable = false)
     private boolean deTurno;
 
@@ -84,6 +90,19 @@ public class SucursalEntidad {
 
     public String getDireccion() {
         return direccion;
+    }
+
+    public Double getLatitud() {
+        return latitud;
+    }
+
+    public Double getLongitud() {
+        return longitud;
+    }
+
+    public void actualizarCoordenadas(Double latitud, Double longitud) {
+        this.latitud = latitud;
+        this.longitud = longitud;
     }
 
     public boolean isDeTurno() {

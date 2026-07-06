@@ -1,5 +1,6 @@
 package com.farmamia.posupdate.infraestructura.persistencia.adaptador;
 
+import com.farmamia.posupdate.aplicacion.excepcion.RecursoNoEncontradoException;
 import com.farmamia.posupdate.dominio.modelo.CatalogoRegion;
 import com.farmamia.posupdate.dominio.modelo.FiltroSucursales;
 import com.farmamia.posupdate.dominio.modelo.Pagina;
@@ -78,6 +79,24 @@ public class RepositorioSucursalesJpaAdaptador implements RepositorioSucursales 
     }
 
     @Override
+    public Sucursal actualizarCoordenadas(UUID id, Double latitud, Double longitud) {
+        if ((latitud == null) != (longitud == null)) {
+            throw new IllegalArgumentException("Debe indicar latitud y longitud juntas, o ninguna de las dos.");
+        }
+        if (latitud != null && (latitud < -90 || latitud > 90)) {
+            throw new IllegalArgumentException("Latitud fuera de rango (-90 a 90).");
+        }
+        if (longitud != null && (longitud < -180 || longitud > 180)) {
+            throw new IllegalArgumentException("Longitud fuera de rango (-180 a 180).");
+        }
+
+        SucursalEntidad entidad = sucursalRepositorioJpa.findById(id)
+            .orElseThrow(() -> new RecursoNoEncontradoException("Farmacia no encontrada: " + id));
+        entidad.actualizarCoordenadas(latitud, longitud);
+        return aDominio(entidad);
+    }
+
+    @Override
     public Pagina<Sucursal> listarPaginado(FiltroSucursales filtro) {
         String q = minusculaANulo(filtro.q());
         String codigo = minusculaANulo(filtro.codigo());
@@ -117,6 +136,8 @@ public class RepositorioSucursalesJpaAdaptador implements RepositorioSucursales 
             entidad.getCiudad(),
             entidad.getZona(),
             entidad.getDireccion(),
+            entidad.getLatitud(),
+            entidad.getLongitud(),
             entidad.isDeTurno(),
             entidad.isActiva(),
             entidad.getCreadoEn(),

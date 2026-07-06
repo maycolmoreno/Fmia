@@ -162,6 +162,8 @@ public class RepositorioEstadoFarmaciasJpaAdaptador implements RepositorioEstado
             farmacia.getNombre(),
             farmacia.getCiudad(),
             farmacia.getZona(),
+            farmacia.getLatitud(),
+            farmacia.getLongitud(),
             farmacia.isDeTurno(),
             farmacia.isActiva(),
             estado,

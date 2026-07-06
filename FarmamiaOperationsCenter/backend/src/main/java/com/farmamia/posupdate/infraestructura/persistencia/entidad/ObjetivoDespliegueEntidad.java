@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -82,6 +83,10 @@ public class ObjetivoDespliegueEntidad {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime actualizadoEn;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private long version;
 
     protected ObjetivoDespliegueEntidad() {
     }
@@ -171,6 +176,10 @@ public class ObjetivoDespliegueEntidad {
 
     public OffsetDateTime getActualizadoEn() {
         return actualizadoEn;
+    }
+
+    public long getVersion() {
+        return version;
     }
 
     public boolean estaAutorizado() {

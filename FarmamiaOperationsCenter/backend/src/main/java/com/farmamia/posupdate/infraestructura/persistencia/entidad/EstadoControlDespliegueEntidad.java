@@ -8,6 +8,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -56,6 +57,10 @@ public class EstadoControlDespliegueEntidad {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime actualizadoEn;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    private long version;
+
     protected EstadoControlDespliegueEntidad() {
     }
 
@@ -101,6 +106,10 @@ public class EstadoControlDespliegueEntidad {
 
     public OffsetDateTime getEvaluadoEn() {
         return evaluadoEn;
+    }
+
+    public long getVersion() {
+        return version;
     }
 
     public void marcarEvaluado() {

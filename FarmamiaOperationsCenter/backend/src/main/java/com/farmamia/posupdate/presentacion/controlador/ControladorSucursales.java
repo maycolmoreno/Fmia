@@ -2,6 +2,7 @@ package com.farmamia.posupdate.presentacion.controlador;
 
 import com.farmamia.posupdate.aplicacion.casouso.ConsultarEstadoFarmaciasCasoUso;
 import com.farmamia.posupdate.aplicacion.casouso.ConsultarCatalogoOperativoCasoUso;
+import com.farmamia.posupdate.aplicacion.casouso.GestionarSucursalesCasoUso;
 import com.farmamia.posupdate.dominio.modelo.EstadoOperacionalFarmacia;
 import com.farmamia.posupdate.dominio.modelo.FiltroSucursales;
 import com.farmamia.posupdate.dominio.modelo.Pagina;
@@ -9,10 +10,14 @@ import com.farmamia.posupdate.dominio.modelo.Sucursal;
 import com.farmamia.posupdate.presentacion.dto.RespuestaEstadoOperacionalFarmacia;
 import com.farmamia.posupdate.presentacion.dto.RespuestaPagina;
 import com.farmamia.posupdate.presentacion.dto.RespuestaSucursal;
+import com.farmamia.posupdate.presentacion.dto.SolicitudCoordenadasSucursal;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,13 +28,21 @@ public class ControladorSucursales {
 
     private final ConsultarCatalogoOperativoCasoUso consultarCatalogoOperativoCasoUso;
     private final ConsultarEstadoFarmaciasCasoUso consultarEstadoFarmaciasCasoUso;
+    private final GestionarSucursalesCasoUso gestionarSucursalesCasoUso;
 
     public ControladorSucursales(
         ConsultarCatalogoOperativoCasoUso consultarCatalogoOperativoCasoUso,
-        ConsultarEstadoFarmaciasCasoUso consultarEstadoFarmaciasCasoUso
+        ConsultarEstadoFarmaciasCasoUso consultarEstadoFarmaciasCasoUso,
+        GestionarSucursalesCasoUso gestionarSucursalesCasoUso
     ) {
         this.consultarCatalogoOperativoCasoUso = consultarCatalogoOperativoCasoUso;
         this.consultarEstadoFarmaciasCasoUso = consultarEstadoFarmaciasCasoUso;
+        this.gestionarSucursalesCasoUso = gestionarSucursalesCasoUso;
+    }
+
+    @PutMapping("/{id}/coordenadas")
+    public RespuestaSucursal actualizarCoordenadas(@PathVariable UUID id, @Valid @RequestBody SolicitudCoordenadasSucursal solicitud) {
+        return aRespuesta(gestionarSucursalesCasoUso.actualizarCoordenadas(id, solicitud.latitude(), solicitud.longitude()));
     }
 
     @GetMapping("/estado")
@@ -94,6 +107,8 @@ public class ControladorSucursales {
             sucursal.ciudad(),
             sucursal.zona(),
             sucursal.direccion(),
+            sucursal.latitud(),
+            sucursal.longitud(),
             sucursal.deTurno(),
             sucursal.activa(),
             sucursal.creadoEn(),
@@ -108,6 +123,8 @@ public class ControladorSucursales {
             estado.nombreFarmacia(),
             estado.ciudad(),
             estado.zona(),
+            estado.latitud(),
+            estado.longitud(),
             estado.deTurno(),
             estado.activa(),
             estado.estadoOperacional(),

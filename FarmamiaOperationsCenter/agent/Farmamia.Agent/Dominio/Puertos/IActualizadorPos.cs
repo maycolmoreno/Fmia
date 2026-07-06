@@ -6,5 +6,5 @@ public interface IActualizadorPos
 {
     Task AplicarAsync(ArchivoPaqueteLocal paquete, string rutaPos, CancellationToken cancellationToken);
 
-    bool Validar(string rutaPos);
+    Task<ResultadoValidacionPos> ValidarAsync(string rutaPos, CancellationToken cancellationToken);
 }

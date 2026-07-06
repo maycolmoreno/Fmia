@@ -11,6 +11,8 @@ public record RespuestaSucursal(
     @JsonProperty("city") String ciudad,
     @JsonProperty("zone") String zona,
     @JsonProperty("address") String direccion,
+    @JsonProperty("latitude") Double latitud,
+    @JsonProperty("longitude") Double longitud,
     @JsonProperty("onDuty") boolean deTurno,
     @JsonProperty("active") boolean activa,
     @JsonProperty("createdAt") OffsetDateTime creadoEn,

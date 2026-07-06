@@ -19,6 +19,7 @@ public record AlertaRegistrada(
     OffsetDateTime reconocidaEn,
     String cerradaPor,
     OffsetDateTime cerradaEn,
-    boolean eventoDeRed
+    boolean eventoDeRed,
+    UUID correlacionId
 ) {
 }
