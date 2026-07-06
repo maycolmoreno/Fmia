@@ -46,7 +46,7 @@ public class EquipoEntidad {
     @Column(name = "snmp_if_index", nullable = false)
     private int snmpIfIndex = 2;
 
-    @Column(name = "mac_address", unique = true, length = 32)
+    @Column(name = "mac_address", length = 32)
     private String direccionMac;
 
     @Column(name = "windows_version", length = 120)

@@ -31,11 +31,24 @@ function Confirmar-Administrador {
 function Esperar-TareaTerminada {
     param([string]$NombreTarea, [int]$TimeoutSegundos = 60)
 
+    # Una tarea recien registrada reporta LastTaskResult=267011 (SCHED_S_TASK_HAS_NOT_RUN), que no
+    # es 267009 (SCHED_S_TASK_RUNNING): comparar solo contra 267009 hace que esta espera retorne de
+    # inmediato mientras la instancia sigue en cola, y el Unregister posterior mata la tarea antes
+    # de que su proceso llegue a crearse. Por eso se espera en dos fases usando State, que si
+    # refleja la instancia en vivo: primero a que arranque, luego a que termine.
     $limite = (Get-Date).AddSeconds($TimeoutSegundos)
+
     do {
+        $estado = (Get-ScheduledTask -TaskName $NombreTarea).State
         $info = Get-ScheduledTaskInfo -TaskName $NombreTarea
-        if ($info.LastTaskResult -ne 267009) {
-            # 267009 = SCHED_S_TASK_RUNNING
+        if ($estado -eq "Running" -or $info.LastTaskResult -ne 267011) {
+            break
+        }
+        Start-Sleep -Milliseconds 500
+    } while ((Get-Date) -lt $limite)
+
+    do {
+        if ((Get-ScheduledTask -TaskName $NombreTarea).State -ne "Running") {
             return
         }
         Start-Sleep -Seconds 1
@@ -67,7 +80,14 @@ Write-Host "POS de laboratorio corriendo (PID $($procesoAntes.Id))."
 Write-Host ""
 Read-Host "Confirme que ve su ventana/consola en el escritorio y presione Enter para continuar"
 
-$logDiagnostico = Join-Path $env:TEMP "farmamia-probar-sesion0.log"
+# El log NO va a $env:TEMP: si el script se ejecuta elevado con credenciales de otro usuario
+# (UAC "over-the-shoulder", tipico cuando un tecnico eleva con su cuenta de dominio), $env:TEMP
+# apunta al perfil del usuario elevado, que puede no existir en la maquina. cmd.exe aborta sin
+# ejecutar el comando cuando no puede crear el archivo de redireccion, y la prueba falla en
+# silencio. Una ruta fija junto al agente funciona para SYSTEM y para cualquier usuario.
+$carpetaLogs = Join-Path $RutaAgente "Logs"
+New-Item -ItemType Directory -Force -Path $carpetaLogs | Out-Null
+$logDiagnostico = Join-Path $carpetaLogs "probar-sesion0.log"
 Remove-Item -Path $logDiagnostico -ErrorAction SilentlyContinue
 
 $nombreTarea = "FarmamiaProbarSesion0"

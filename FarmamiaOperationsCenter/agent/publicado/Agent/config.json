@@ -1,0 +1,14 @@
+{
+  "AgenteFarmamia": {
+    "UrlApiCentral": "http://192.168.0.168:8081",
+    "CodigoSucursal": "FMA001",
+    "VersionAgente": "1.0.0",
+    "RutaPos": "C:\\FarmamiaLab\\PosDemo",
+    "RutaAgente": "C:\\FarmamiaLab\\Agent",
+    "IntervaloHeartbeatSegundos": 60,
+    "TimeoutSegundos": 30,
+    "MaxIntentosDescarga": 3,
+    "BackoffInicialSegundos": 5,
+    "BackoffMaximoSegundos": 300
+  }
+}

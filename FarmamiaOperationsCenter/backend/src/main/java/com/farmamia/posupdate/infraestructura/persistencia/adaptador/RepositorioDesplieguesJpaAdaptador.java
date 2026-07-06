@@ -247,6 +247,17 @@ public class RepositorioDesplieguesJpaAdaptador implements RepositorioDespliegue
     public Despliegue cancelar(UUID id) {
         DespliegueEntidad despliegue = buscarDespliegue(id);
         despliegue.cancelar();
+
+        // Sin esto, los objetivos de equipos/farmacias de esta campana quedaban en un estado no
+        // final para siempre, bloqueando permanentemente esas farmacias para nuevas campanas
+        // (ver validarFarmaciasSinCampaniaActiva). Cancelar la campana debe liberar sus objetivos.
+        List<ObjetivoDespliegueEntidad> objetivosNoFinales = objetivoDespliegueRepositorioJpa.findByDespliegue_Id(id)
+            .stream()
+            .filter(objetivo -> !ESTADOS_FINALES.contains(objetivo.getEstado()))
+            .toList();
+        objetivosNoFinales.forEach(objetivo -> objetivo.registrarResultado("SKIPPED", null, null, "Campana cancelada"));
+        objetivoDespliegueRepositorioJpa.saveAll(objetivosNoFinales);
+
         return aDominio(despliegue, objetivoDespliegueRepositorioJpa.countByDespliegue_Id(id));
     }
 

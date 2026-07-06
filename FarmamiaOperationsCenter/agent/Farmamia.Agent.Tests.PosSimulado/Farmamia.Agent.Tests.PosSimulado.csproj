@@ -7,6 +7,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
     <AssemblyName>Zabyca.Pos.Desktop</AssemblyName>
+    <!-- El SDK agrega el hash de commit al ProductVersion por defecto al detectar git, excediendo
+         el varchar(40) de devices.pos_version en el backend real que consume este simulado. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
 </Project>
