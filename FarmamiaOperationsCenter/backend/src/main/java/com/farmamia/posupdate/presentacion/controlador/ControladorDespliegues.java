@@ -274,36 +274,6 @@ public class ControladorDespliegues {
         }
     }
 
-    @PostMapping("/{id}/grupos-trx/{grupoTrxId}/pausar")
-    public RespuestaCampanaGrupoTrx pausarGrupoTrxCampana(
-        @PathVariable UUID id,
-        @PathVariable UUID grupoTrxId,
-        @RequestBody(required = false) SolicitudMotivoOperacion solicitud,
-        Authentication autenticacion,
-        HttpServletRequest request
-    ) {
-        exigirOperador(autenticacion);
-        CampanaGrupoTrx anterior = obtenerGrupoTrxCampana(id, grupoTrxId);
-        CampanaGrupoTrx grupo = gestionarCampanaGruposTrxCasoUso.pausar(id, grupoTrxId, motivo(solicitud));
-        auditarGrupoTrxCampana(autenticacion, request, "PAUSAR_GRUPO_TRX_CAMPANA", grupo, valoresGrupoCampana(anterior, motivo(solicitud)), valoresGrupoCampana(grupo, motivo(solicitud)));
-        return aRespuestaGrupoTrx(grupo);
-    }
-
-    @PostMapping("/{id}/grupos-trx/{grupoTrxId}/reanudar")
-    public RespuestaCampanaGrupoTrx reanudarGrupoTrxCampana(
-        @PathVariable UUID id,
-        @PathVariable UUID grupoTrxId,
-        @RequestBody(required = false) SolicitudMotivoOperacion solicitud,
-        Authentication autenticacion,
-        HttpServletRequest request
-    ) {
-        exigirOperador(autenticacion);
-        CampanaGrupoTrx anterior = obtenerGrupoTrxCampana(id, grupoTrxId);
-        CampanaGrupoTrx grupo = gestionarCampanaGruposTrxCasoUso.reanudar(id, grupoTrxId);
-        auditarGrupoTrxCampana(autenticacion, request, "REANUDAR_GRUPO_TRX_CAMPANA", grupo, valoresGrupoCampana(anterior, motivo(solicitud)), valoresGrupoCampana(grupo, motivo(solicitud)));
-        return aRespuestaGrupoTrx(grupo);
-    }
-
     private RespuestaDespliegue aRespuesta(Despliegue despliegue) {
         return new RespuestaDespliegue(
             despliegue.id(),
@@ -506,13 +476,6 @@ public class ControladorDespliegues {
             "farmaciasCriticas", grupo.farmaciasCriticas(),
             "motivo", motivo == null ? "" : motivo
         );
-    }
-
-    private CampanaGrupoTrx obtenerGrupoTrxCampana(UUID idCampana, UUID idGrupoTrx) {
-        return gestionarCampanaGruposTrxCasoUso.estadoPorTrx(idCampana).grupos().stream()
-            .filter(grupo -> grupo.grupoTrxId().equals(idGrupoTrx))
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("Grupo TRX no asociado a la campana POS."));
     }
 
     private String motivo(SolicitudMotivoOperacion solicitud) {

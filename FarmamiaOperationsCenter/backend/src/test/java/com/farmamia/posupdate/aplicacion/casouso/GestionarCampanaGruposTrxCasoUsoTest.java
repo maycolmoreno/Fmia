@@ -1,7 +1,6 @@
 package com.farmamia.posupdate.aplicacion.casouso;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.farmamia.posupdate.dominio.modelo.CampanaGrupoTrx;
 import com.farmamia.posupdate.dominio.modelo.EstadoCampanaGrupoTrx;
@@ -27,24 +26,11 @@ class GestionarCampanaGruposTrxCasoUsoTest {
         assertEquals(EstadoCampanaGrupoTrx.EN_RIESGO, resumen.grupos().get(0).estado());
     }
 
-    @Test
-    void pausaGrupoTrxDentroDeCampanaBloqueaInstrucciones() {
-        RepositorioCampanaGruposTrxFake repositorio = new RepositorioCampanaGruposTrxFake();
-        GestionarCampanaGruposTrxCasoUso casoUso = new GestionarCampanaGruposTrxCasoUso(repositorio);
-
-        CampanaGrupoTrx pausado = casoUso.pausar(repositorio.idCampana, repositorio.idGrupoTrx, "farmacias criticas");
-
-        assertEquals(EstadoCampanaGrupoTrx.PAUSADO, pausado.estado());
-        assertEquals("farmacias criticas", repositorio.motivo);
-        assertTrue(repositorio.instruccionBloqueada(repositorio.idCampana, repositorio.idGrupoTrx, null));
-    }
-
     private static final class RepositorioCampanaGruposTrxFake implements RepositorioCampanaGruposTrx {
 
         private final UUID idCampana = UUID.randomUUID();
         private final UUID idGrupoTrx = UUID.randomUUID();
-        private EstadoCampanaGrupoTrx estado = EstadoCampanaGrupoTrx.EN_RIESGO;
-        private String motivo;
+        private final EstadoCampanaGrupoTrx estado = EstadoCampanaGrupoTrx.EN_RIESGO;
 
         @Override
         public ResumenCampanaGruposTrx estadoPorTrx(UUID idCampana) {
@@ -55,7 +41,7 @@ class GestionarCampanaGruposTrxCasoUsoTest {
                 "RUNNING",
                 1,
                 1,
-                estado == EstadoCampanaGrupoTrx.PAUSADO ? 1 : 0,
+                0,
                 8,
                 2,
                 3,
@@ -73,21 +59,8 @@ class GestionarCampanaGruposTrxCasoUsoTest {
         }
 
         @Override
-        public CampanaGrupoTrx pausar(UUID idCampana, UUID idGrupoTrx, String motivo) {
-            this.estado = EstadoCampanaGrupoTrx.PAUSADO;
-            this.motivo = motivo;
-            return grupo();
-        }
-
-        @Override
-        public CampanaGrupoTrx reanudar(UUID idCampana, UUID idGrupoTrx) {
-            this.estado = EstadoCampanaGrupoTrx.PENDIENTE;
-            return grupo();
-        }
-
-        @Override
         public boolean instruccionBloqueada(UUID idCampana, UUID idGrupoTrx, String codigoGrupoLegacy) {
-            return estado == EstadoCampanaGrupoTrx.PAUSADO;
+            return false;
         }
 
         private CampanaGrupoTrx grupo() {
@@ -113,7 +86,7 @@ class GestionarCampanaGruposTrxCasoUsoTest {
                 20,
                 11,
                 2,
-                motivo,
+                null,
                 "3 farmacias criticas y 2 farmacias de turno afectadas",
                 OffsetDateTime.now(),
                 null,

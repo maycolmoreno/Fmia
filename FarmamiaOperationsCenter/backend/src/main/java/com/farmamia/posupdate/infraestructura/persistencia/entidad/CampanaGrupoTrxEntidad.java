@@ -101,21 +101,7 @@ public class CampanaGrupoTrxEntidad {
         return actualizadoEn;
     }
 
-    public void pausar(String motivo) {
-        this.estado = "PAUSADO";
-        this.motivoPausa = motivo;
-    }
-
-    public void reanudar() {
-        this.estado = "PENDIENTE";
-        this.motivoPausa = null;
-        this.finalizadoEn = null;
-    }
-
     public void actualizarEstadoCalculado(String estadoCalculado) {
-        if ("PAUSADO".equals(this.estado)) {
-            return;
-        }
         this.estado = estadoCalculado;
         if ("EN_EJECUCION".equals(estadoCalculado) && iniciadoEn == null) {
             iniciadoEn = OffsetDateTime.now();

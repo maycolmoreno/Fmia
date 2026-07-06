@@ -19,6 +19,7 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class ManejadorExcepcionesApi {
@@ -102,6 +103,16 @@ public class ManejadorExcepcionesApi {
     public ResponseEntity<RespuestaErrorApi> manejarTipoContenidoNoSoportado(HttpMediaTypeNotSupportedException ex) {
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
             .body(RespuestaErrorApi.de("UNSUPPORTED_MEDIA_TYPE", ex.getMessage()));
+    }
+
+    // Encontrado al verificar en vivo la eliminacion de /grupos-trx/{id}/pausar|reanudar (colapso de
+    // superficies de pausa redundantes): Spring señala "sin handler para esta ruta" con
+    // NoResourceFoundException, pero el catch-all de Exception la interceptaba antes de que
+    // llegara al manejo por defecto de Spring, devolviendo 500 en vez del 404 real.
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<RespuestaErrorApi> manejarRecursoDeFrameworkNoEncontrado(NoResourceFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(RespuestaErrorApi.de("RESOURCE_NOT_FOUND", "Ruta no encontrada: " + ex.getResourcePath()));
     }
 
     @ExceptionHandler(ConflictoIdempotenciaException.class)

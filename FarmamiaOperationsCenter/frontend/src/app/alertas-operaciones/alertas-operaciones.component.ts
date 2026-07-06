@@ -32,6 +32,11 @@ type CajaAlertas = {
   alertas: AlertaOperativa[];
 };
 
+type IncidenteAlertas = {
+  principal: AlertaOperativa;
+  relacionadas: AlertaOperativa[];
+};
+
 type FarmaciaAlertas = {
   branchCode: string;
   alertas: AlertaOperativa[];
@@ -48,6 +53,7 @@ type FarmaciaAlertas = {
 export class AlertasOperacionesComponent implements OnInit {
   farmacias: FarmaciaAlertas[] = [];
   abiertas = new Set<string>();
+  incidentesAbiertos = new Set<string>();
   equipoSeleccionado?: CajaAlertas;
   detalleEquipo?: DetalleEquipoPos;
   historicoMetricas: MetricaEquipoPos[] = [];
@@ -120,6 +126,7 @@ export class AlertasOperacionesComponent implements OnInit {
     }
 
     this.equipoSeleccionado = caja;
+    this.incidentesAbiertos.clear();
     this.detalleEquipo = undefined;
     this.historicoMetricas = [];
     this.metricaReciente = undefined;
@@ -189,6 +196,34 @@ export class AlertasOperacionesComponent implements OnInit {
       return;
     }
     this.cargarAlertas();
+  }
+
+  toggleIncidente(idPrincipal: string): void {
+    if (this.incidentesAbiertos.has(idPrincipal)) {
+      this.incidentesAbiertos.delete(idPrincipal);
+      return;
+    }
+    this.incidentesAbiertos.add(idPrincipal);
+  }
+
+  // Agrupa las alertas de un incidente correlacionado bajo la que abrio el incidente
+  // (correlationId null => es la raiz; las demas apuntan a su id via correlationId), para que
+  // el operador vea "enlace caido (+3 alertas relacionadas)" en vez de 4 filas sueltas.
+  agruparPorIncidente(alertas: AlertaOperativa[]): IncidenteAlertas[] {
+    const porRaiz = new Map<string, AlertaOperativa[]>();
+    for (const alerta of alertas) {
+      const raiz = alerta.correlationId || alerta.id;
+      porRaiz.set(raiz, [...(porRaiz.get(raiz) ?? []), alerta]);
+    }
+
+    return Array.from(porRaiz.values()).map((grupo) => {
+      const principal = grupo.find((alerta) => !alerta.correlationId)
+        ?? [...grupo].sort((a, b) => new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime())[0];
+      return {
+        principal,
+        relacionadas: grupo.filter((alerta) => alerta.id !== principal.id)
+      };
+    });
   }
 
   severidadPrincipal(alertas: AlertaOperativa[]): string {

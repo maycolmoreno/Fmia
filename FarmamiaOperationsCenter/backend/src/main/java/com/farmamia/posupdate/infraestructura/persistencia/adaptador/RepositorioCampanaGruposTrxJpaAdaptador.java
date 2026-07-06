@@ -137,30 +137,17 @@ public class RepositorioCampanaGruposTrxJpaAdaptador implements RepositorioCampa
         campanaGrupoTrxRepositorioJpa.delete(entidad);
     }
 
-    @Override
-    @Transactional
-    public CampanaGrupoTrx pausar(UUID idCampana, UUID idGrupoTrx, String motivo) {
-        CampanaGrupoTrxEntidad entidad = buscarRelacion(idCampana, idGrupoTrx);
-        entidad.pausar(motivo);
-        return calcular(entidad.getCampana(), campanaGrupoTrxRepositorioJpa.save(entidad), true);
-    }
-
-    @Override
-    @Transactional
-    public CampanaGrupoTrx reanudar(UUID idCampana, UUID idGrupoTrx) {
-        CampanaGrupoTrxEntidad entidad = buscarRelacion(idCampana, idGrupoTrx);
-        entidad.reanudar();
-        CampanaGrupoTrx calculado = calcular(entidad.getCampana(), entidad, true);
-        entidad.actualizarEstadoCalculado(calculado.estado().name());
-        return calcular(entidad.getCampana(), campanaGrupoTrxRepositorioJpa.save(entidad), true);
-    }
-
+    // Solo bloquea por FALLIDO (calculado automaticamente desde el estado real de los objetivos).
+    // El pausado manual por Grupo TRX-en-campana se elimino: era un plano de control redundante con
+    // pausar/reanudar oleada (las oleadas ya se agrupan por este mismo grupoObjetivo), con dos estados
+    // en BD que podian divergir. Pausar una oleada (OrquestarDesplieguesCasoUso) ya bloquea la entrega
+    // de instrucciones a estos mismos objetivos.
     @Override
     @Transactional(readOnly = true)
     public boolean instruccionBloqueada(UUID idCampana, UUID idGrupoTrx, String codigoGrupoLegacy) {
         if (idGrupoTrx != null) {
             return campanaGrupoTrxRepositorioJpa.findByCampana_IdAndGrupoTrx_Id(idCampana, idGrupoTrx)
-                .map(relacion -> "PAUSADO".equals(relacion.getEstado()) || "BLOQUEADO".equals(relacion.getEstado()) || "FALLIDO".equals(relacion.getEstado()))
+                .map(relacion -> "FALLIDO".equals(relacion.getEstado()))
                 .orElse(false);
         }
         if (codigoGrupoLegacy == null || codigoGrupoLegacy.isBlank()) {
@@ -168,7 +155,7 @@ public class RepositorioCampanaGruposTrxJpaAdaptador implements RepositorioCampa
         }
         return grupoTrxRepositorioJpa.findByCodigo(codigoGrupoLegacy.trim().toLowerCase(Locale.ROOT))
             .flatMap(grupo -> campanaGrupoTrxRepositorioJpa.findByCampana_IdAndGrupoTrx_Id(idCampana, grupo.getId()))
-            .map(relacion -> "PAUSADO".equals(relacion.getEstado()) || "BLOQUEADO".equals(relacion.getEstado()) || "FALLIDO".equals(relacion.getEstado()))
+            .map(relacion -> "FALLIDO".equals(relacion.getEstado()))
             .orElse(false);
     }
 
@@ -207,7 +194,7 @@ public class RepositorioCampanaGruposTrxJpaAdaptador implements RepositorioCampa
         int farmaciasTurno = (int) farmacias.stream().filter(farmacia -> farmacia.deTurno() && farmacia.estadoOperacional() != EstadoOperacionalCampanaFarmacia.NORMAL).count();
         int farmaciasPendientes = (int) farmacias.stream().filter(farmacia -> farmacia.pendientes() > 0).count();
         int farmaciasConFallos = (int) farmacias.stream().filter(farmacia -> farmacia.fallidos() > 0 || farmacia.rollbacks() > 0).count();
-        EstadoCampanaGrupoTrx estado = estadoGrupo(relacion.getEstado(), objetivos, farmaciasCriticas, farmaciasTurno, fallidos, rollbacks, pendientes, completados);
+        EstadoCampanaGrupoTrx estado = estadoGrupo(objetivos, farmaciasCriticas, farmaciasTurno, fallidos, rollbacks, pendientes, completados);
 
         return new CampanaGrupoTrx(
             relacion.getId(),
@@ -349,7 +336,6 @@ public class RepositorioCampanaGruposTrxJpaAdaptador implements RepositorioCampa
     }
 
     private EstadoCampanaGrupoTrx estadoGrupo(
-        String estadoPersistido,
         List<ObjetivoDespliegueEntidad> objetivos,
         int farmaciasCriticas,
         int farmaciasTurno,
@@ -358,9 +344,6 @@ public class RepositorioCampanaGruposTrxJpaAdaptador implements RepositorioCampa
         int pendientes,
         int completados
     ) {
-        if ("PAUSADO".equals(estadoPersistido)) {
-            return EstadoCampanaGrupoTrx.PAUSADO;
-        }
         if (fallidos > 0 && objetivos.stream().anyMatch(objetivo -> "ROLLBACK_FAILED".equals(objetivo.getEstado()))) {
             return EstadoCampanaGrupoTrx.FALLIDO;
         }

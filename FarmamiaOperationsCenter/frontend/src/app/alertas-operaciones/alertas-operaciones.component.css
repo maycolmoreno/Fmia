@@ -249,6 +249,36 @@ dt {
   padding: 14px;
 }
 
+.incidente-toggle {
+  justify-self: start;
+}
+
+.incidente-relacionadas {
+  border-top: 1px dashed #cbd5e1;
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
+}
+
+.incidente-relacionada {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.incidente-relacionada-info {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.incidente-relacionada-info span {
+  color: #0f172a;
+  font-size: 0.85rem;
+}
+
 dl {
   display: grid;
   gap: 8px;

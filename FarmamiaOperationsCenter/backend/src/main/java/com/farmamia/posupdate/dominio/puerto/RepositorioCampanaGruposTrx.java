@@ -12,9 +12,5 @@ public interface RepositorioCampanaGruposTrx {
 
     void quitar(UUID idCampana, UUID idGrupoTrx);
 
-    CampanaGrupoTrx pausar(UUID idCampana, UUID idGrupoTrx, String motivo);
-
-    CampanaGrupoTrx reanudar(UUID idCampana, UUID idGrupoTrx);
-
     boolean instruccionBloqueada(UUID idCampana, UUID idGrupoTrx, String codigoGrupoLegacy);
 }

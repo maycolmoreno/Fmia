@@ -7,8 +7,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.http.MediaType;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.util.List;
 
 // Reproduce el bug real encontrado al probar la Fase 3 en la app corriendo: Spring envuelve
@@ -98,5 +100,19 @@ class ManejadorExcepcionesApiTest {
 
         assertEquals(HttpStatus.UNSUPPORTED_MEDIA_TYPE, respuesta.getStatusCode());
         assertEquals("UNSUPPORTED_MEDIA_TYPE", respuesta.getBody().code());
+    }
+
+    // Reproduce el bug encontrado al verificar en vivo el colapso de superficies de pausa
+    // redundantes (POST /grupos-trx/{id}/pausar|reanudar eliminados): Spring señala la ruta
+    // inexistente con NoResourceFoundException, pero el catch-all de Exception la convertia en
+    // 500 en vez del 404 real.
+    @Test
+    void manejaRutaInexistenteComo404() {
+        NoResourceFoundException ex = new NoResourceFoundException(HttpMethod.POST, "api/deployments/x/grupos-trx/y/pausar");
+
+        var respuesta = manejador.manejarRecursoDeFrameworkNoEncontrado(ex);
+
+        assertEquals(HttpStatus.NOT_FOUND, respuesta.getStatusCode());
+        assertEquals("RESOURCE_NOT_FOUND", respuesta.getBody().code());
     }
 }

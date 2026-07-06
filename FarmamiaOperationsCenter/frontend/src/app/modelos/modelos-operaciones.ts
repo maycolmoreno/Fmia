@@ -377,6 +377,7 @@ export interface AlertaOperativa {
   acknowledgedAt?: string | null;
   closedBy?: string | null;
   closedAt?: string | null;
+  correlationId?: string | null;
 }
 
 export interface AuditoriaAdministrativa {

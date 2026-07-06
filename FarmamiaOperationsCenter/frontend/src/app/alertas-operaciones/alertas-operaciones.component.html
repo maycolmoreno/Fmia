@@ -144,34 +144,59 @@
       </div>
 
       <div class="detalle-alertas">
-        <article class="detalle-alerta" *ngFor="let alerta of equipo.alertas">
+        <article class="detalle-alerta" *ngFor="let grupo of agruparPorIncidente(equipo.alertas)">
           <div class="detalle-alerta-top">
-            <app-status-badge [status]="alerta.severity"></app-status-badge>
-            <app-status-badge [status]="alerta.status"></app-status-badge>
+            <app-status-badge [status]="grupo.principal.severity"></app-status-badge>
+            <app-status-badge [status]="grupo.principal.status"></app-status-badge>
           </div>
-          <h3>{{ alerta.title }}</h3>
-          <p>{{ alerta.message || alerta.alertType }}</p>
+          <h3>{{ grupo.principal.title }}</h3>
+          <p>{{ grupo.principal.message || grupo.principal.alertType }}</p>
           <dl>
             <div>
               <dt>Tipo</dt>
-              <dd>{{ alerta.alertType }}</dd>
+              <dd>{{ grupo.principal.alertType }}</dd>
             </div>
             <div>
               <dt>Farmacia</dt>
-              <dd>{{ alerta.branchCode }}</dd>
+              <dd>{{ grupo.principal.branchCode }}</dd>
             </div>
             <div>
               <dt>Fecha</dt>
-              <dd>{{ alerta.openedAt | date:'short' }}</dd>
+              <dd>{{ grupo.principal.openedAt | date:'short' }}</dd>
             </div>
             <div *ngIf="modo === 'historial'">
               <dt>Solucionado</dt>
-              <dd>{{ alerta.closedAt ? (alerta.closedAt | date:'short') : 'N/D' }}</dd>
+              <dd>{{ grupo.principal.closedAt ? (grupo.principal.closedAt | date:'short') : 'N/D' }}</dd>
             </div>
           </dl>
           <div class="drawer-acciones" *ngIf="sesion.puedeOperar() && modo === 'activas'">
-            <button type="button" class="boton pequeno" (click)="reconocer(alerta)" [disabled]="alerta.status !== 'OPEN'">Reconocer</button>
-            <button type="button" class="boton pequeno peligro" (click)="cerrar(alerta)" [disabled]="alerta.status === 'CLOSED'">Cerrar</button>
+            <button type="button" class="boton pequeno" (click)="reconocer(grupo.principal)" [disabled]="grupo.principal.status !== 'OPEN'">Reconocer</button>
+            <button type="button" class="boton pequeno peligro" (click)="cerrar(grupo.principal)" [disabled]="grupo.principal.status === 'CLOSED'">Cerrar</button>
+          </div>
+
+          <button
+            type="button"
+            class="boton pequeno secundario incidente-toggle"
+            *ngIf="grupo.relacionadas.length > 0"
+            (click)="toggleIncidente(grupo.principal.id)"
+          >
+            {{ incidentesAbiertos.has(grupo.principal.id) ? 'Ocultar' : 'Ver' }}
+            {{ grupo.relacionadas.length }}
+            alerta{{ grupo.relacionadas.length === 1 ? '' : 's' }} relacionada{{ grupo.relacionadas.length === 1 ? '' : 's' }}
+          </button>
+
+          <div class="incidente-relacionadas" *ngIf="grupo.relacionadas.length > 0 && incidentesAbiertos.has(grupo.principal.id)">
+            <div class="incidente-relacionada" *ngFor="let relacionada of grupo.relacionadas">
+              <div class="incidente-relacionada-info">
+                <app-status-badge [status]="relacionada.severity"></app-status-badge>
+                <span>{{ relacionada.title }}</span>
+                <small>{{ relacionada.openedAt | date:'short' }}</small>
+              </div>
+              <div class="drawer-acciones" *ngIf="sesion.puedeOperar() && modo === 'activas'">
+                <button type="button" class="boton pequeno" (click)="reconocer(relacionada)" [disabled]="relacionada.status !== 'OPEN'">Reconocer</button>
+                <button type="button" class="boton pequeno peligro" (click)="cerrar(relacionada)" [disabled]="relacionada.status === 'CLOSED'">Cerrar</button>
+              </div>
+            </div>
           </div>
         </article>
       </div>

@@ -30,18 +30,4 @@ public class GestionarCampanaGruposTrxCasoUso {
     public void quitar(UUID idCampana, UUID idGrupoTrx) {
         repositorioCampanaGruposTrx.quitar(idCampana, idGrupoTrx);
     }
-
-    @Transactional
-    public CampanaGrupoTrx pausar(UUID idCampana, UUID idGrupoTrx, String motivo) {
-        return repositorioCampanaGruposTrx.pausar(idCampana, idGrupoTrx, limpiar(motivo));
-    }
-
-    @Transactional
-    public CampanaGrupoTrx reanudar(UUID idCampana, UUID idGrupoTrx) {
-        return repositorioCampanaGruposTrx.reanudar(idCampana, idGrupoTrx);
-    }
-
-    private String limpiar(String valor) {
-        return valor == null || valor.isBlank() ? null : valor.trim();
-    }
 }

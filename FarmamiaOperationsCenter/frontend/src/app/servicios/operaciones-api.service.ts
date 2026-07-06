@@ -494,14 +494,6 @@ export class OperacionesApiService {
     });
   }
 
-  pausarGrupoTrxCampana(id: string, grupoTrxId: string, motivo = ''): Observable<CampanaGrupoTrx> {
-    return this.http.post<CampanaGrupoTrx>(`${this.baseUrl}/api/campanas-pos/${id}/grupos-trx/${grupoTrxId}/pausar`, { motivo });
-  }
-
-  reanudarGrupoTrxCampana(id: string, grupoTrxId: string, motivo = ''): Observable<CampanaGrupoTrx> {
-    return this.http.post<CampanaGrupoTrx>(`${this.baseUrl}/api/campanas-pos/${id}/grupos-trx/${grupoTrxId}/reanudar`, { motivo });
-  }
-
   planificarOrquestacion(id: string, solicitud: SolicitudPlanOrquestacion): Observable<PlanOrquestacion> {
     return this.http.post<PlanOrquestacion>(`${this.baseUrl}/api/orchestration/deployments/${id}/plan`, solicitud);
   }
