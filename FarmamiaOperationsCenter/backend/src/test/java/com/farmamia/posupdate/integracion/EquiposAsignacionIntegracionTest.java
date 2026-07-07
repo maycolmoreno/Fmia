@@ -5,15 +5,19 @@ import com.farmamia.posupdate.infraestructura.persistencia.entidad.SucursalEntid
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.EquipoRepositorioJpa;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.SucursalRepositorioJpa;
 import com.farmamia.posupdate.infraestructura.seguridad.FiltroAutenticacionAdministrativa;
+import jakarta.servlet.FilterChain;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -32,6 +36,26 @@ class EquiposAsignacionIntegracionTest extends BaseIntegracionApiTest {
     @MockBean
     private FiltroAutenticacionAdministrativa filtroAutenticacionAdministrativa;
 
+    // Configuramos el mock para que pase cada petición al siguiente filtro en la cadena
+    // (pass-through), de modo que @WithMockUser pueda establecer el contexto de seguridad
+    // y la autorización por roles funcione correctamente. No se hace login real porque
+    // el mock no puede procesar el endpoint /api/auth/login de forma habitual.
+    // Configuramos el mock para que pase cada petición al siguiente filtro en la cadena
+    // (pass-through), de modo que @WithMockUser pueda establecer el contexto de seguridad
+    // y la autorización por roles funcione correctamente.
+    // Se sobreescribe el método del padre (en vez de añadir uno nuevo) para que JUnit 5
+    // no ejecute también el login real del padre, que fallaría porque el mock del filtro
+    // aún no estaría configurado como pass-through en ese momento.
+    @BeforeEach
+    @Override
+    void prepararSesionAdmin() throws Exception {
+        doAnswer(invocation -> {
+            FilterChain chain = invocation.getArgument(2);
+            chain.doFilter(invocation.getArgument(0), invocation.getArgument(1));
+            return null;
+        }).when(filtroAutenticacionAdministrativa).doFilter(any(), any(), any());
+    }
+
     @Test
     @WithMockUser(roles = "USER") // Rol no autorizado (se requiere OPERATOR o ADMIN)
     void asignarSucursalesRetorna403ParaUsuarioSinRolOperator() throws Exception {
@@ -48,8 +72,10 @@ class EquiposAsignacionIntegracionTest extends BaseIntegracionApiTest {
     }
 
     @Test
-    void asignarSucursalesRetorna403ParaUsuarioAnonimo() throws Exception {
-        // Al no tener @WithMockUser, el SecurityContext estará vacío
+    void asignarSucursalesRetorna401ParaUsuarioAnonimo() throws Exception {
+        // Sin autenticación, Spring Security rechaza la petición con 401 Unauthorized
+        // al no satisfacer la regla .authenticated() de /api/equipos-pos/**, antes de
+        // que la petición llegue al controlador.
         mockMvc.perform(post("/api/equipos-pos/asignacion-masiva")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json(Map.of(
@@ -58,8 +84,7 @@ class EquiposAsignacionIntegracionTest extends BaseIntegracionApiTest {
                         "branchId", UUID.randomUUID().toString()
                     ))
                 ))))
-            .andExpect(status().isForbidden())
-            .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+            .andExpect(status().isUnauthorized());
     }
 
     @Test

@@ -22,7 +22,7 @@ class InstruccionesDespliegueIntegracionTest extends BaseIntegracionApiTest {
         JsonNode paquete = cargarPaquete("2026.06.2-it-instructions", zipValido());
         paquete = aprobarPaquete(paquete.get("id").asText());
 
-        mockMvc.perform(post("/api/deployments")
+        MvcResult despliegueResult = mockMvc.perform(post("/api/deployments")
                 .header(HttpHeaders.AUTHORIZATION, bearerAdmin())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json(Map.of(
@@ -33,7 +33,9 @@ class InstruccionesDespliegueIntegracionTest extends BaseIntegracionApiTest {
                     "pilot", true,
                     "deviceIds", List.of(agente.idEquipo().toString())
                 ))))
-            .andExpect(status().isCreated());
+            .andExpect(status().isCreated())
+            .andReturn();
+        iniciarDespliegue(json(despliegueResult).get("id").asText());
 
         MvcResult resultado = mockMvc.perform(get("/api/agent/{deviceId}/instructions", agente.idEquipo())
                 .header(HttpHeaders.AUTHORIZATION, bearerAgente(agente.tokenAgente())))
