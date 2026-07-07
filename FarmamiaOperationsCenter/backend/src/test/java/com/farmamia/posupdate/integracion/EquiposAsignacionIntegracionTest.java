@@ -40,6 +40,12 @@ class EquiposAsignacionIntegracionTest extends BaseIntegracionApiTest {
     // (pass-through), de modo que @WithMockUser pueda establecer el contexto de seguridad
     // y la autorización por roles funcione correctamente. No se hace login real porque
     // el mock no puede procesar el endpoint /api/auth/login de forma habitual.
+    // Configuramos el mock para que pase cada petición al siguiente filtro en la cadena
+    // (pass-through), de modo que @WithMockUser pueda establecer el contexto de seguridad
+    // y la autorización por roles funcione correctamente.
+    // Se sobreescribe el método del padre (en vez de añadir uno nuevo) para que JUnit 5
+    // no ejecute también el login real del padre, que fallaría porque el mock del filtro
+    // aún no estaría configurado como pass-through en ese momento.
     @BeforeEach
     @Override
     void prepararSesionAdmin() throws Exception {

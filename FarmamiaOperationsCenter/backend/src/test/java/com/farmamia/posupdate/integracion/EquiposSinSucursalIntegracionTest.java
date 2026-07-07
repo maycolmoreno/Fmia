@@ -16,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -112,7 +113,7 @@ class EquiposSinSucursalIntegracionTest extends BaseIntegracionApiTest {
             // Validar que se retornaron ambos equipos huérfanos de prueba
             assertEquals(2, misHuerfanos.size());
             // Validar que el equipo asignado no se incluye en la respuesta
-            assertTrue(!contieneAsignado, "El equipo asignado no debería listarse");
+            assertFalse(contieneAsignado, "El equipo asignado no debería listarse");
 
             // Validar el orden alfabético ascendente: TEST-ORPHAN-A antes de TEST-ORPHAN-Z
             assertEquals("TEST-ORPHAN-A", misHuerfanos.get(0).get("hostname").asText());
