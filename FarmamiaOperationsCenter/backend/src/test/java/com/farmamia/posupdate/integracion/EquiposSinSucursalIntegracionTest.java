@@ -7,16 +7,19 @@ import com.farmamia.posupdate.infraestructura.persistencia.repositorio.SucursalR
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class EquiposSinSucursalIntegracionTest extends BaseIntegracionApiTest {
@@ -32,8 +35,24 @@ class EquiposSinSucursalIntegracionTest extends BaseIntegracionApiTest {
 
     @BeforeEach
     void setupUsuarios() throws Exception {
-        tokenOperator = login("operator", "operator123");
-        tokenViewer = login("viewer", "viewer123");
+        crearUsuario("operator-sinsc", "Operator12345X", "OPERATOR");
+        crearUsuario("viewer-sinsc", "Viewer12345X", "VIEWER");
+        tokenOperator = login("operator-sinsc", "Operator12345X");
+        tokenViewer = login("viewer-sinsc", "Viewer12345X");
+    }
+
+    private void crearUsuario(String usuario, String contrasena, String rol) throws Exception {
+        mockMvc.perform(post("/api/admin/users")
+                .header(HttpHeaders.AUTHORIZATION, bearerAdmin())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of(
+                    "username", usuario,
+                    "password", contrasena,
+                    "fullName", usuario,
+                    "email", usuario + "@farmamia.local",
+                    "role", rol
+                ))))
+            .andExpect(status().isCreated());
     }
 
     @Test
@@ -82,7 +101,7 @@ class EquiposSinSucursalIntegracionTest extends BaseIntegracionApiTest {
             boolean contieneAsignado = false;
 
             for (JsonNode node : listNode) {
-                String name = node.get("nombreEquipo").asText();
+                String name = node.get("hostname").asText();
                 if ("TEST-ORPHAN-A".equals(name) || "TEST-ORPHAN-Z".equals(name)) {
                     misHuerfanos.add(node);
                 } else if ("TEST-ASSIGNED-X".equals(name)) {
@@ -96,12 +115,12 @@ class EquiposSinSucursalIntegracionTest extends BaseIntegracionApiTest {
             assertTrue(!contieneAsignado, "El equipo asignado no debería listarse");
 
             // Validar el orden alfabético ascendente: TEST-ORPHAN-A antes de TEST-ORPHAN-Z
-            assertEquals("TEST-ORPHAN-A", misHuerfanos.get(0).get("nombreEquipo").asText());
-            assertEquals("TEST-ORPHAN-Z", misHuerfanos.get(1).get("nombreEquipo").asText());
+            assertEquals("TEST-ORPHAN-A", misHuerfanos.get(0).get("hostname").asText());
+            assertEquals("TEST-ORPHAN-Z", misHuerfanos.get(1).get("hostname").asText());
 
             // Validar que el ID de sucursal es null o vacío
-            assertTrue(misHuerfanos.get(0).get("idSucursal").isNull() || misHuerfanos.get(0).get("idSucursal").asText().isEmpty());
-            assertEquals("SIN ASIGNAR", misHuerfanos.get(0).get("nombreSucursal").asText());
+            assertTrue(misHuerfanos.get(0).get("branchId").isNull() || misHuerfanos.get(0).get("branchId").asText().isEmpty());
+            assertEquals("SIN ASIGNAR", misHuerfanos.get(0).get("branchName").asText());
 
         } finally {
             // Limpiar los equipos y la sucursal de prueba para no contaminar la base de datos
