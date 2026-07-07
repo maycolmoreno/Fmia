@@ -55,7 +55,7 @@ class FiltrosAlertasIntegracionTest extends BaseIntegracionApiTest {
 
     private UUID crearObjetivoConInstruccion(RegistroAgente agente, String version) throws Exception {
         JsonNode paquete = aprobarPaquete(cargarPaquete(version, zipValido()).get("id").asText());
-        mockMvc.perform(post("/api/deployments")
+        MvcResult despliegueResult = mockMvc.perform(post("/api/deployments")
                 .header(HttpHeaders.AUTHORIZATION, bearerAdmin())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json(Map.of(
@@ -65,7 +65,9 @@ class FiltrosAlertasIntegracionTest extends BaseIntegracionApiTest {
                     "pilot", true,
                     "deviceIds", List.of(agente.idEquipo().toString())
                 ))))
-            .andExpect(status().isCreated());
+            .andExpect(status().isCreated())
+            .andReturn();
+        iniciarDespliegue(json(despliegueResult).get("id").asText());
 
         MvcResult instruccion = mockMvc.perform(get("/api/agent/{deviceId}/instructions", agente.idEquipo())
                 .header(HttpHeaders.AUTHORIZATION, bearerAgente(agente.tokenAgente())))

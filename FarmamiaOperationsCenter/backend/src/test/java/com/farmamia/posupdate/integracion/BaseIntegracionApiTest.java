@@ -121,6 +121,19 @@ abstract class BaseIntegracionApiTest {
         return json(resultado);
     }
 
+    protected void iniciarDespliegue(String idDespliegue) throws Exception {
+        // 1. Crear plan de orquestacion con defaults (una sola oleada)
+        MvcResult planResult = mockMvc.perform(post("/api/orchestration/deployments/{id}/plan", idDespliegue)
+                .header(HttpHeaders.AUTHORIZATION, bearerAdmin()))
+            .andExpect(status().isOk())
+            .andReturn();
+        // 2. Iniciar la primera oleada, que autoriza los objetivos y permite la entrega de instrucciones
+        String waveId = json(planResult).get("waves").get(0).get("id").asText();
+        mockMvc.perform(post("/api/orchestration/deployments/{id}/waves/{waveId}/start", idDespliegue, waveId)
+                .header(HttpHeaders.AUTHORIZATION, bearerAdmin()))
+            .andExpect(status().isOk());
+    }
+
     protected byte[] zip(Map<String, String> archivos) throws Exception {
         ByteArrayOutputStream salida = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(salida, StandardCharsets.UTF_8)) {

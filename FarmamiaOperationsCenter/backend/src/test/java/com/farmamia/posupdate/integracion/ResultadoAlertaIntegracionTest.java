@@ -72,6 +72,7 @@ class ResultadoAlertaIntegracionTest extends BaseIntegracionApiTest {
             .andExpect(status().isCreated())
             .andReturn();
         UUID idDespliegue = UUID.fromString(json(despliegueResultado).get("id").asText());
+        iniciarDespliegue(idDespliegue.toString());
 
         MvcResult instruccionResultado = mockMvc.perform(get("/api/agent/{deviceId}/instructions", agente.idEquipo())
                 .header(HttpHeaders.AUTHORIZATION, bearerAgente(agente.tokenAgente())))

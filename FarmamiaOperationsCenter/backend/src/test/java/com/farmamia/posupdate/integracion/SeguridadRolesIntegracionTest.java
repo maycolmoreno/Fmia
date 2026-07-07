@@ -44,10 +44,15 @@ class SeguridadRolesIntegracionTest extends BaseIntegracionApiTest {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenAuditor))
             .andExpect(status().isOk());
 
+        // Un auditor no puede crear despliegues (requiere OPERATOR o ADMIN).
+        // Se provee un body válido para que @Valid no falle con 400 antes de la verificación de permisos.
         mockMvc.perform(post("/api/deployments")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenAuditor)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(Map.of())))
+                .content(json(Map.of(
+                    "packageId", "00000000-0000-0000-0000-000000000000",
+                    "name", "blocked-deploy-it"
+                ))))
             .andExpect(status().isForbidden());
 
         mockMvc.perform(get("/api/packages")
