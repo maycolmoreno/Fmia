@@ -1,9 +1,28 @@
 # DISENO_NOC.md — Sistema de Diseño del Panel NOC
 > Farmamia Operations Center — Frontend Angular 18
-> Última actualización: 2026-06-22
+> Última actualización: 2026-07-06
 >
 > Leer este documento antes de tocar cualquier archivo CSS o crear un componente nuevo.
 > El objetivo es que todo el panel tenga coherencia visual y soporte tema oscuro/claro automáticamente.
+
+## Identidad visual — "Cruz Verde"
+
+La paleta anterior (`#0d1117` / `#58a6ff` / `#3fb950`) era, hex por hex, la paleta de GitHub en modo
+oscuro (Primer) — reconocible al instante como "modo oscuro genérico de developer", sin relación con
+farmacias ni con Ecuador. La paleta actual parte de un objeto real del mundo de una farmacia: la cruz
+iluminada que marca cada local, abstraída como el glifo de estado que reemplaza puntos/círculos en
+todo el sistema (pendiente de implementar componente-por-componente; hoy solo los tokens y la
+tipografía usan la nueva identidad).
+
+**Regla de oro de la paleta:** `--color-primary` (verde cruz, la marca) y `--color-success` (verde
+"todo OK") son colores **distintos a propósito** — para que "esto es Farmamia" y "esto está sano" no
+se confundan visualmente en el mismo golpe de vista.
+
+**Tipografía:** Bahnschrift (condensada, viene instalada en Windows — el mismo SO de cada PC del NOC
+y de cada agente) para títulos/etiquetas vía `var(--font-display)`; Segoe UI para texto de lectura vía
+`var(--font-body)`; Cascadia Mono para códigos/IPs/timestamps vía `var(--font-mono)` — con la lógica de
+un ticket de POS impreso. Elegidas por estar ya instaladas en el entorno real de despliegue, no como
+atajo: cero riesgo de fallback silencioso a una fuente distinta a la diseñada.
 
 ---
 
@@ -23,52 +42,58 @@
 En `app.component.css`, bloque `:host`:
 
 ```css
-/* Tema OSCURO (default) */
+/* Tema OSCURO (default) — paleta "Cruz Verde" */
 :host {
-  --color-primary:       #58a6ff;
-  --color-primary-soft:  #172340;
-  --color-success:       #3fb950;
-  --color-success-soft:  #0d2818;
-  --color-warning:       #e3b341;
-  --color-warning-soft:  #2b1d00;
-  --color-danger:        #f85149;
-  --color-danger-soft:   #2d0f0f;
-  --color-purple:        #a371f7;
-  --color-purple-soft:   #1e0a3a;
-  --color-background:    #0d1117;
-  --color-card:          #161b22;
-  --color-card-raised:   #1c2128;
-  --color-border:        #30363d;
-  --color-text:          #e6edf3;
-  --color-muted:         #8b949e;
+  --color-primary:       #1fae85;  /* verde cruz — MARCA, no "estado sano" */
+  --color-primary-soft:  #12271f;
+  --color-success:       #4cb977;  /* verde "sano", distinto a proposito del de marca */
+  --color-success-soft:  #10251a;
+  --color-warning:       #e8a33d;
+  --color-warning-soft:  #2a2011;
+  --color-danger:        #e1473b;
+  --color-danger-soft:   #2c1512;
+  --color-purple:        #b98cd6;
+  --color-purple-soft:   #241a30;
+  --color-background:    #0a120f;
+  --color-card:          #121d19;
+  --color-card-raised:   #182620;
+  --color-border:        #24352c;
+  --color-text:          #edeae2;
+  --color-muted:         #8a9a90;
   --shadow-card:         0 8px 24px rgb(0 0 0 / 40%);
-  --color-sidebar:       #0d1117;
-  --color-nav-text:      #8b949e;
-  --color-nav-active-bg: #1f2937;
-  --color-nav-active-border: #374151;
+  --color-sidebar:       #121d19;
+  --color-nav-text:      #8a9a90;
+  --color-nav-active-bg: #12271f;
+  --color-nav-active-border: #1f4a3e;
+
+  --font-display: 'Bahnschrift', 'DIN Condensed', 'Arial Narrow', sans-serif;
+  --font-body:    'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono:    'Cascadia Mono', Consolas, 'SF Mono', monospace;
 }
 
 /* Tema CLARO — se activa cuando <main class="app-shell tema-claro"> */
 :host:has(.tema-claro) {
-  --color-primary:       #2563eb;
-  --color-primary-soft:  #eff6ff;
-  --color-success:       #16a34a;
-  --color-success-soft:  #ecfdf5;
-  --color-warning:       #d97706;
-  --color-warning-soft:  #fffbeb;
-  --color-danger:        #dc2626;
-  --color-danger-soft:   #fef2f2;
-  --color-background:    #f8fafc;
+  --color-primary:       #0e8f6c;
+  --color-primary-soft:  #e3f3ec;
+  --color-success:       #2e8b52;
+  --color-success-soft:  #e6f3ea;
+  --color-warning:       #b9761f;
+  --color-warning-soft:  #f8ecd8;
+  --color-danger:        #c43326;
+  --color-danger-soft:   #fbe6e3;
+  --color-purple:        #8449b3;
+  --color-purple-soft:   #f2ebfa;
+  --color-background:    #f7f5ef;
   --color-card:          #ffffff;
-  --color-card-raised:   #f1f5f9;
-  --color-border:        #e2e8f0;
-  --color-text:          #0f172a;
-  --color-muted:         #64748b;
-  --shadow-card:         0 4px 16px rgb(15 23 42 / 6%);
+  --color-card-raised:   #eeece3;
+  --color-border:        #dcd8ca;
+  --color-text:          #171f1b;
+  --color-muted:         #5c6b62;
+  --shadow-card:         0 4px 16px rgb(23 31 27 / 6%);
   --color-sidebar:       #ffffff;
-  --color-nav-text:      #334155;
-  --color-nav-active-bg: #eff6ff;
-  --color-nav-active-border: #bfdbfe;
+  --color-nav-text:      #5c6b62;
+  --color-nav-active-bg: #e3f3ec;
+  --color-nav-active-border: #bfe3d5;
 }
 ```
 
@@ -95,19 +120,31 @@ toggleTema(): void {
 
 | Variable | Oscuro | Claro | Uso |
 |---|---|---|---|
-| `--color-primary` | `#58a6ff` | `#2563eb` | Links, botones primarios, reloj NOC |
-| `--color-success` | `#3fb950` | `#16a34a` | Farmacias OK, POS online, completados |
-| `--color-warning` | `#e3b341` | `#d97706` | En riesgo, latencia alta, avisos |
-| `--color-danger` | `#f85149` | `#dc2626` | Críticas, offline, rollback, alertas |
-| `--color-purple` | `#a371f7` | *(igual)* | Campañas activas, turno |
-| `--color-background` | `#0d1117` | `#f8fafc` | Fondo general del contenido |
-| `--color-card` | `#161b22` | `#ffffff` | Tarjetas, panel drawer, header |
-| `--color-card-raised` | `#1c2128` | `#f1f5f9` | Filas hover, inputs, sub-tarjetas |
-| `--color-border` | `#30363d` | `#e2e8f0` | Bordes de tarjetas, separadores |
-| `--color-text` | `#e6edf3` | `#0f172a` | Texto principal |
-| `--color-muted` | `#8b949e` | `#64748b` | Subtítulos, timestamps, etiquetas |
+| `--color-primary` | `#1fae85` | `#0e8f6c` | Marca (cruz), links, botones primarios, nav activo — **no** es "estado sano" |
+| `--color-success` | `#4cb977` | `#2e8b52` | Farmacias OK, POS online, completados |
+| `--color-warning` | `#e8a33d` | `#b9761f` | En riesgo, latencia alta, avisos, turno nocturno |
+| `--color-danger` | `#e1473b` | `#c43326` | Críticas, offline, rollback, alertas |
+| `--color-purple` | `#b98cd6` | `#8449b3` | Campañas activas, badge de turno |
+| `--color-background` | `#0a120f` | `#f7f5ef` | Fondo general del contenido |
+| `--color-card` | `#121d19` | `#ffffff` | Tarjetas, panel drawer, header |
+| `--color-card-raised` | `#182620` | `#eeece3` | Filas hover, inputs, sub-tarjetas |
+| `--color-border` | `#24352c` | `#dcd8ca` | Bordes de tarjetas, separadores |
+| `--color-text` | `#edeae2` | `#171f1b` | Texto principal |
+| `--color-muted` | `#8a9a90` | `#5c6b62` | Subtítulos, timestamps, etiquetas |
 
 **Regla de oro:** Si hardcodeas un color hex en un componente, estás rompiendo el tema.
+
+### Tipografía
+
+| Variable | Fuente | Uso |
+|---|---|---|
+| `--font-display` | Bahnschrift | Títulos (`h1`/`h2`/`h3`), `.etiqueta`, `.grupo-nav` — condensada, caracter de señalética |
+| `--font-body` | Segoe UI | Texto de lectura (heredado por defecto en `:host`) |
+| `--font-mono` | Cascadia Mono | `.reloj-hora`, y todo dato tabular/código nuevo (IPs, timestamps, ids de farmacia) |
+
+**Pendiente (fuera de esta pasada):** reestructurar `dashboard-noc` con el nuevo hero de "veredicto de
+flota" y crear el componente de glifo de cruz que reemplace `status-badge`/puntos en el resto del
+sistema — ver propuesta visual acordada en sesión (artefacto "Farmamia NOC — propuesta visual").
 
 ---
 

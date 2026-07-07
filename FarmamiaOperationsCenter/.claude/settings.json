@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./mvnw -o test -Dtest=ConsultarResumenNocCasoUsoCacheTest,RepositorioAlertasJpaAdaptadorTest)",
+      "Bash(cd \"d:/7mo/Proyectos Universitarios/Fmia/FarmamiaOperationsCenter\" && grep -n \"^@@\" /tmp/app_css.diff)",
+      "Read(//tmp/**)",
+      "Bash(head -4 /tmp/app_css.diff)",
+      "Bash(sed -n '454,$p' /tmp/app_css.diff)",
+      "Bash(git apply *)",
+      "Bash(cd \"d:/7mo/Proyectos Universitarios/Fmia/FarmamiaOperationsCenter\" && grep -n \"^@@\" /tmp/app_ts.diff)",
+      "Bash(cd \"d:/7mo/Proyectos Universitarios/Fmia/FarmamiaOperationsCenter\" && sed -n '13,21p' /tmp/app_ts.diff)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(git restore *)",
+      "Bash(cat /tmp/tsc_staged_check.log | head -60)",
+      "Read(//d/tmp/**)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}

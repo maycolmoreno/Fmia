@@ -17,31 +17,30 @@
   </header>
 
   <ng-container *ngIf="resumen">
-    <div class="noc-resumen-grid">
-      <app-kpi-card
-        label="1.1 ENLACES All"
-        [value]="contadoresEnlaces.total"
-        helper="Total monitoreado"
-        icon="ALL"
-        tone="info"
-      ></app-kpi-card>
-
-      <app-kpi-card
-        label="1.2 ENLACES UP"
-        [value]="contadoresEnlaces.up"
-        helper="Operativos"
-        icon="UP"
-        tone="success"
-      ></app-kpi-card>
-
-      <app-kpi-card
-        label="1.1 ENLACES DOWN"
-        [value]="contadoresEnlaces.down"
-        helper="Fuera de servicio"
-        icon="DOWN"
-        tone="danger"
-      ></app-kpi-card>
-    </div>
+    <section class="veredicto">
+      <app-cruz-glifo [estado]="estadoVeredicto" [tamano]="52"></app-cruz-glifo>
+      <div class="veredicto-texto">
+        <p class="veredicto-titulo" [ngClass]="estadoVeredicto">{{ tituloVeredicto }}</p>
+        <p class="veredicto-sub">
+          <b>{{ farmaciasOk }} de {{ totalFarmacias }}</b> farmacias operando con normalidad
+          <ng-container *ngIf="alertasCriticas > 0"> · <b>{{ alertasCriticas }}</b> alerta{{ alertasCriticas === 1 ? '' : 's' }} crítica{{ alertasCriticas === 1 ? '' : 's' }} sin reconocer</ng-container>
+        </p>
+      </div>
+      <div class="veredicto-stats">
+        <div class="vstat">
+          <strong>{{ resumen.pos.online }}<span> / {{ resumen.pos.total }}</span></strong>
+          <span>equipos POS online</span>
+        </div>
+        <div class="vstat">
+          <strong class="riesgo">{{ resumen.atRiskFarms.length }}</strong>
+          <span>farmacias en riesgo</span>
+        </div>
+        <div class="vstat">
+          <strong class="critico">{{ resumen.criticFarms.length }}</strong>
+          <span>farmacias críticas</span>
+        </div>
+      </div>
+    </section>
 
     <div class="noc-contexto">
       <article class="noc-contexto-card">

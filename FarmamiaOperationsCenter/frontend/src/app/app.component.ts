@@ -28,7 +28,6 @@ import { AlertasOperacionesComponent } from './alertas-operaciones/alertas-opera
 import { ActualizacionesOperacionesComponent } from './actualizaciones-operaciones/actualizaciones-operaciones.component';
 import { AlertListComponent } from './componentes-ui/alert-list.component';
 import { AppCardComponent } from './componentes-ui/app-card.component';
-import { KpiCardComponent } from './componentes-ui/kpi-card.component';
 import { NocTableComponent } from './componentes-ui/noc-table.component';
 import { StatCardComponent } from './componentes-ui/stat-card.component';
 import { StatusBadgeComponent } from './componentes-ui/status-badge.component';
@@ -37,7 +36,7 @@ import { NocDashboardService } from './servicios/noc-dashboard.service';
 import { OperacionesApiService } from './servicios/operaciones-api.service';
 import { SesionAdminService } from './servicios/sesion-admin.service';
 
-type Vista = 'dashboard' | 'turno' | 'incidentes' | 'operaciones' | 'equipos' | 'actualizaciones' | 'gruposTrx' | 'agentes' | 'red' | 'eventos' | 'alertas' | 'auditoria' | 'seguridad' | 'usuarios';
+type Vista = 'dashboard' | 'equipos' | 'actualizaciones' | 'gruposTrx' | 'agentes' | 'alertas' | 'auditoria' | 'seguridad' | 'usuarios';
 
 @Component({
   selector: 'app-root',
@@ -52,7 +51,6 @@ type Vista = 'dashboard' | 'turno' | 'incidentes' | 'operaciones' | 'equipos' | 
     FarmaciasTarjetasComponent,
     AlertListComponent,
     AppCardComponent,
-    KpiCardComponent,
     NocTableComponent,
     StatCardComponent,
     StatusBadgeComponent,
@@ -89,8 +87,7 @@ export class AppComponent implements OnInit, OnDestroy {
   alertasRedCriticas = 0;
   alertasLatenciaAlta = 0;
   subTabFarmacias: 'tarjetas' | 'todas' | 'turno' | 'pos' | 'red' | 'huerfanos' = 'tarjetas';
-  subTabAlertas: 'activas' | 'incidentes' | 'red' = 'activas';
-  subTabAgentes: 'equipos' | 'eventos' = 'equipos';
+  subTabAlertas: 'activas' | 'incidentes' = 'activas';
   salud?: EstadoSaludApi;
   farmacias: Farmacia[] = [];
   estadoFarmacias: EstadoOperacionalFarmacia[] = [];
@@ -573,32 +570,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   cambiarVista(vista: Vista): void {
-    // Sub-vistas redirigidas a sub-tabs del padre
-    if (vista === 'turno') {
-      this.cambiarVista('equipos');
-      this.subTabFarmacias = 'turno';
-      return;
-    }
-    if (vista === 'incidentes') {
-      this.cambiarVista('alertas');
-      this.subTabAlertas = 'incidentes';
-      return;
-    }
-    if (vista === 'red') {
-      this.cambiarVista('alertas');
-      this.subTabAlertas = 'red';
-      return;
-    }
-    if (vista === 'eventos') {
-      this.cambiarVista('agentes');
-      this.subTabAgentes = 'eventos';
-      return;
-    }
-    if (vista === 'operaciones') {
-      this.cambiarVista('actualizaciones');
-      return;
-    }
-
     if (vista === 'usuarios' && !this.sesion.esAdmin()) {
       this.error = 'No tienes permiso para administrar usuarios.';
       return;

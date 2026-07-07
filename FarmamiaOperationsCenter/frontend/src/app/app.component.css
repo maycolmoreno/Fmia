@@ -20,11 +20,6 @@
   margin-bottom: 20px;
 }
 
-.login-marca small,
-.texto-ayuda {
-  color: #607089;
-}
-
 .campos-login {
   display: grid;
   gap: 14px;
@@ -62,10 +57,6 @@
   display: block;
 }
 
-.marca small {
-  color: #b8c2d2;
-}
-
 .navegacion {
   display: grid;
   gap: 6px;
@@ -87,17 +78,6 @@
   color: #dbe4ef;
   padding: 10px 12px;
   text-align: left;
-}
-
-.navegacion button.activo,
-.navegacion button:hover {
-  background: #253247;
-  color: #ffffff;
-}
-
-.contenido {
-  padding: 28px;
-  min-width: 0;
 }
 
 .sub-tabs-barra {
@@ -226,19 +206,6 @@ h3 {
   grid-row: span 2;
 }
 
-.tarjeta {
-  background: #ffffff;
-  border: 1px solid #d9e0ea;
-  border-radius: 8px;
-  padding: 18px;
-  box-shadow: 0 8px 18px rgb(23 33 47 / 6%);
-}
-
-.tarjeta.interna {
-  box-shadow: none;
-  background: #fbfcfe;
-}
-
 .metrica span,
 .metrica small {
   display: block;
@@ -256,61 +223,9 @@ h3 {
   gap: 16px;
 }
 
-.noc-farmacia-first {
-  background: #0f172a;
-  margin: -10px;
-  padding: 14px;
-  border-radius: 8px;
-}
-
-.noc-farmacia-first .tarjeta {
-  background: #111827;
-  border-color: #263347;
-  color: #e5edf6;
-  box-shadow: none;
-}
-
-.noc-farmacia-first h2,
-.noc-farmacia-first strong {
-  color: #f8fafc;
-}
-
-.noc-farmacia-first small,
-.noc-farmacia-first .vacio,
-.noc-farmacia-first .tabla-fila.cabecera {
-  color: #94a3b8;
-}
-
-.metricas-noc {
-  grid-template-columns: repeat(6, minmax(150px, 1fr));
-}
-
-.metrica-noc {
-  border-top: 4px solid #64748b;
-}
-
 .metrica-noc strong {
   font-size: 2.35rem;
   line-height: 1;
-}
-
-.metrica-noc.critica {
-  border-color: #ef4444;
-  background: #1f1518;
-}
-
-.metrica-noc.riesgo {
-  border-color: #f59e0b;
-  background: #211a0f;
-}
-
-.metrica-noc.normal {
-  border-color: #22c55e;
-  background: #102017;
-}
-
-.bloque-noc {
-  padding: 16px;
 }
 
 .rejilla-noc-prioridad {
@@ -334,11 +249,6 @@ h3 {
 .lista-compacta {
   display: grid;
   gap: 10px;
-}
-
-.prioridad-turno {
-  border-color: #f59e0b;
-  box-shadow: 0 0 0 1px rgb(245 158 11 / 20%);
 }
 
 .lista-turno {
@@ -493,38 +403,6 @@ mark {
   font-weight: 700;
 }
 
-.estado.critica,
-mark.critica {
-  background: #fdecec;
-  color: #9f1d1d;
-}
-
-.estado.riesgo,
-mark.riesgo {
-  background: #fff1e6;
-  color: #9a4d00;
-}
-
-mark.alta {
-  background: #fff1e6;
-  color: #9a4d00;
-}
-
-mark.media {
-  background: #fff8db;
-  color: #795c00;
-}
-
-mark.baja {
-  background: #e8f7ef;
-  color: #147a45;
-}
-
-mark.red-event {
-  background: #e6f0ff;
-  color: #2b5fa8;
-}
-
 .estado-grande {
   display: inline-block;
   border-radius: 6px;
@@ -582,10 +460,6 @@ mark.red-event {
   height: 100%;
   border-radius: inherit;
   background: #2fbf71;
-}
-
-.progreso-linea.fallo .barra-progreso span {
-  background: #dc2626;
 }
 
 .campos {
@@ -671,20 +545,6 @@ textarea {
   padding: 8px 12px;
   text-decoration: none;
   font-weight: 700;
-}
-
-.boton.primario {
-  background: #147a45;
-  border-color: #147a45;
-  color: #ffffff;
-}
-
-.boton.secundario {
-  background: #eef2f7;
-}
-
-.boton.peligro {
-  color: #a52121;
 }
 
 .boton.pequeno {
@@ -843,20 +703,10 @@ textarea {
   min-width: 980px;
 }
 
-.estado-red-noc {
-  border-style: dashed;
-}
-
 .metricas-red {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
-}
-
-.metricas-red div {
-  border: 1px solid #263347;
-  border-radius: 6px;
-  padding: 12px;
 }
 
 .metricas-red span,
@@ -895,10 +745,6 @@ textarea {
   font: inherit;
   text-align: left;
   width: 100%;
-}
-
-.fila-boton:hover {
-  background: #f4f8fb;
 }
 
 .tabla-equipos-grupo .tabla-fila {
@@ -956,32 +802,14 @@ textarea {
   font-weight: 700;
 }
 
-.alerta.exito {
-  background: #e9f7ef;
-  color: #147a45;
-}
-
-.alerta.error {
-  background: #fdecec;
-  color: #9f1d1d;
-}
-
 .vacio {
   color: #68768a;
   margin: 10px 0 0;
 }
 
 @media (max-width: 980px) {
-  .app-shell {
-    grid-template-columns: 1fr;
-  }
-
   .barra-lateral {
     padding: 16px;
-  }
-
-  .navegacion {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .metricas,
@@ -1026,57 +854,75 @@ textarea {
 /* ───────────────────────────────────────────────
    Tema claro — se aplica cuando .app-shell lleva
    la clase .tema-claro (toggle en el header)
+
+   Paleta "Cruz Verde": nace de la cruz iluminada de
+   farmacia (glifo de estado en todo el sistema), no
+   de una paleta de IDE. --color-primary es el verde
+   de MARCA (cruz/chrome) y es intencionalmente distinto
+   de --color-success (verde de estado "sano"), para que
+   "esto es Farmamia" y "esto esta bien" no se confundan.
+   Ver docs/DISENO_NOC.md para la justificacion completa.
 ─────────────────────────────────────────────── */
 :host:has(.tema-claro) {
-  --color-primary: #2563eb;
-  --color-primary-soft: #eff6ff;
-  --color-success: #16a34a;
-  --color-success-soft: #ecfdf5;
-  --color-warning: #d97706;
-  --color-warning-soft: #fffbeb;
-  --color-danger: #dc2626;
-  --color-danger-soft: #fef2f2;
-  --color-purple: #7c3aed;
-  --color-purple-soft: #f5f3ff;
-  --color-background: #f8fafc;
+  --color-primary: #0e8f6c;
+  --color-primary-soft: #e3f3ec;
+  --color-success: #2e8b52;
+  --color-success-soft: #e6f3ea;
+  --color-warning: #b9761f;
+  --color-warning-soft: #f8ecd8;
+  --color-danger: #c43326;
+  --color-danger-soft: #fbe6e3;
+  --color-purple: #8449b3;
+  --color-purple-soft: #f2ebfa;
+  --color-background: #f7f5ef;
   --color-card: #ffffff;
-  --color-card-raised: #f1f5f9;
-  --color-border: #e2e8f0;
-  --color-text: #0f172a;
-  --color-muted: #64748b;
-  --shadow-card: 0 4px 16px rgb(15 23 42 / 6%);
+  --color-card-raised: #eeece3;
+  --color-border: #dcd8ca;
+  --color-text: #171f1b;
+  --color-muted: #5c6b62;
+  --shadow-card: 0 4px 16px rgb(23 31 27 / 6%);
   --color-sidebar: #ffffff;
-  --color-nav-text: #334155;
-  --color-nav-active-bg: #eff6ff;
-  --color-nav-active-border: #bfdbfe;
+  --color-nav-text: #5c6b62;
+  --color-nav-active-bg: #e3f3ec;
+  --color-nav-active-border: #bfe3d5;
 }
 
-/* NOC dark design system - Farmamia Operations Center */
+/* NOC "Cruz Verde" design system - Farmamia Operations Center */
 :host {
-  --color-primary: #58a6ff;
-  --color-primary-soft: #172340;
-  --color-success: #3fb950;
-  --color-success-soft: #0d2818;
-  --color-warning: #e3b341;
-  --color-warning-soft: #2b1d00;
-  --color-danger: #f85149;
-  --color-danger-soft: #2d0f0f;
-  --color-purple: #a371f7;
-  --color-purple-soft: #1e0a3a;
-  --color-background: #0d1117;
-  --color-card: #161b22;
-  --color-card-raised: #1c2128;
-  --color-border: #30363d;
-  --color-text: #e6edf3;
-  --color-muted: #8b949e;
-  --shadow-card: 0 8px 24px rgb(0 0 0 / 50%);
-  --color-sidebar: #0d1117;
-  --color-nav-text: #8b949e;
-  --color-nav-active-bg: #172340;
-  --color-nav-active-border: #1e3a5f;
+  --color-primary: #1fae85;
+  --color-primary-soft: #12271f;
+  --color-success: #4cb977;
+  --color-success-soft: #10251a;
+  --color-warning: #e8a33d;
+  --color-warning-soft: #2a2011;
+  --color-danger: #e1473b;
+  --color-danger-soft: #2c1512;
+  --color-purple: #b98cd6;
+  --color-purple-soft: #241a30;
+  --color-background: #0a120f;
+  --color-card: #121d19;
+  --color-card-raised: #182620;
+  --color-border: #24352c;
+  --color-text: #edeae2;
+  --color-muted: #8a9a90;
+  --shadow-card: 0 8px 24px rgb(0 0 0 / 40%);
+  --color-sidebar: #121d19;
+  --color-nav-text: #8a9a90;
+  --color-nav-active-bg: #12271f;
+  --color-nav-active-border: #1f4a3e;
+
+  /* Tipografia: Bahnschrift (condensada, nativa de Windows — el mismo SO
+     de cada PC del NOC y de cada agente) para titulos/etiquetas; Segoe UI
+     para lectura; Cascadia Mono para codigos/IPs/timestamps, con la logica
+     de un ticket de POS impreso. Elegidas por estar YA instaladas en el
+     entorno real, no como atajo — cero riesgo de fallback silencioso. */
+  --font-display: 'Bahnschrift', 'DIN Condensed', 'Arial Narrow', sans-serif;
+  --font-body: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Mono', Consolas, 'SF Mono', monospace;
+
   color: var(--color-text);
   display: block;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-body);
 }
 
 * {
@@ -1136,8 +982,10 @@ textarea {
 
 .grupo-nav {
   color: var(--color-muted);
+  font-family: var(--font-display);
   font-size: 0.68rem;
-  font-weight: 800;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   margin: 18px 10px 6px;
 }
 
@@ -1211,6 +1059,7 @@ textarea {
 }
 
 .reloj-hora {
+  font-family: var(--font-mono);
   font-size: 1.45rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -1361,22 +1210,27 @@ textarea {
 
 .etiqueta {
   color: var(--color-muted);
+  font-family: var(--font-display);
   font-size: 0.74rem;
-  font-weight: 800;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 h1 {
   color: var(--color-text);
-  font-size: clamp(1.45rem, 2vw, 1.85rem);
-  font-weight: 750;
-  letter-spacing: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 2.4vw, 2.05rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 h2,
 h3 {
   color: var(--color-text);
-  font-weight: 750;
-  letter-spacing: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .vista,

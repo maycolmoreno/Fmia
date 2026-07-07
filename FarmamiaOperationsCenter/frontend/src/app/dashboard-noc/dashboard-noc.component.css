@@ -53,10 +53,80 @@
   font-size: 0.82rem;
 }
 
-.noc-resumen-grid {
-  display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+/* Veredicto de flota — el titular de la pantalla, reemplaza la grilla de KPIs
+   identicos que existia antes (ver docs/DISENO_NOC.md). */
+.veredicto {
+  align-items: center;
+  background: var(--color-card, #121d19);
+  border: 1px solid var(--color-border, #24352c);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card, 0 8px 24px rgb(0 0 0 / 40%));
+  display: flex;
+  gap: 22px;
+  padding: 22px 26px;
+}
+
+.veredicto-texto {
+  min-width: 0;
+}
+
+.veredicto-titulo {
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.2vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  margin: 0 0 3px;
+}
+
+.veredicto-titulo.normal { color: var(--color-success, #4cb977); }
+.veredicto-titulo.riesgo { color: var(--color-warning, #e8a33d); }
+.veredicto-titulo.critico { color: var(--color-danger, #e1473b); }
+.veredicto-titulo.inactivo { color: var(--color-muted, #8a9a90); }
+
+.veredicto-sub {
+  color: var(--color-muted, #8a9a90);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.veredicto-sub b {
+  color: var(--color-text, #edeae2);
+  font-weight: 700;
+}
+
+.veredicto-stats {
+  border-left: 1px solid var(--color-border, #24352c);
+  display: flex;
+  gap: 26px;
+  margin-left: auto;
+  padding-left: 24px;
+}
+
+.vstat {
+  text-align: right;
+}
+
+.vstat strong {
+  color: var(--color-text, #edeae2);
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.vstat strong span {
+  color: var(--color-muted, #8a9a90);
+  font-size: 0.85rem;
+}
+
+.vstat strong.riesgo { color: var(--color-warning, #e8a33d); }
+.vstat strong.critico { color: var(--color-danger, #e1473b); }
+
+.vstat span {
+  color: var(--color-muted, #8a9a90);
+  font-size: 0.68rem;
 }
 
 .noc-contexto-card {
@@ -196,7 +266,6 @@
 }
 
 @media (max-width: 980px) {
-  .noc-resumen-grid,
   .noc-contexto {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -211,7 +280,21 @@
     flex-direction: column;
   }
 
-  .noc-resumen-grid,
+  .veredicto {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .veredicto-stats {
+    border-left: 0;
+    border-top: 1px solid var(--color-border, #24352c);
+    justify-content: space-between;
+    margin-left: 0;
+    padding-left: 0;
+    padding-top: 14px;
+    width: 100%;
+  }
+
   .noc-contexto,
   .noc-zonas-grid {
     grid-template-columns: 1fr;

@@ -2,14 +2,14 @@ import { AsyncPipe, CommonModule } from '@angular/common';
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { ContadoresEnlaces, EstadoOperacionalFarmacia, ResumenNocDashboard } from '../modelos/modelos-operaciones';
+import { EstadoOperacionalFarmacia, ResumenNocDashboard } from '../modelos/modelos-operaciones';
 import { NocDashboardService } from '../servicios/noc-dashboard.service';
 import { NocZonaCampanaComponent } from './zonas/noc-zona-campana.component';
 import { NocZonaCriticoComponent } from './zonas/noc-zona-critico.component';
 import { NocZonaPosComponent } from './zonas/noc-zona-pos.component';
 import { NocZonaRedComponent } from './zonas/noc-zona-red.component';
 import { environment } from '../../environments/environment';
-import { KpiCardComponent } from '../componentes-ui/kpi-card.component';
+import { CruzGlifoComponent, EstadoCruz } from '../componentes-ui/cruz-glifo.component';
 
 @Component({
   selector: 'app-dashboard-noc',
@@ -21,7 +21,7 @@ import { KpiCardComponent } from '../componentes-ui/kpi-card.component';
     NocZonaRedComponent,
     NocZonaPosComponent,
     NocZonaCampanaComponent,
-    KpiCardComponent
+    CruzGlifoComponent
   ],
   templateUrl: './dashboard-noc.component.html',
   styleUrl: './dashboard-noc.component.css'
@@ -30,7 +30,6 @@ export class DashboardNocComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   resumen: ResumenNocDashboard | null = null;
-  contadoresEnlaces: ContadoresEnlaces = { total: 0, up: 0, down: 0 };
   cargando = true;
   error = false;
   readonly grafanaUrl = environment.grafanaUrl;
@@ -50,9 +49,6 @@ export class DashboardNocComponent implements OnInit, OnDestroy {
     });
     this.nocService.error$.pipe(takeUntil(this.destroy$)).subscribe(e => {
       this.error = e;
-    });
-    this.nocService.contadoresEnlaces$.pipe(takeUntil(this.destroy$)).subscribe(contadores => {
-      this.contadoresEnlaces = contadores;
     });
   }
 
@@ -85,6 +81,47 @@ export class DashboardNocComponent implements OnInit, OnDestroy {
 
   get codigosFarmaciasTurno(): Set<string> {
     return new Set(this.estadoFarmacias.filter(f => f.deTurno).map(f => f.codigoFarmacia));
+  }
+
+  // Veredicto de flota: el titular real de la pantalla — la pregunta que un operador
+  // necesita responder en segundos al llegar a su turno, no una grilla de KPIs iguales.
+  get totalFarmacias(): number {
+    return this.estadoFarmacias.length;
+  }
+
+  get farmaciasOk(): number {
+    if (!this.resumen) {
+      return 0;
+    }
+    return Math.max(0, this.totalFarmacias - this.resumen.criticFarms.length - this.resumen.atRiskFarms.length);
+  }
+
+  get estadoVeredicto(): EstadoCruz {
+    if (!this.resumen) {
+      return 'inactivo';
+    }
+    if (this.resumen.criticFarms.length > 0) {
+      return 'critico';
+    }
+    if (this.resumen.atRiskFarms.length > 0) {
+      return 'riesgo';
+    }
+    return 'normal';
+  }
+
+  get tituloVeredicto(): string {
+    if (!this.resumen) {
+      return 'Sin datos';
+    }
+    if (this.resumen.criticFarms.length > 0) {
+      const cantidad = this.resumen.criticFarms.length;
+      return `${cantidad} farmacia${cantidad === 1 ? '' : 's'} crítica${cantidad === 1 ? '' : 's'}`;
+    }
+    if (this.resumen.atRiskFarms.length > 0) {
+      const cantidad = this.resumen.atRiskFarms.length;
+      return `${cantidad} farmacia${cantidad === 1 ? '' : 's'} en riesgo`;
+    }
+    return 'Todo normal';
   }
 
   urlGrafanaFarmacia(branchCode: string): string {
