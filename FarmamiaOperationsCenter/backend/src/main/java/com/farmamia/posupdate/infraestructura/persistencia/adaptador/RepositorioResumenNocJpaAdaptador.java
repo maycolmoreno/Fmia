@@ -53,7 +53,9 @@ public class RepositorioResumenNocJpaAdaptador implements RepositorioResumenNoc 
         return new EstadoRedNoc(
             alertaRepositorioJpa.countByTipoAlertaAndEstado("NETWORK_LINK_DOWN", "OPEN"),
             alertaRepositorioJpa.countByTipoAlertaAndEstado("HIGH_LATENCY", "OPEN"),
-            alertaRepositorioJpa.countByTipoAlertaAndEstado("VPN_DOWN", "OPEN")
+            alertaRepositorioJpa.countByTipoAlertaAndEstado("VPN_DOWN", "OPEN"),
+            equipoRepositorioJpa.countByTipo(TipoEquipo.NETWORK_LINK),
+            equipoRepositorioJpa.countByTipoAndEstado(TipoEquipo.NETWORK_LINK, "ONLINE")
         );
     }
 
@@ -141,7 +143,10 @@ public class RepositorioResumenNocJpaAdaptador implements RepositorioResumenNoc 
         return new EquipoSinActualizarNoc(
             equipo != null ? equipo.getNombreEquipo() : null,
             sucursal != null ? sucursal.getCodigo() : null,
-            objetivo.getEstado()
+            objetivo.getEstado(),
+            equipo != null ? equipo.getId() : null,
+            objetivo.getVersionNueva(),
+            objetivo.getActualizadoEn()
         );
     }
 
@@ -152,6 +157,7 @@ public class RepositorioResumenNocJpaAdaptador implements RepositorioResumenNoc 
             alerta.getId(),
             sucursal != null ? sucursal.getId() : null,
             sucursal != null ? sucursal.getCodigo() : alerta.getCodigoSucursalRed(),
+            equipo != null ? equipo.getCodigoPdv() : null,
             alerta.getSeveridad(),
             alerta.getTipoAlerta(),
             alerta.getTitulo(),

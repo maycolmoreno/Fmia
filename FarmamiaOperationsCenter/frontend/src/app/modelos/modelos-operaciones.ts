@@ -481,6 +481,8 @@ export interface EstadoRedNoc {
   linkDown: number;
   highLatency: number;
   vpnDown: number;
+  total: number;
+  up: number;
   downLinks: EnlaceCaidoNoc[];
 }
 
@@ -488,6 +490,9 @@ export interface EquipoSinActualizarNoc {
   deviceName: string | null;
   branchCode: string | null;
   targetStatus: string;
+  deviceId: string | null;
+  targetVersion: string | null;
+  lastUpdatedAt: string | null;
 }
 
 export interface EstadoPosNoc {
@@ -513,12 +518,25 @@ export interface AlertaResumenNoc {
   id: string;
   farmId: string | null;
   farmCode: string | null;
+  deviceCode: string | null;
   severity: string;
   alertType: string;
   title: string;
   status: string;
   openedAt: string;
   networkEvent: boolean;
+}
+
+export interface ProblemaAbiertoNoc {
+  codigo: string;
+  tipo: string;
+  estado: string;
+  severidad: string;
+  descripcion: string;
+  iniciadoEn: string;
+  accion: 'grafana' | 'equipo' | null;
+  branchCode: string | null;
+  deviceId: string | null;
 }
 
 export interface ResumenNocDashboard {

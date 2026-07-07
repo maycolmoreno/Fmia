@@ -31,7 +31,9 @@ public record ResumenNocDashboard(
     public record EstadoRedNoc(
         long enlacesCaidos,
         long latenciaAlta,
-        long vpnCaidas
+        long vpnCaidas,
+        long totalEnlaces,
+        long enlacesUp
     ) {}
 
     public record EnlaceCaidoNoc(
@@ -53,7 +55,10 @@ public record ResumenNocDashboard(
     public record EquipoSinActualizarNoc(
         String nombreEquipo,
         String codigoSucursal,
-        String estadoObjetivo
+        String estadoObjetivo,
+        UUID idEquipo,
+        String versionNueva,
+        OffsetDateTime actualizadoEn
     ) {}
 
     public record CampanaActivaNoc(
@@ -70,6 +75,7 @@ public record ResumenNocDashboard(
         UUID id,
         UUID idFarmacia,
         String codigoFarmacia,
+        String codigoPdv,
         String severidad,
         String tipoAlerta,
         String titulo,

@@ -34,9 +34,17 @@ import { CampanaActivaNoc } from '../../modelos/modelos-operaciones';
           <span class="metrica-valor">{{ campana!.completed }}</span>
           <span class="metrica-label">Completados</span>
         </div>
+        <div class="metrica-fila metrica-aviso" *ngIf="pendientes > 0">
+          <span class="metrica-valor">{{ pendientes }}</span>
+          <span class="metrica-label">Pendientes</span>
+        </div>
         <div class="metrica-fila metrica-alerta" *ngIf="campana!.failed > 0">
           <span class="metrica-valor">{{ campana!.failed }}</span>
           <span class="metrica-label">Fallidos</span>
+        </div>
+        <div class="metrica-fila metrica-alerta" *ngIf="sinActualizar > 0">
+          <span class="metrica-valor">{{ sinActualizar }}</span>
+          <span class="metrica-label">Sin recibir actualizacion</span>
         </div>
       </div>
     </article>
@@ -54,6 +62,7 @@ import { CampanaActivaNoc } from '../../modelos/modelos-operaciones';
     }
     .metrica-ok     { background: var(--color-success-soft, #0d2818); }
     .metrica-alerta { background: var(--color-danger-soft, #2d0f0f); }
+    .metrica-aviso  { background: var(--color-warning-soft, #2b1d00); }
     .metrica-valor { font-size: 1.5rem; font-weight: 700; min-width: 32px; text-align: right; color: var(--color-text, #e6edf3); }
     .metrica-label { font-size: 0.85rem; color: var(--color-muted, #8b949e); }
     .version-pos { padding: 4px 10px; font-size: 0.9rem; color: var(--color-text, #e6edf3); }
@@ -81,4 +90,12 @@ import { CampanaActivaNoc } from '../../modelos/modelos-operaciones';
 })
 export class NocZonaCampanaComponent {
   @Input() campana: CampanaActivaNoc | null = null;
+  @Input() sinActualizar = 0;
+
+  get pendientes(): number {
+    if (!this.campana) {
+      return 0;
+    }
+    return Math.max(0, this.campana.totalDevices - this.campana.completed - this.campana.failed);
+  }
 }

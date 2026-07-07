@@ -25,20 +25,13 @@ import { EstadoPosNoc } from '../../modelos/modelos-operaciones';
           <span class="metrica-valor">{{ pos.offline }}</span>
           <span class="metrica-label">Offline</span>
         </div>
-        <div class="metrica-fila metrica-aviso" *ngIf="pos.atRisk > 0">
-          <span class="metrica-valor">{{ pos.atRisk }}</span>
-          <span class="metrica-label">Sin estado conocido</span>
+        <div class="metrica-fila metrica-aviso" *ngIf="pos.pendingDevices.length > 0">
+          <span class="metrica-valor">{{ pos.pendingDevices.length }}</span>
+          <span class="metrica-label">Sin actualizar</span>
         </div>
         <div class="version-actual" *ngIf="pos.currentVersion">
           <span class="metrica-label">Version dominante: </span>
           <strong>{{ pos.currentVersion }}</strong>
-        </div>
-
-        <div class="equipos-pendientes" *ngIf="pos.pendingDevices.length > 0">
-          <p class="etiqueta-zona">Equipos sin actualizar en esta campana</p>
-          <div class="fila-equipo-pendiente" *ngFor="let equipo of pos.pendingDevices">
-            {{ equipo.deviceName || 'Equipo sin nombre' }}
-          </div>
         </div>
       </div>
     </article>
@@ -60,24 +53,6 @@ import { EstadoPosNoc } from '../../modelos/modelos-operaciones';
     .metrica-valor { font-size: 1.5rem; font-weight: 700; min-width: 32px; text-align: right; color: var(--color-text, #e6edf3); }
     .metrica-label { font-size: 0.85rem; color: var(--color-muted, #8b949e); }
     .version-actual { padding: 6px 10px; font-size: 0.85rem; color: var(--color-text, #e6edf3); }
-    .equipos-pendientes { padding-top: 4px; }
-    .etiqueta-zona {
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--color-muted, #8b949e);
-      margin: 12px 0 4px;
-    }
-    .fila-equipo-pendiente {
-      padding: 6px 10px;
-      margin-bottom: 4px;
-      font-size: 0.85rem;
-      color: var(--color-text, #e6edf3);
-      background: var(--color-warning-soft, #2b1d00);
-      border-left: 3px solid var(--color-warning, #e3b341);
-      border-radius: 4px;
-    }
   `]
 })
 export class NocZonaPosComponent {

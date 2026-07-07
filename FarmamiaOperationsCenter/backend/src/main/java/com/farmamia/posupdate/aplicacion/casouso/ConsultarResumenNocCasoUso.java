@@ -17,7 +17,7 @@ public class ConsultarResumenNocCasoUso {
 
     private static final int MAX_CRITICAS = 10;
     private static final int MAX_EN_RIESGO = 5;
-    private static final int ALERTAS_RECIENTES = 10;
+    private static final int ALERTAS_RECIENTES = 100;
     private static final int MAX_ENLACES_CAIDOS = 20;
     private static final int MAX_EQUIPOS_SIN_ACTUALIZAR = 20;
 

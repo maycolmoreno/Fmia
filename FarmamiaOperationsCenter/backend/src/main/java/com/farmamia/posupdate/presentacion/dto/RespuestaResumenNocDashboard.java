@@ -32,7 +32,9 @@ public record RespuestaResumenNocDashboard(
     public record EstadoRedNocDto(
         @JsonProperty("linkDown") long enlacesCaidos,
         @JsonProperty("highLatency") long latenciaAlta,
-        @JsonProperty("vpnDown") long vpnCaidas
+        @JsonProperty("vpnDown") long vpnCaidas,
+        @JsonProperty("total") long totalEnlaces,
+        @JsonProperty("up") long enlacesUp
     ) {}
 
     public record EnlaceCaidoNocDto(
@@ -54,7 +56,10 @@ public record RespuestaResumenNocDashboard(
     public record EquipoSinActualizarNocDto(
         @JsonProperty("deviceName") String nombreEquipo,
         @JsonProperty("branchCode") String codigoSucursal,
-        @JsonProperty("targetStatus") String estadoObjetivo
+        @JsonProperty("targetStatus") String estadoObjetivo,
+        @JsonProperty("deviceId") UUID idEquipo,
+        @JsonProperty("targetVersion") String versionNueva,
+        @JsonProperty("lastUpdatedAt") OffsetDateTime actualizadoEn
     ) {}
 
     public record CampanaActivaNocDto(
@@ -71,6 +76,7 @@ public record RespuestaResumenNocDashboard(
         @JsonProperty("id") UUID id,
         @JsonProperty("farmId") UUID idFarmacia,
         @JsonProperty("farmCode") String codigoFarmacia,
+        @JsonProperty("deviceCode") String codigoPdv,
         @JsonProperty("severity") String severidad,
         @JsonProperty("alertType") String tipoAlerta,
         @JsonProperty("title") String titulo,

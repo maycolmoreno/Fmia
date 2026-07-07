@@ -155,7 +155,7 @@
     <div class="alerta error" *ngIf="error">{{ error }}</div>
 
     <section class="vista dashboard-noc noc-farmacia-first" *ngIf="vistaActiva === 'dashboard'">
-      <app-dashboard-noc [estadoFarmacias]="estadoFarmacias"></app-dashboard-noc>
+      <app-dashboard-noc [estadoFarmacias]="estadoFarmacias" (verEquipo)="verDetalleEquipoPorId($event)"></app-dashboard-noc>
 
       <div class="dashboard-acciones-rapidas">
         <button type="button" class="accion-operativa danger" (click)="cambiarVista('equipos')">

@@ -51,7 +51,9 @@ public class ControladorDashboard {
         EstadoRedNocDto red = new EstadoRedNocDto(
             noc.red().enlacesCaidos(),
             noc.red().latenciaAlta(),
-            noc.red().vpnCaidas()
+            noc.red().vpnCaidas(),
+            noc.red().totalEnlaces(),
+            noc.red().enlacesUp()
         );
         List<EnlaceCaidoNocDto> enlacesCaidos = noc.enlacesCaidosDetalle().stream()
             .map(e -> new EnlaceCaidoNocDto(e.codigoPdv(), e.codigoSucursal(), e.nombreSucursal(), e.direccionIp(), e.ultimoLatidoEn()))
@@ -64,7 +66,10 @@ public class ControladorDashboard {
             noc.pos().versionActual()
         );
         List<EquipoSinActualizarNocDto> equiposSinActualizar = noc.equiposSinActualizar().stream()
-            .map(e -> new EquipoSinActualizarNocDto(e.nombreEquipo(), e.codigoSucursal(), e.estadoObjetivo()))
+            .map(e -> new EquipoSinActualizarNocDto(
+                e.nombreEquipo(), e.codigoSucursal(), e.estadoObjetivo(),
+                e.idEquipo(), e.versionNueva(), e.actualizadoEn()
+            ))
             .toList();
         CampanaActivaNocDto campana = noc.campanaActiva() == null ? null : new CampanaActivaNocDto(
             noc.campanaActiva().id(),
@@ -77,7 +82,7 @@ public class ControladorDashboard {
         );
         List<AlertaResumenNocDto> alertas = noc.alertasRecientes().stream()
             .map(a -> new AlertaResumenNocDto(
-                a.id(), a.idFarmacia(), a.codigoFarmacia(),
+                a.id(), a.idFarmacia(), a.codigoFarmacia(), a.codigoPdv(),
                 a.severidad(), a.tipoAlerta(), a.titulo(),
                 a.estado(), a.abiertaEn(), a.eventoDeRed()
             ))

@@ -42,11 +42,11 @@ class ConsultarResumenNocCasoUsoCacheTest {
         RepositorioResumenNoc repositorioResumenNoc = mock(RepositorioResumenNoc.class);
         when(repositorioEstadoFarmacias.listar()).thenReturn(List.of());
         when(repositorioResumenNoc.obtenerEstadoRed())
-            .thenReturn(new ResumenNocDashboard.EstadoRedNoc(0, 0, 0));
+            .thenReturn(new ResumenNocDashboard.EstadoRedNoc(0, 0, 0, 0, 0));
         when(repositorioResumenNoc.obtenerEstadoPos())
             .thenReturn(new ResumenNocDashboard.EstadoPosNoc(0, 0, 0, 0, null));
         when(repositorioResumenNoc.obtenerCampanaActiva()).thenReturn(null);
-        when(repositorioResumenNoc.obtenerAlertasRecientes(10)).thenReturn(List.of());
+        when(repositorioResumenNoc.obtenerAlertasRecientes(100)).thenReturn(List.of());
 
         contexto = new AnnotationConfigApplicationContext();
         contexto.registerBean(RepositorioEstadoFarmacias.class, () -> repositorioEstadoFarmacias);
