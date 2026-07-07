@@ -1548,14 +1548,6 @@ h3 {
   border-color: #bbf7d0;
 }
 
-.estado-red-noc {
-  border-color: #1e3a5f;
-  border-style: solid;
-  background:
-    linear-gradient(180deg, rgb(23 35 64 / 70%), rgb(22 27 34 / 0) 190px),
-    var(--color-card);
-}
-
 .metricas-red div {
   padding: 16px;
 }

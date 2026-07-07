@@ -5,6 +5,8 @@ import com.farmamia.posupdate.dominio.modelo.ResumenNocDashboard;
 import com.farmamia.posupdate.presentacion.dto.RespuestaResumenNocDashboard;
 import com.farmamia.posupdate.presentacion.dto.RespuestaResumenNocDashboard.AlertaResumenNocDto;
 import com.farmamia.posupdate.presentacion.dto.RespuestaResumenNocDashboard.CampanaActivaNocDto;
+import com.farmamia.posupdate.presentacion.dto.RespuestaResumenNocDashboard.EnlaceCaidoNocDto;
+import com.farmamia.posupdate.presentacion.dto.RespuestaResumenNocDashboard.EquipoSinActualizarNocDto;
 import com.farmamia.posupdate.presentacion.dto.RespuestaResumenNocDashboard.EstadoPosNocDto;
 import com.farmamia.posupdate.presentacion.dto.RespuestaResumenNocDashboard.EstadoRedNocDto;
 import com.farmamia.posupdate.presentacion.dto.RespuestaResumenNocDashboard.FarmaciaCriticaNocDto;
@@ -51,6 +53,9 @@ public class ControladorDashboard {
             noc.red().latenciaAlta(),
             noc.red().vpnCaidas()
         );
+        List<EnlaceCaidoNocDto> enlacesCaidos = noc.enlacesCaidosDetalle().stream()
+            .map(e -> new EnlaceCaidoNocDto(e.codigoPdv(), e.codigoSucursal(), e.nombreSucursal(), e.direccionIp(), e.ultimoLatidoEn()))
+            .toList();
         EstadoPosNocDto pos = new EstadoPosNocDto(
             noc.pos().totalPos(),
             noc.pos().posOnline(),
@@ -58,6 +63,9 @@ public class ControladorDashboard {
             noc.pos().posEnRiesgo(),
             noc.pos().versionActual()
         );
+        List<EquipoSinActualizarNocDto> equiposSinActualizar = noc.equiposSinActualizar().stream()
+            .map(e -> new EquipoSinActualizarNocDto(e.nombreEquipo(), e.codigoSucursal(), e.estadoObjetivo()))
+            .toList();
         CampanaActivaNocDto campana = noc.campanaActiva() == null ? null : new CampanaActivaNocDto(
             noc.campanaActiva().id(),
             noc.campanaActiva().nombre(),
@@ -74,7 +82,7 @@ public class ControladorDashboard {
                 a.estado(), a.abiertaEn(), a.eventoDeRed()
             ))
             .toList();
-        return new RespuestaResumenNocDashboard(criticas, enRiesgo, red, pos, campana, alertas, noc.generadoEn());
+        return new RespuestaResumenNocDashboard(criticas, enRiesgo, red, enlacesCaidos, pos, equiposSinActualizar, campana, alertas, noc.generadoEn());
     }
 
     private FarmaciaCriticaNocDto aFarmaciaNocDto(ResumenNocDashboard.FarmaciaCriticaNoc f) {

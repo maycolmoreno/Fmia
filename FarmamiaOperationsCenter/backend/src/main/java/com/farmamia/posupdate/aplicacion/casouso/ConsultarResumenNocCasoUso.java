@@ -7,6 +7,7 @@ import com.farmamia.posupdate.dominio.puerto.RepositorioEstadoFarmacias;
 import com.farmamia.posupdate.dominio.puerto.RepositorioResumenNoc;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,8 @@ public class ConsultarResumenNocCasoUso {
     private static final int MAX_CRITICAS = 10;
     private static final int MAX_EN_RIESGO = 5;
     private static final int ALERTAS_RECIENTES = 10;
+    private static final int MAX_ENLACES_CAIDOS = 20;
+    private static final int MAX_EQUIPOS_SIN_ACTUALIZAR = 20;
 
     private final RepositorioEstadoFarmacias repositorioEstadoFarmacias;
     private final RepositorioResumenNoc repositorioResumenNoc;
@@ -46,12 +49,17 @@ public class ConsultarResumenNocCasoUso {
             .map(this::aFarmaciaNoc)
             .toList();
 
+        var campanaActiva = repositorioResumenNoc.obtenerCampanaActiva();
+        UUID idCampanaActiva = campanaActiva != null ? campanaActiva.id() : null;
+
         return new ResumenNocDashboard(
             criticas,
             turnoEnRiesgo,
             repositorioResumenNoc.obtenerEstadoRed(),
+            repositorioResumenNoc.obtenerEnlacesCaidos(MAX_ENLACES_CAIDOS),
             repositorioResumenNoc.obtenerEstadoPos(),
-            repositorioResumenNoc.obtenerCampanaActiva(),
+            repositorioResumenNoc.obtenerEquiposSinActualizar(idCampanaActiva, MAX_EQUIPOS_SIN_ACTUALIZAR),
+            campanaActiva,
             repositorioResumenNoc.obtenerAlertasRecientes(ALERTAS_RECIENTES),
             OffsetDateTime.now()
         );

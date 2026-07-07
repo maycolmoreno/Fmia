@@ -8,7 +8,9 @@ public record ResumenNocDashboard(
     List<FarmaciaCriticaNoc> farmaciasCriticas,
     List<FarmaciaCriticaNoc> farmaciasDeTurnoEnRiesgo,
     EstadoRedNoc red,
+    List<EnlaceCaidoNoc> enlacesCaidosDetalle,
     EstadoPosNoc pos,
+    List<EquipoSinActualizarNoc> equiposSinActualizar,
     CampanaActivaNoc campanaActiva,
     List<AlertaResumenNoc> alertasRecientes,
     OffsetDateTime generadoEn
@@ -32,12 +34,26 @@ public record ResumenNocDashboard(
         long vpnCaidas
     ) {}
 
+    public record EnlaceCaidoNoc(
+        String codigoPdv,
+        String codigoSucursal,
+        String nombreSucursal,
+        String direccionIp,
+        OffsetDateTime ultimoLatidoEn
+    ) {}
+
     public record EstadoPosNoc(
         long totalPos,
         long posOnline,
         long posOffline,
         long posEnRiesgo,
         String versionActual
+    ) {}
+
+    public record EquipoSinActualizarNoc(
+        String nombreEquipo,
+        String codigoSucursal,
+        String estadoObjetivo
     ) {}
 
     public record CampanaActivaNoc(

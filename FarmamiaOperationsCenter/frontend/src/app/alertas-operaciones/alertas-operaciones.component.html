@@ -12,10 +12,36 @@
       </div>
     </div>
 
+    <div class="panel-filtros">
+      <label>
+        Farmacia
+        <input type="text" [(ngModel)]="filtros.branchCode" placeholder="FMA001">
+      </label>
+      <label>
+        Severidad
+        <select [(ngModel)]="filtros.severity">
+          <option value="">Todas</option>
+          <option value="CRITICAL">Critical</option>
+          <option value="HIGH">High</option>
+          <option value="WARNING">Warning</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="LOW">Low</option>
+        </select>
+      </label>
+      <label>
+        Tipo
+        <input type="text" [(ngModel)]="filtros.type" placeholder="LINK_DOWN">
+      </label>
+      <button type="button" class="boton pequeno secundario" (click)="limpiarFiltros()">Limpiar</button>
+    </div>
+
     <p class="alerta error" *ngIf="error">{{ error }}</p>
     <p class="alerta exito" *ngIf="mensaje">{{ mensaje }}</p>
-    <p class="vacio" *ngIf="!cargando && farmacias.length === 0">
+    <p class="vacio" *ngIf="!cargando && alertasCrudo.length === 0">
       {{ modo === 'historial' ? 'Aun no hay incidentes cerrados.' : 'Aun no hay alertas abiertas.' }}
+    </p>
+    <p class="vacio" *ngIf="!cargando && alertasCrudo.length > 0 && farmacias.length === 0">
+      Ningun resultado con estos filtros.
     </p>
 
     <div class="farmacia-lista">

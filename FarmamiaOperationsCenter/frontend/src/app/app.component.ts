@@ -94,6 +94,7 @@ export class AppComponent implements OnInit, OnDestroy {
   salud?: EstadoSaludApi;
   farmacias: Farmacia[] = [];
   estadoFarmacias: EstadoOperacionalFarmacia[] = [];
+  farmaciasEstadoFiltros: { q: string; ciudad: string; estado: string } = { q: '', ciudad: '', estado: '' };
   equiposPos: Equipo[] = [];
   equiposRed: Equipo[] = [];
   equiposPosPagina?: RespuestaPagina<EquipoPos>;
@@ -233,12 +234,6 @@ export class AppComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly nocService: NocDashboardService
   ) {
-  }
-
-  get equiposSinLatido(): EquipoPos[] {
-    return this.equiposPos
-      .filter((equipo) => equipo.status !== 'ONLINE')
-      .slice(0, 8);
   }
 
   get huerfanosConSugerenciaValida(): number {
@@ -644,8 +639,13 @@ export class AppComponent implements OnInit, OnDestroy {
       this.error = 'No tienes permiso para consultar alertas de red.';
       return;
     }
-    this.subTabAlertas = 'red';
-    this.cambiarVista('alertas');
+    this.subTabFarmacias = 'red';
+    this.cambiarVista('equipos');
+  }
+
+  abrirEquiposPos(): void {
+    this.subTabFarmacias = 'pos';
+    this.cambiarVista('equipos');
   }
 
   verDetalleEquipoPorId(idEquipo: string): void {
@@ -1009,6 +1009,28 @@ export class AppComponent implements OnInit, OnDestroy {
   filtrarEquipos(): void {
     this.equiposFiltros.page = 0;
     this.cargarEquipos();
+  }
+
+  get estadoFarmaciasFiltradas(): EstadoOperacionalFarmacia[] {
+    const q = this.farmaciasEstadoFiltros.q.trim().toLowerCase();
+    const ciudad = this.farmaciasEstadoFiltros.ciudad.trim().toLowerCase();
+    const estado = this.farmaciasEstadoFiltros.estado;
+    return this.estadoFarmacias.filter(f => {
+      if (q && !(f.codigoFarmacia.toLowerCase().includes(q) || f.nombreFarmacia.toLowerCase().includes(q))) {
+        return false;
+      }
+      if (ciudad && !(f.ciudad || '').toLowerCase().includes(ciudad)) {
+        return false;
+      }
+      if (estado && f.estadoOperacional !== estado) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  limpiarFiltrosEstadoFarmacias(): void {
+    this.farmaciasEstadoFiltros = { q: '', ciudad: '', estado: '' };
   }
 
   limpiarFiltrosEquipos(): void {

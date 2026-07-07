@@ -2,12 +2,15 @@ package com.farmamia.posupdate.infraestructura.persistencia.adaptador;
 
 import com.farmamia.posupdate.dominio.modelo.ResumenNocDashboard.AlertaResumenNoc;
 import com.farmamia.posupdate.dominio.modelo.ResumenNocDashboard.CampanaActivaNoc;
+import com.farmamia.posupdate.dominio.modelo.ResumenNocDashboard.EnlaceCaidoNoc;
+import com.farmamia.posupdate.dominio.modelo.ResumenNocDashboard.EquipoSinActualizarNoc;
 import com.farmamia.posupdate.dominio.modelo.ResumenNocDashboard.EstadoPosNoc;
 import com.farmamia.posupdate.dominio.modelo.ResumenNocDashboard.EstadoRedNoc;
 import com.farmamia.posupdate.dominio.puerto.RepositorioResumenNoc;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.AlertaEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.DespliegueEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.EquipoEntidad;
+import com.farmamia.posupdate.infraestructura.persistencia.entidad.ObjetivoDespliegueEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.SucursalEntidad;
 import com.farmamia.posupdate.infraestructura.persistencia.entidad.TipoEquipo;
 import com.farmamia.posupdate.infraestructura.persistencia.repositorio.AlertaRepositorioJpa;
@@ -56,6 +59,17 @@ public class RepositorioResumenNocJpaAdaptador implements RepositorioResumenNoc 
 
     @Override
     @Transactional(readOnly = true)
+    public List<EnlaceCaidoNoc> obtenerEnlacesCaidos(int limite) {
+        return equipoRepositorioJpa.findByTipoAndDireccionIpIsNotNullOrderByNombreEquipoAsc(TipoEquipo.NETWORK_LINK)
+            .stream()
+            .filter(equipo -> "OFFLINE".equals(equipo.getEstado()))
+            .limit(limite)
+            .map(this::aEnlaceCaidoNoc)
+            .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public EstadoPosNoc obtenerEstadoPos() {
         long totalPos    = equipoRepositorioJpa.countByTipo(TipoEquipo.POS_TERMINAL);
         long posOnline   = equipoRepositorioJpa.countByTipoAndEstado(TipoEquipo.POS_TERMINAL, "ONLINE");
@@ -65,6 +79,20 @@ public class RepositorioResumenNocJpaAdaptador implements RepositorioResumenNoc 
             .findVersionesPosPorFrecuencia(PageRequest.of(0, 1))
             .stream().findFirst().orElse(null);
         return new EstadoPosNoc(totalPos, posOnline, posOffline, posEnRiesgo, versionActual);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EquipoSinActualizarNoc> obtenerEquiposSinActualizar(UUID idCampanaActiva, int limite) {
+        if (idCampanaActiva == null) {
+            return List.of();
+        }
+        return objetivoDespliegueRepositorioJpa.findByDespliegue_Id(idCampanaActiva)
+            .stream()
+            .filter(objetivo -> !"COMPLETED".equals(objetivo.getEstado()))
+            .limit(limite)
+            .map(this::aEquipoSinActualizarNoc)
+            .toList();
     }
 
     @Override
@@ -80,7 +108,7 @@ public class RepositorioResumenNocJpaAdaptador implements RepositorioResumenNoc 
     @Transactional(readOnly = true)
     public List<AlertaResumenNoc> obtenerAlertasRecientes(int limite) {
         return alertaRepositorioJpa
-            .findByOrderByAbiertaEnDesc(PageRequest.of(0, limite))
+            .findByEstadoNotOrderByAbiertaEnDesc("CLOSED", PageRequest.of(0, limite))
             .stream()
             .map(this::aAlertaResumenNoc)
             .toList();
@@ -94,6 +122,27 @@ public class RepositorioResumenNocJpaAdaptador implements RepositorioResumenNoc 
         int progreso = total == 0 ? 0 : (int) ((completados * 100) / total);
         String versionPos = despliegue.getPaquete() != null ? despliegue.getPaquete().getVersion() : null;
         return new CampanaActivaNoc(idDespliegue, despliegue.getNombre(), versionPos, progreso, total, completados, fallidos);
+    }
+
+    private EnlaceCaidoNoc aEnlaceCaidoNoc(EquipoEntidad equipo) {
+        SucursalEntidad sucursal = equipo.getSucursal();
+        return new EnlaceCaidoNoc(
+            equipo.getCodigoPdv(),
+            sucursal != null ? sucursal.getCodigo() : null,
+            sucursal != null ? sucursal.getNombre() : null,
+            equipo.getDireccionIp(),
+            equipo.getUltimoLatidoEn()
+        );
+    }
+
+    private EquipoSinActualizarNoc aEquipoSinActualizarNoc(ObjetivoDespliegueEntidad objetivo) {
+        EquipoEntidad equipo = objetivo.getEquipo();
+        SucursalEntidad sucursal = equipo != null ? equipo.getSucursal() : null;
+        return new EquipoSinActualizarNoc(
+            equipo != null ? equipo.getNombreEquipo() : null,
+            sucursal != null ? sucursal.getCodigo() : null,
+            objetivo.getEstado()
+        );
     }
 
     private AlertaResumenNoc aAlertaResumenNoc(AlertaEntidad alerta) {

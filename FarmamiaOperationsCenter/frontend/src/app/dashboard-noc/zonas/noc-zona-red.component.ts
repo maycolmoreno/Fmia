@@ -20,6 +20,14 @@ import { EstadoRedNoc } from '../../modelos/modelos-operaciones';
           <span class="metrica-valor">{{ red.linkDown }}</span>
           <span class="metrica-label">Enlace(s) caido(s)</span>
         </div>
+
+        <div class="lista-enlaces" *ngIf="red.downLinks.length > 0">
+          <div class="fila-enlace" *ngFor="let enlace of red.downLinks">
+            <span class="codigo-enlace">{{ enlace.code }}</span>
+            <span class="nombre-enlace">{{ enlace.branchName || enlace.branchCode || 'Sin farmacia asignada' }}</span>
+          </div>
+        </div>
+
         <div class="metrica-fila" [class.metrica-aviso]="red.highLatency > 0">
           <span class="metrica-valor">{{ red.highLatency }}</span>
           <span class="metrica-label">Latencia alta</span>
@@ -47,6 +55,24 @@ import { EstadoRedNoc } from '../../modelos/modelos-operaciones';
     .metrica-aviso  { background: var(--color-warning-soft, #2b1d00); }
     .metrica-valor { font-size: 1.5rem; font-weight: 700; min-width: 32px; text-align: right; color: var(--color-text, #e6edf3); }
     .metrica-label { font-size: 0.85rem; color: var(--color-muted, #8b949e); }
+    .lista-enlaces { display: grid; gap: 4px; padding: 2px 10px 8px; }
+    .fila-enlace {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-left: 3px solid var(--color-danger, #f85149);
+      padding: 4px 8px;
+      background: var(--color-danger-soft, #2d0f0f);
+      border-radius: 4px;
+    }
+    .codigo-enlace {
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: var(--color-danger, #f85149);
+      white-space: nowrap;
+    }
+    .nombre-enlace { font-size: 0.82rem; color: var(--color-text, #e6edf3); }
     .enlace-grafana {
       font-size: 0.72rem;
       color: var(--color-warning, #e3b341);
@@ -60,7 +86,7 @@ import { EstadoRedNoc } from '../../modelos/modelos-operaciones';
   `]
 })
 export class NocZonaRedComponent {
-  @Input() red: EstadoRedNoc = { linkDown: 0, highLatency: 0, vpnDown: 0 };
+  @Input() red: EstadoRedNoc = { linkDown: 0, highLatency: 0, vpnDown: 0, downLinks: [] };
   @Input() grafanaUrl: string = '';
 
   urlGrafanaRed(): string {

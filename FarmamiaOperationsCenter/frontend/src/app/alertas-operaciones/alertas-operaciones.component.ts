@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import {
   ApexAxisChartSeries,
@@ -46,12 +47,13 @@ type FarmaciaAlertas = {
 @Component({
   selector: 'app-alertas-operaciones',
   standalone: true,
-  imports: [CommonModule, NgApexchartsModule, StatusBadgeComponent],
+  imports: [CommonModule, FormsModule, NgApexchartsModule, StatusBadgeComponent],
   templateUrl: './alertas-operaciones.component.html',
   styleUrl: './alertas-operaciones.component.css'
 })
 export class AlertasOperacionesComponent implements OnInit {
-  farmacias: FarmaciaAlertas[] = [];
+  alertasCrudo: AlertaOperativa[] = [];
+  filtros: { branchCode: string; severity: string; type: string } = { branchCode: '', severity: '', type: '' };
   abiertas = new Set<string>();
   incidentesAbiertos = new Set<string>();
   equipoSeleccionado?: CajaAlertas;
@@ -82,7 +84,7 @@ export class AlertasOperacionesComponent implements OnInit {
     this.error = '';
     this.api.listarAlertas(200, { status: 'OPEN', sort: 'openedAt,desc' }).subscribe({
       next: (alertas) => {
-        this.farmacias = this.agruparPorFarmacia(alertas);
+        this.alertasCrudo = alertas;
         this.cargando = false;
       },
       error: (respuesta) => {
@@ -99,13 +101,39 @@ export class AlertasOperacionesComponent implements OnInit {
     this.error = '';
     this.api.listarAlertas(200, { status: 'CLOSED', sort: 'closedAt,desc' }).subscribe({
       next: (alertas) => {
-        this.farmacias = this.agruparPorFarmacia(alertas);
+        this.alertasCrudo = alertas;
         this.cargando = false;
       },
       error: (respuesta) => {
         this.error = respuesta?.error?.message ?? 'No se pudo cargar el historial de alertas.';
         this.cargando = false;
       }
+    });
+  }
+
+  get farmacias(): FarmaciaAlertas[] {
+    return this.agruparPorFarmacia(this.filtrarAlertas(this.alertasCrudo));
+  }
+
+  limpiarFiltros(): void {
+    this.filtros = { branchCode: '', severity: '', type: '' };
+  }
+
+  private filtrarAlertas(alertas: AlertaOperativa[]): AlertaOperativa[] {
+    const branchCode = this.filtros.branchCode.trim().toLowerCase();
+    const severity = this.filtros.severity;
+    const type = this.filtros.type.trim().toLowerCase();
+    return alertas.filter((alerta) => {
+      if (branchCode && !(alerta.branchCode || '').toLowerCase().includes(branchCode)) {
+        return false;
+      }
+      if (severity && alerta.severity?.toUpperCase() !== severity) {
+        return false;
+      }
+      if (type && !alerta.alertType.toLowerCase().includes(type)) {
+        return false;
+      }
+      return true;
     });
   }
 

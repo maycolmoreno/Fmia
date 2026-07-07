@@ -469,10 +469,25 @@ export interface FarmaciaCriticaNoc {
   riskSummary: string;
 }
 
+export interface EnlaceCaidoNoc {
+  code: string;
+  branchCode: string | null;
+  branchName: string | null;
+  ipAddress: string | null;
+  lastHeartbeatAt: string | null;
+}
+
 export interface EstadoRedNoc {
   linkDown: number;
   highLatency: number;
   vpnDown: number;
+  downLinks: EnlaceCaidoNoc[];
+}
+
+export interface EquipoSinActualizarNoc {
+  deviceName: string | null;
+  branchCode: string | null;
+  targetStatus: string;
 }
 
 export interface EstadoPosNoc {
@@ -481,6 +496,7 @@ export interface EstadoPosNoc {
   offline: number;
   atRisk: number;
   currentVersion: string | null;
+  pendingDevices: EquipoSinActualizarNoc[];
 }
 
 export interface CampanaActivaNoc {

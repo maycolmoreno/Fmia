@@ -24,6 +24,11 @@ public interface AlertaRepositorioJpa extends JpaRepository<AlertaEntidad, UUID>
     @EntityGraph(attributePaths = {"equipo", "equipo.sucursal", "sucursal", "reconocidaPor", "cerradaPor"})
     List<AlertaEntidad> findByOrderByAbiertaEnDesc(Pageable pageable);
 
+    // Usado por el NOC para el panel de "Problems": solo alertas activas, para que una alerta
+    // ya CLOSED (ej. enlace de red recuperado) deje de listarse como problema abierto.
+    @EntityGraph(attributePaths = {"equipo", "equipo.sucursal", "sucursal", "reconocidaPor", "cerradaPor"})
+    List<AlertaEntidad> findByEstadoNotOrderByAbiertaEnDesc(String estado, Pageable pageable);
+
     @EntityGraph(attributePaths = {"equipo", "equipo.sucursal", "sucursal"})
     List<AlertaEntidad> findByEstadoIn(List<String> estados);
 

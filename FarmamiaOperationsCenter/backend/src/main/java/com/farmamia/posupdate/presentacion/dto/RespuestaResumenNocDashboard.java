@@ -9,7 +9,9 @@ public record RespuestaResumenNocDashboard(
     @JsonProperty("criticFarms") List<FarmaciaCriticaNocDto> farmaciasCriticas,
     @JsonProperty("atRiskFarms") List<FarmaciaCriticaNocDto> farmaciasDeTurnoEnRiesgo,
     @JsonProperty("network") EstadoRedNocDto red,
+    @JsonProperty("downLinks") List<EnlaceCaidoNocDto> enlacesCaidosDetalle,
     @JsonProperty("pos") EstadoPosNocDto pos,
+    @JsonProperty("pendingUpdateDevices") List<EquipoSinActualizarNocDto> equiposSinActualizar,
     @JsonProperty("activeCampaign") CampanaActivaNocDto campanaActiva,
     @JsonProperty("recentAlerts") List<AlertaResumenNocDto> alertasRecientes,
     @JsonProperty("generatedAt") OffsetDateTime generadoEn
@@ -33,12 +35,26 @@ public record RespuestaResumenNocDashboard(
         @JsonProperty("vpnDown") long vpnCaidas
     ) {}
 
+    public record EnlaceCaidoNocDto(
+        @JsonProperty("code") String codigoPdv,
+        @JsonProperty("branchCode") String codigoSucursal,
+        @JsonProperty("branchName") String nombreSucursal,
+        @JsonProperty("ipAddress") String direccionIp,
+        @JsonProperty("lastHeartbeatAt") OffsetDateTime ultimoLatidoEn
+    ) {}
+
     public record EstadoPosNocDto(
         @JsonProperty("total") long totalPos,
         @JsonProperty("online") long posOnline,
         @JsonProperty("offline") long posOffline,
         @JsonProperty("atRisk") long posEnRiesgo,
         @JsonProperty("currentVersion") String versionActual
+    ) {}
+
+    public record EquipoSinActualizarNocDto(
+        @JsonProperty("deviceName") String nombreEquipo,
+        @JsonProperty("branchCode") String codigoSucursal,
+        @JsonProperty("targetStatus") String estadoObjetivo
     ) {}
 
     public record CampanaActivaNocDto(

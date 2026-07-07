@@ -11,7 +11,6 @@ import { EstadoOperacionalFarmacia, FarmaciaCriticaNoc } from '../../modelos/mod
     <article class="tarjeta bloque-noc bloque-prioritario">
       <div class="titulo-tarjeta">
         <h2>Farmacias criticas y en riesgo</h2>
-        <small>Primera lectura operacional del NOC</small>
       </div>
 
       <div class="lista-turno" *ngIf="farmaciasCriticas.length > 0">

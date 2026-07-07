@@ -50,7 +50,7 @@
       <button type="button" *ngIf="sesion.puedeVerEventosYAlertas()" [class.activo]="vistaActiva === 'alertas'" (click)="cambiarVista('alertas')">
         Incidencias
       </button>
-      <button type="button" [class.activo]="vistaActiva === 'agentes'" (click)="cambiarVista('agentes')">
+      <button type="button" *ngIf="sesion.puedeVerEventosYAlertas()" [class.activo]="vistaActiva === 'agentes'" (click)="cambiarVista('agentes')">
         Agentes
       </button>
 
@@ -163,7 +163,7 @@
           <strong>{{ farmaciasCriticas.length }}</strong>
           <small>criticas</small>
         </button>
-        <button type="button" class="accion-operativa warning" (click)="cambiarVista('agentes')">
+        <button type="button" class="accion-operativa warning" (click)="abrirEquiposPos()">
           <span>POS</span>
           <strong>{{ equiposFueraLinea }}</strong>
           <small>apagados o sin latido</small>
@@ -241,61 +241,6 @@
       </article>
     </section>
 
-    <nav class="sub-tabs-barra" *ngIf="vistaActiva === 'agentes'">
-      <button type="button" class="sub-tab" [class.activo]="subTabAgentes === 'equipos'" (click)="subTabAgentes = 'equipos'">Equipos</button>
-      <button type="button" class="sub-tab" *ngIf="sesion.puedeVerEventosYAlertas()" [class.activo]="subTabAgentes === 'eventos'" (click)="subTabAgentes = 'eventos'">Eventos</button>
-    </nav>
-    <section class="vista" *ngIf="vistaActiva === 'agentes' && subTabAgentes === 'equipos'">
-      <article class="tarjeta bloque-noc">
-        <div class="titulo-tarjeta">
-          <div>
-            <h2>Agentes POS</h2>
-            <small>Salud de agentes por farmacia y ultimo heartbeat</small>
-          </div>
-          <button type="button" class="boton pequeno secundario" (click)="cambiarVista('equipos')">Ver equipos POS</button>
-        </div>
-        <div class="tabla tabla-equipos">
-          <div class="tabla-fila cabecera">
-            <span>Equipo POS</span>
-            <span>Farmacia</span>
-            <span>IP</span>
-            <span>Agente</span>
-            <span>POS</span>
-            <span>Estado</span>
-            <span>Ultimo latido</span>
-            <span>Accion</span>
-          </div>
-          <div class="tabla-fila" *ngFor="let equipo of equiposSinLatido.length ? equiposSinLatido : equipos">
-            <span>{{ equipo.hostname }}</span>
-            <span>{{ equipo.branchCode }}</span>
-            <span>{{ equipo.ipAddress || 'N/D' }}</span>
-            <span>{{ equipo.agentVersion || 'N/D' }}</span>
-            <span>{{ equipo.posVersion || 'N/D' }}</span>
-            <span><app-status-badge [status]="equipo.status"></app-status-badge></span>
-            <span>{{ equipo.lastHeartbeatAt ? (equipo.lastHeartbeatAt | date:'short') : 'Sin latido' }}</span>
-            <span><button type="button" class="boton pequeno" (click)="verDetalleEquipo(equipo)">Ver</button></span>
-          </div>
-        </div>
-      </article>
-    </section>
-
-    <section class="vista" *ngIf="vistaActiva === 'alertas' && subTabAlertas === 'red'">
-      <article class="tarjeta bloque-noc estado-red-noc">
-        <div class="titulo-tarjeta">
-          <div>
-            <h2>Red</h2>
-            <small>Placeholder visual para integracion futura con Grafana, Zabbix, LibreNMS o PRTG</small>
-          </div>
-        </div>
-        <div class="metricas metricas-red">
-          <div><span>Enlaces WAN UP</span><strong>645</strong><small>pendiente integracion</small></div>
-          <div><span>Enlaces WAN DOWN</span><strong>{{ alertasRedCriticas }}</strong><small>alertas de red</small></div>
-          <div><span>VPN UP</span><strong>--</strong><small>pendiente integracion</small></div>
-          <div><span>VPN DOWN</span><strong>--</strong><small>pendiente integracion</small></div>
-          <div><span>Latencia alta</span><strong>{{ alertasLatenciaAlta }}</strong><small>alertas recientes</small></div>
-        </div>
-      </article>
-    </section>
 
     <nav class="sub-tabs-barra" *ngIf="vistaActiva === 'equipos'">
       <button type="button" class="sub-tab" [class.activo]="subTabFarmacias === 'tarjetas'" (click)="subTabFarmacias = 'tarjetas'">Tarjetas</button>
@@ -324,10 +269,40 @@
         <app-stat-card label="Turno en riesgo" [value]="farmaciasTurnoEnRiesgo.length" helper="prioridad NOC"></app-stat-card>
       </div>
 
+      <article class="tarjeta formulario">
+        <div class="titulo-tarjeta">
+          <h2>Filtros de farmacias</h2>
+          <button type="button" class="boton pequeno secundario" (click)="limpiarFiltrosEstadoFarmacias()">Limpiar</button>
+        </div>
+        <div class="campos equipos-campos">
+          <label>
+            Busqueda
+            <input type="text" [(ngModel)]="farmaciasEstadoFiltros.q" placeholder="FMA001 o nombre">
+          </label>
+          <label>
+            Ciudad
+            <input type="text" [(ngModel)]="farmaciasEstadoFiltros.ciudad" placeholder="Quito">
+          </label>
+          <label>
+            Estado
+            <select [(ngModel)]="farmaciasEstadoFiltros.estado">
+              <option value="">Todos</option>
+              <option value="CRITICA">Critica</option>
+              <option value="EN_RIESGO">En riesgo</option>
+              <option value="TURNO_EN_RIESGO">Turno en riesgo</option>
+              <option value="NORMAL">Normal</option>
+            </select>
+          </label>
+        </div>
+      </article>
+
       <article class="tarjeta">
         <div class="titulo-tarjeta">
           <h2>Estado operacional de farmacias</h2>
-          <button type="button" class="boton pequeno secundario" (click)="recargarTodo()">Actualizar</button>
+          <div class="acciones">
+            <span class="estado">{{ estadoFarmaciasFiltradas.length }} de {{ estadoFarmacias.length }}</span>
+            <button type="button" class="boton pequeno secundario" (click)="recargarTodo()">Actualizar</button>
+          </div>
         </div>
         <div class="tabla tabla-farmacias-estado">
           <div class="tabla-fila cabecera">
@@ -341,7 +316,7 @@
             <span>Version POS</span>
             <span>Ultimo latido</span>
           </div>
-          <div class="tabla-fila" *ngFor="let f of estadoFarmacias"
+          <div class="tabla-fila" *ngFor="let f of estadoFarmaciasFiltradas"
                [class.fila-critica]="f.critica"
                [class.fila-riesgo]="f.turnoEnRiesgo && !f.critica">
             <span><strong>{{ f.codigoFarmacia }}</strong></span>
@@ -358,6 +333,7 @@
             <span>{{ f.ultimoLatidoEn ? (f.ultimoLatidoEn | date:'short') : 'Sin latido' }}</span>
           </div>
           <p class="vacio" *ngIf="estadoFarmacias.length === 0">Cargando estado operacional de farmacias...</p>
+          <p class="vacio" *ngIf="estadoFarmacias.length > 0 && estadoFarmaciasFiltradas.length === 0">Ningun resultado con estos filtros.</p>
         </div>
       </article>
     </section>
@@ -843,7 +819,7 @@
       </div>
     </section>
 
-    <section class="vista" *ngIf="vistaActiva === 'agentes' && subTabAgentes === 'eventos'">
+    <section class="vista" *ngIf="vistaActiva === 'agentes'">
       <article class="tarjeta">
         <div class="titulo-tarjeta">
           <h2>Eventos del agente</h2>
@@ -873,7 +849,6 @@
     <nav class="sub-tabs-barra" *ngIf="vistaActiva === 'alertas'">
       <button type="button" class="sub-tab" [class.activo]="subTabAlertas === 'activas'" (click)="subTabAlertas = 'activas'">Activas</button>
       <button type="button" class="sub-tab" [class.activo]="subTabAlertas === 'incidentes'" (click)="subTabAlertas = 'incidentes'">Incidentes</button>
-      <button type="button" class="sub-tab" [class.activo]="subTabAlertas === 'red'" (click)="subTabAlertas = 'red'">Red</button>
     </nav>
     <section class="vista" *ngIf="vistaActiva === 'alertas' && subTabAlertas === 'activas'">
       <app-alertas-operaciones></app-alertas-operaciones>
